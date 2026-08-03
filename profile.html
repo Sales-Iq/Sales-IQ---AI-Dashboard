@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SalesIQ Profile</title>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f172a" />
+<link rel="preconnect" href="https://cdn.tailwindcss.com" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { inter: ['Inter', 'system-ui', 'sans-serif'] },
+        boxShadow: { glow: '0 0 35px rgba(56,189,248,.25)' },
+        animation: {
+          floaty: 'floaty 7s ease-in-out infinite',
+          shimmer: 'shimmer 2.6s linear infinite',
+          pulseSoft: 'pulseSoft 2.8s ease-in-out infinite',
+          slideUp: 'slideUp .65s cubic-bezier(.2,.9,.2,1) both'
+        },
+        keyframes: {
+          floaty: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-18px)' } },
+          shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+          pulseSoft: { '0%,100%': { opacity: '.65', transform: 'scale(1)' }, '50%': { opacity: '1', transform: 'scale(1.04)' } },
+          slideUp: { '0%': { opacity: '0', transform: 'translateY(22px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+        }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css" />
+<link rel="stylesheet" href="css/liquid-glass.css" />
+
+</head>
+<body class="font-inter bg-slate-950 text-white overflow-x-hidden">
+  <div id="animatedBg" class="animated-bg"></div>
+  <div id="splashScreen" class="splash-screen"><div class="splash-orb"></div><h2>SalesIQ</h2><p>Loading intelligent dashboard...</p></div>
+
+<section class="min-h-screen p-5 flex items-center justify-center"><div class="glass-strong w-full max-w-2xl p-7 animate-slideUp"><div class="flex justify-between items-center mb-6"><a href="index.html" class="flex items-center gap-3 font-black text-2xl"><span class="logo-mark">SIQ</span> Profile</a><button id="profileBack" class="btn btn-ghost btn-sm">Back to Dashboard</button></div><form id="profileForm" class="form-grid"><div class="md:col-span-2 flex items-center gap-4"><img id="profileImagePreview" class="w-20 h-20 rounded-3xl object-cover bg-slate-800 border border-slate-700" alt="Profile"><div><h2 id="profileNameTitle" class="text-2xl font-black">User</h2><p id="profileRole" class="text-slate-400">Role</p></div></div><div><label class="label">Name</label><input id="profileName" class="input"></div><div><label class="label">Email</label><input id="profileEmail" class="input" disabled></div><div class="md:col-span-2"><label class="label">Profile Photo URL</label><input id="profilePhoto" class="input" placeholder="https://..."></div><div class="md:col-span-2"><button class="btn btn-primary w-full">Update Profile</button></div></form><div class="mt-5 grid md:grid-cols-2 gap-3"><button id="profileTheme" class="btn btn-ghost">Toggle Dark/Light</button><button id="profileLogout" class="btn btn-danger">Logout</button></div></div></section>
+
+  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="js/liquid-glass.js"></script>
+<script type="module" src="js/shared.js"></script>
+  <script type="module" src="js/profile.js"></script>
+</body>
+</html>

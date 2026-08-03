@@ -1,0 +1,124 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isActiveAdminOrManager() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active'
+        && (
+          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'Admin'
+          || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'Manager'
+        );
+    }
+
+    function isActiveAdminOnly() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active'
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    function isActiveStaff() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.status == 'active'
+        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'Sales Staff';
+    }
+
+    function active() {
+      return isActiveAdminOrManager() || isActiveStaff();
+    }
+
+    function stockOnlyUpdate() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly(['stock', 'status', 'updatedAt']);
+    }
+
+    match /admins/{uid} {
+      allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
+
+       allow create: if isActiveAdminOnly()
+        || (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.status == 'active'
+          && request.resource.data.role in ['Admin', 'Manager']
+        );
+
+      allow update: if isActiveAdminOnly()
+        || (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.role == resource.data.role
+        );
+
+      allow delete: if isActiveAdminOnly();
+   } 
+
+    match /staff/{uid} {
+  allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
+
+  allow create: if isActiveAdminOnly()
+    || (
+      signedIn()
+      && uid == request.auth.uid
+      && request.resource.data.status == 'active'
+      && request.resource.data.role == 'Sales Staff'
+    );
+
+  allow update: if isActiveAdminOnly()
+    || (
+      signedIn()
+      && uid == request.auth.uid
+      && request.resource.data.role == resource.data.role
+    );
+
+  allow delete: if isActiveAdminOnly() || (signedIn() && uid == request.auth.uid);
+}
+
+    match /products/{id} {
+      allow read: if active();
+      allow create, delete: if isActiveAdminOrManager();
+      allow update: if isActiveAdminOrManager() || (active() && stockOnlyUpdate());
+    }
+
+    match /sales/{id} {
+      allow read: if active();
+      allow create: if active();
+      allow update, delete: if isActiveAdminOrManager();
+    }
+
+    match /customers/{id} {
+      allow read, create: if active();
+      allow update, delete: if isActiveAdminOrManager();
+    }
+
+    match /suppliers/{id} {
+      allow read, write: if isActiveAdminOrManager();
+    }
+
+    match /purchases/{id} {
+      allow read, write: if isActiveAdminOrManager();
+    }
+
+    match /notifications/{id} {
+      allow read: if active();
+      allow write: if isActiveAdminOrManager();
+    }
+
+    match /forecasting/{id} {
+      allow read, write: if isActiveAdminOrManager();
+    }
+
+    match /businessSettings/{id} {
+      allow read: if active();
+      allow write: if isActiveAdminOrManager();
+    }
+  }
+}
