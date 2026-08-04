@@ -1,0 +1,162 @@
+import {
+  requireAuth,
+  initAppShell,
+  fetchAll,
+  $,
+  $$,
+  money,
+  emptyState,
+  badgeForStatus,
+  statusFor,
+} from "../../js/shared.js";
+import {
+  db,
+  collection,
+  query,
+  where,
+  orderBy,
+} from "../../js/firebase-config.js";
+
+const { profile } = await requireAuth(["Sales Staff"]);
+initAppShell("sales", "stock-view", profile);
+
+let products = [];
+let batches = [];
+
+function getBatchStatus(batch) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (batch.status === "Disposed" || batch.status === "Empty") {
+    return batch.status;
+  }
+
+  if (!batch.expiryDate) {
+    return "Active";
+  }
+
+  if (batch.expiryDate < today) {
+    return "Expired";
+  }
+
+  const todayDate = new Date(`${today}T00:00:00`);
+  const expiryDate = new Date(`${batch.expiryDate}T00:00:00`);
+  const daysLeft = Math.ceil(
+    (expiryDate.getTime() - todayDate.getTime()) / 86400000,
+  );
+
+  if (daysLeft <= 30) {
+    return "Near Expiry";
+  }
+
+  return "Active";
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-IN");
+}
+
+function badgeForBatchStatus(status) {
+  switch (status) {
+    case "Expired":
+      return '<span class="badge badge-danger">Expired</span>';
+    case "Near Expiry":
+      return '<span class="badge badge-warn">Near Expiry</span>';
+    case "Disposed":
+      return '<span class="badge badge-danger">Disposed</span>';
+    case "Empty":
+      return '<span class="badge badge-warn">Empty</span>';
+    default:
+      return '<span class="badge badge-ok">Active</span>';
+  }
+}
+
+function render() {
+  const q = $("#stockSearch").value.toLowerCase();
+  const c = $("#stockCategory").value.toLowerCase();
+
+  const rows = products.filter((p) => {
+    const matchesName = (p.name || "").toLowerCase().includes(q);
+    const matchesCategory = !c || (p.category || "").toLowerCase().includes(c);
+    return matchesName && matchesCategory;
+  });
+
+  $("#stockViewTable").innerHTML = rows.length
+    ? `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Total Stock</th>
+              <th>Batches</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows
+              .map((p) => {
+                const productBatches = batches.filter(
+                  (b) => b.productId === p.id,
+                );
+                const activeBatches = productBatches.filter((b) => {
+                  const s = getBatchStatus(b);
+                  return s !== "Disposed" && s !== "Empty";
+                });
+
+                const batchHtml = activeBatches.length
+                  ? activeBatches
+                      .sort((a, b) =>
+                        (a.expiryDate || "").localeCompare(b.expiryDate || ""),
+                      )
+                      .map((b) => {
+                        const status = getBatchStatus(b);
+                        return `
+                          <div class="text-xs flex justify-between items-center py-1 px-2 rounded ${status === "Expired" ? "bg-red-500/20" : status === "Near Expiry" ? "bg-amber-500/20" : "bg-emerald-500/20"}">
+                            <span>${b.batchNumber}</span>
+                            <span class="flex items-center gap-2">
+                              ${badgeForBatchStatus(status)}
+                              <span class="font-mono">${b.remainingQuantity || 0}</span>
+                            </span>
+                          </div>
+                        `;
+                      })
+                      .join("")
+                  : '<span class="text-slate-400 text-sm">No active batches</span>';
+
+                return `
+                  <tr class="${statusFor(p.stock, p.minStock) !== "Available" ? "warning-row" : ""}">
+                    <td class="font-black">${p.name}</td>
+                    <td>${p.category || "-"}</td>
+                    <td class="font-bold">${p.stock || 0}</td>
+                    <td>
+                      <div class="max-h-32 overflow-y-auto space-y-1">
+                        ${batchHtml}
+                      </div>co
+                    </td>
+                    <td>${money(p.price)}</td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `
+    : emptyState("No products", "Admin has not added products yet.");
+}
+
+async function load() {
+  products = await fetchAll("products");
+  batches = await fetchAll("productBatches");
+  render();
+}
+
+["stockSearch", "stockCategory"].forEach((id) =>
+  $("#" + id).addEventListener("input", render),
+);
+$("#refreshStock").onclick = load;
+load();

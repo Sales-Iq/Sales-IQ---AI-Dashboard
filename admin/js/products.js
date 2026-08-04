@@ -11,6 +11,10 @@ import {
   money,
   emptyState,
   createNotification,
+  getBatchStatus,
+  badgeForBatchStatus,
+  formatDate,
+  getProductBatchInfo,
 } from "../../js/shared.js";
 
 import {
@@ -27,72 +31,11 @@ const { profile } = await requireAuth(["Admin", "Manager"]);
 initAppShell("admin", "products", profile);
 
 let products = [];
+let batches = [];
 
 const modal = $("#productModal");
 const form = $("#productForm");
-
-const PERISHABLE_CATEGORIES = new Set(["food", "medicine"]);
-
-function isPerishable(category) {
-  return PERISHABLE_CATEGORIES.has(
-    String(category || "")
-      .trim()
-      .toLowerCase(),
-  );
-}
-
-function formatProductDate(value) {
-  if (!value) return "-";
-
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString("en-IN");
-}
-
-function expiryCell(product) {
-  if (!isPerishable(product.category)) {
-    return "-";
-  }
-
-  if (!product.expiryDate) {
-    return '<span class="badge badge-warn">Missing date</span>';
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  if (product.expiryDate < today) {
-    return `
-      <span class="badge badge-danger">
-        Expired · ${formatProductDate(product.expiryDate)}
-      </span>
-    `;
-  }
-
-  const todayDate = new Date(`${today}T00:00:00`);
-  const expiryDate = new Date(`${product.expiryDate}T00:00:00`);
-
-  const daysLeft = Math.ceil(
-    (expiryDate.getTime() - todayDate.getTime()) / 86400000,
-  );
-
-  if (daysLeft <= 30) {
-    return `
-      <span class="badge badge-warn">
-        ${formatProductDate(product.expiryDate)} · ${daysLeft} days
-      </span>
-    `;
-  }
-
-  return `
-    <span class="badge badge-ok">
-      ${formatProductDate(product.expiryDate)}
-    </span>
-  `;
-}
+const batchDetailModal = $("#batchDetailModal");
 
 function ensureCategoryOption(category) {
   if (!category) return;
@@ -105,25 +48,6 @@ function ensureCategoryOption(category) {
 
   if (!alreadyExists) {
     categorySelect.add(new Option(category, category));
-  }
-}
-
-function toggleProductDateFields(clearWhenHidden = true) {
-  const category = $("#productCategory").value;
-  const requiresDates = isPerishable(category);
-
-  const wrapper = $("#productDateFields");
-  const manufactureInput = $("#productManufactureDate");
-  const expiryInput = $("#productExpiryDate");
-
-  wrapper.hidden = !requiresDates;
-
-  manufactureInput.required = requiresDates;
-  expiryInput.required = requiresDates;
-
-  if (!requiresDates && clearWhenHidden) {
-    manufactureInput.value = "";
-    expiryInput.value = "";
   }
 }
 
@@ -140,18 +64,13 @@ function openModal(product = null) {
   ensureCategoryOption(product?.category);
   $("#productCategory").value = product?.category || "";
 
-  $("#productManufactureDate").value = product?.manufactureDate || "";
-
-  $("#productExpiryDate").value = product?.expiryDate || "";
-
   $("#productPrice").value = product?.price ?? "";
   $("#productCost").value = product?.costPrice ?? "";
   $("#productStock").value = product?.stock ?? "";
   $("#productMinStock").value = product?.minStock ?? "";
   $("#productSupplier").value = product?.supplierName || "";
   $("#productImage").value = product?.imageUrl || "";
-
-  toggleProductDateFields(false);
+  $("#productDescription").value = product?.description || "";
 
   modal.classList.add("show");
 }
@@ -159,7 +78,6 @@ function openModal(product = null) {
 function closeModal() {
   modal.classList.remove("show");
   form.reset();
-  toggleProductDateFields();
 }
 
 window.editProduct = (id) => {
@@ -178,6 +96,42 @@ window.deleteProduct = async (id) => {
     toast(error.message, "err");
   }
 };
+
+window.viewBatchDetails = (productId) => {
+  const p = products.find((x) => x.id === productId);
+  const productBatches = batches.filter((b) => b.productId === productId);
+  $("#batchDetailTitle").textContent = `Batches: ${p.name}`;
+  $("#batchDetailContent").innerHTML = productBatches.length
+    ? `<div class="table-wrap"><table><thead><tr><th>Batch #</th><th>MFG Date</th><th>Expiry Date</th><th>Purchased</th><th>Remaining</th><th>Supplier</th><th>Purchase Price</th><th>Status</th></tr></thead><tbody>${productBatches
+        .sort((a, b) => (a.expiryDate || "").localeCompare(b.expiryDate || ""))
+        .map((b) => {
+          const status = getBatchStatus(b);
+          return `<tr class="${status === "Expired" ? "warning-row" : ""}"><td class="font-mono">${b.batchNumber}</td><td>${formatDate(b.manufactureDate)}</td><td>${formatDate(b.expiryDate)}</td><td>${b.purchasedQuantity || 0}</td><td class="font-bold">${b.remainingQuantity || 0}</td><td>${b.supplierName || "-"}</td><td>${money(b.purchasePrice || 0)}</td><td>${badgeForBatchStatus(status)}</td></tr>`;
+        })
+        .join("")}</tbody></table></div>`
+    : emptyState("No batches", "This product has no batches yet. Create batches via Restock page.");
+  batchDetailModal.classList.add("show");
+};
+
+function getOldestExpiry(product, productBatches) {
+  const activeBatches = productBatches.filter(b => {
+    const s = getBatchStatus(b);
+    return s !== "Disposed" && s !== "Empty" && b.expiryDate;
+  });
+  if (!activeBatches.length) return "-";
+  activeBatches.sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
+  return formatDate(activeBatches[0].expiryDate);
+}
+
+function getLatestExpiry(product, productBatches) {
+  const activeBatches = productBatches.filter(b => {
+    const s = getBatchStatus(b);
+    return s !== "Disposed" && s !== "Empty" && b.expiryDate;
+  });
+  if (!activeBatches.length) return "-";
+  activeBatches.sort((a, b) => b.expiryDate.localeCompare(a.expiryDate));
+  return formatDate(activeBatches[0].expiryDate);
+}
 
 function render() {
   const search = $("#productSearch").value.toLowerCase();
@@ -206,13 +160,14 @@ function render() {
               <th>Image</th>
               <th>Name</th>
               <th>Category</th>
-              <th>MFG Date</th>
-              <th>Expiry Date</th>
               <th>Price</th>
               <th>Cost</th>
-              <th>Stock</th>
+              <th>Total Stock</th>
               <th>Min</th>
-              <th>Supplier</th>
+              <th>Default Supplier</th>
+              <th>Batches</th>
+              <th>Nearest Expiry</th>
+              <th>Latest Expiry</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -222,6 +177,13 @@ function render() {
             ${rows
               .map((product) => {
                 const stockStatus = statusFor(product.stock, product.minStock);
+                const productBatches = batches.filter((b) => b.productId === product.id);
+                const activeBatches = productBatches.filter(b => {
+                  const s = getBatchStatus(b);
+                  return s !== "Disposed" && s !== "Empty";
+                });
+                const oldestExpiry = getOldestExpiry(product, productBatches);
+                const latestExpiry = getLatestExpiry(product, productBatches);
 
                 return `
                   <tr class="${
@@ -247,21 +209,25 @@ function render() {
 
                     <td>${product.category || "-"}</td>
 
-                    <td>
-                      ${
-                        isPerishable(product.category)
-                          ? formatProductDate(product.manufactureDate)
-                          : "-"
-                      }
-                    </td>
-
-                    <td>${expiryCell(product)}</td>
-
                     <td>${money(product.price)}</td>
                     <td>${money(product.costPrice)}</td>
                     <td>${product.stock || 0}</td>
                     <td>${product.minStock || 0}</td>
                     <td>${product.supplierName || "-"}</td>
+
+                    <td>
+                      <span class="badge badge-info">${activeBatches.length}</span>
+                    </td>
+
+                    <td>
+                      ${oldestExpiry !== "-" 
+                        ? `<span class="${activeBatches.some(b => getBatchStatus(b) === "Critical Expiry") ? "text-red-400" : activeBatches.some(b => getBatchStatus(b) === "Near Expiry") ? "text-amber-400" : ""}">${oldestExpiry}</span>`
+                        : '<span class="text-slate-400">—</span>'}
+                    </td>
+
+                    <td>
+                      ${latestExpiry !== "-" ? latestExpiry : '<span class="text-slate-400">—</span>'}
+                    </td>
 
                     <td>
                       ${badgeForStatus(stockStatus)}
@@ -274,6 +240,13 @@ function render() {
                           onclick="editProduct('${product.id}')"
                         >
                           Edit
+                        </button>
+
+                        <button
+                          class="btn btn-info btn-sm"
+                          onclick="viewBatchDetails('${product.id}')"
+                        >
+                          View Batches
                         </button>
 
                         <button
@@ -297,22 +270,23 @@ function render() {
 
 async function load() {
   products = await fetchAll("products");
+  batches = await fetchAll("productBatches");
   render();
 }
 
 $("#openProductModal").onclick = () => openModal();
 
 $$("[data-close-modal]").forEach((button) => {
-  button.onclick = closeModal;
+  button.onclick = () => {
+    modal.classList.remove("show");
+    batchDetailModal.classList.remove("show");
+    form.reset();
+  };
 });
 
 $("#refreshProducts").onclick = load;
 $("#productSearch").oninput = render;
 $("#categoryFilter").oninput = render;
-
-$("#productCategory").addEventListener("change", () => {
-  toggleProductDateFields();
-});
 
 form.onsubmit = async (event) => {
   event.preventDefault();
@@ -322,42 +296,17 @@ form.onsubmit = async (event) => {
 
   try {
     const category = $("#productCategory").value.trim();
-    const perishable = isPerishable(category);
-
-    const manufactureDate = perishable
-      ? $("#productManufactureDate").value
-      : "";
-
-    const expiryDate = perishable ? $("#productExpiryDate").value : "";
-
-    if (perishable && !manufactureDate) {
-      throw new Error("Manufacture date is required for food and medicine.");
-    }
-
-    if (perishable && !expiryDate) {
-      throw new Error("Expiry date is required for food and medicine.");
-    }
-
-    if (
-      perishable &&
-      manufactureDate &&
-      expiryDate &&
-      expiryDate <= manufactureDate
-    ) {
-      throw new Error("Expiry date must be after the manufacture date.");
-    }
 
     const data = {
       name: $("#productName").value.trim(),
       category,
-      manufactureDate,
-      expiryDate,
       price: Number($("#productPrice").value),
       costPrice: Number($("#productCost").value),
       stock: Number($("#productStock").value),
       minStock: Number($("#productMinStock").value),
       supplierName: $("#productSupplier").value.trim(),
       imageUrl: $("#productImage").value.trim(),
+      description: $("#productDescription").value.trim(),
       updatedAt: serverTimestamp(),
     };
 
@@ -391,5 +340,4 @@ form.onsubmit = async (event) => {
   }
 };
 
-toggleProductDateFields();
 load();

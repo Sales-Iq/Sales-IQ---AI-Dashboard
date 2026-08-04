@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SalesIQ - Admin & Staff</title>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f172a" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { inter: ['Inter','system-ui','sans-serif'] }, animation: { floaty:'floaty 7s ease-in-out infinite', shimmer:'shimmer 2.6s linear infinite', pulseSoft:'pulseSoft 2.8s ease-in-out infinite', slideUp:'slideUp .65s cubic-bezier(.2,.9,.2,1) both' }, keyframes: { floaty:{'0%,100%':{transform:'translateY(0)'},'50%':{transform:'translateY(-18px)'}}, shimmer:{'0%':{backgroundPosition:'-200% 0'},'100%':{backgroundPosition:'200% 0'}}, pulseSoft:{'0%,100%':{opacity:'.65',transform:'scale(1)'},'50%':{opacity:'1',transform:'scale(1.04)'}}, slideUp:{'0%':{opacity:'0',transform:'translateY(22px)'},'100%':{opacity:'1',transform:'translateY(0)'}} } } } }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css" />
+<link rel="stylesheet" href="../css/liquid-glass.css" />
+<link rel="stylesheet" href="css/admin.css" />
+
+
+</head>
+<body class="font-inter bg-slate-950 text-slate-100 app-body" data-role="admin" data-active="users">
+  <div id="animatedBg" class="animated-bg"></div>
+  <div id="splashScreen" class="splash-screen"><div class="splash-orb"></div><h2>SalesIQ</h2><p>Opening Admin & Staff Accounts...</p></div>
+  <div class="app-shell">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+    <div class="app-main">
+      <header id="appHeader" class="app-header"></header>
+      <main class="page-container animate-slideUp">
+        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Admin & Staff Management</h2><p class="page-subtitle">Separate admin and staff collections with role changes, activate/deactivate, and account creation.</p></div><div class="flex flex-wrap gap-3"><button id="openUserModal" class="btn btn-primary">+ Add Account</button></div></div>
+<div class="glass p-5"><div id="usersTable"></div></div>
+<div id="userModal" class="modal-backdrop"><div class="modal-card glass-strong p-6"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black">Add Admin or Staff</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="userForm" class="form-grid"><div><label class="label">Name</label><input id="staffName" class="input" required></div><div><label class="label">Email</label><input id="staffEmail" class="input" type="email" required></div><div><label class="label">Password</label><input id="staffPassword" class="input" type="password" minlength="6" required></div><div><label class="label">Role</label><select id="staffRole" class="select"><option>Sales Staff</option><option>Manager</option><option>Admin</option></select></div><div class="md:col-span-2"><button class="btn btn-primary w-full">Create User</button></div></form></div></div>
+
+      </main>
+    </div>
+  </div>
+  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="../js/fallback-ui.js"></script>
+  <script src="../js/liquid-glass.js"></script>
+<script type="module" src="../js/shared.js"></script>
+  <script type="module" src="js/users.js"></script>
+</body>
+</html>

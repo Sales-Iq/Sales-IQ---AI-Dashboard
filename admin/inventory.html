@@ -83,7 +83,7 @@
             </div>
           </div>
           <div class="stats-grid mb-6" id="inventoryStats"></div>
-          <div class="glass p-5 mb-5 grid md:grid-cols-4 gap-4">
+          <div class="glass p-5 mb-5 grid md:grid-cols-5 gap-4">
             <input
               id="inventorySearch"
               class="input"
@@ -95,6 +95,15 @@
               <option>Available</option>
               <option>Low Stock</option>
               <option>Out of Stock</option></select
+            ><select id="inventoryBatchStatus" class="select">
+              <option value="">All batch status</option>
+              <option>Active</option>
+              <option>Upcoming Expiry</option>
+              <option>Near Expiry</option>
+              <option>Critical Expiry</option>
+              <option>Expired</option>
+              <option>Disposed</option>
+              <option>Empty</option></select
             ><button id="refreshInventory" class="btn btn-ghost">
               Refresh
             </button>
@@ -132,6 +141,54 @@
                   />
                 </div>
                 <button class="btn btn-primary w-full">Update Stock</button>
+              </form>
+            </div>
+          </div>
+          <div id="batchDetailModal" class="modal-backdrop">
+            <div class="modal-card glass-strong p-6 max-w-3xl">
+              <div class="flex justify-between items-center mb-5">
+                <h3 class="text-2xl font-black" id="batchDetailTitle">Batch Details</h3>
+                <button class="btn btn-ghost btn-sm" data-close-modal>✕</button>
+              </div>
+              <div id="batchDetailContent"></div>
+            </div>
+          </div>
+          <div id="disposeModal" class="modal-backdrop">
+            <div class="modal-card glass-strong p-6">
+              <div class="flex justify-between items-center mb-5">
+                <h3 class="text-2xl font-black">Dispose Stock</h3>
+                <button class="btn btn-ghost btn-sm" data-close-modal>✕</button>
+              </div>
+              <form id="disposeForm" class="space-y-4">
+                <input type="hidden" id="disposeBatchId" />
+                <div>
+                  <label class="label">Batch</label
+                  ><input id="disposeBatchInfo" class="input" disabled />
+                </div>
+                <div>
+                  <label class="label">Quantity to Dispose</label
+                  ><input
+                    id="disposeQty"
+                    class="input"
+                    type="number"
+                    min="1"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="label">Reason</label
+                  ><select id="disposeReason" class="select" required>
+                    <option value="Expired">Expired</option>
+                    <option value="Damaged">Damaged</option>
+                    <option value="Recalled">Recalled</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label">Notes</label
+                  ><textarea id="disposeNotes" class="textarea" rows="3"></textarea>
+                </div>
+                <button class="btn btn-danger w-full">Dispose Stock</button>
               </form>
             </div>
           </div>

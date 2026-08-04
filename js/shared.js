@@ -165,6 +165,7 @@ export function initClickSpark() {
 const adminLinks = [
   ["dashboard", "Dashboard", "dashboard.html", "📊"],
   ["products", "Products", "products.html", "📦"],
+  ["batches", "Batch Management", "batches.html", "📋"],
   ["inventory", "Inventory", "inventory.html", "🏬"],
   ["sales", "Sales Records", "sales.html", "🧾"],
   ["add-sale", "Billing", "add-sale.html", "💳"],
@@ -174,6 +175,7 @@ const adminLinks = [
   ["customers", "Customers", "customers.html", "👥"],
   ["suppliers", "Suppliers", "suppliers.html", "🚚"],
   ["purchases", "Restock", "purchases.html", "➕"],
+  ["disposals", "Disposals", "disposals.html", "🗑️"],
   ["reports", "Reports", "reports.html", "📄"],
   ["users", "Admin & Staff", "users.html", "🛡️"],
   ["notifications", "Notifications", "notifications.html", "🔔"],
@@ -486,6 +488,119 @@ export function badgeForStatus(status) {
   return '<span class="badge badge-ok">● Available</span>';
 }
 
+export function getBatchStatus(batch) {
+  const today = new Date().toISOString().slice(0, 10);
+  
+  if (batch.status === "Disposed" || batch.status === "Empty") {
+    return batch.status;
+  }
+  
+  if (!batch.expiryDate) {
+    return "Active";
+  }
+  
+  if (batch.expiryDate < today) {
+    return "Expired";
+  }
+  
+  const todayDate = new Date(`${today}T00:00:00`);
+  const expiryDate = new Date(`${batch.expiryDate}T00:00:00`);
+  const daysLeft = Math.ceil((expiryDate.getTime() - todayDate.getTime()) / 86400000);
+  
+  if (daysLeft <= 7) {
+    return "Critical Expiry";
+  }
+  if (daysLeft <= 30) {
+    return "Near Expiry";
+  }
+  if (daysLeft <= 90) {
+    return "Upcoming Expiry";
+  }
+  
+  return "Active";
+}
+
+export function badgeForBatchStatus(status) {
+  switch (status) {
+    case "Expired":
+      return '<span class="badge badge-danger">Expired</span>';
+    case "Critical Expiry":
+      return '<span class="badge badge-danger">Critical Expiry (≤7 days)</span>';
+    case "Near Expiry":
+      return '<span class="badge badge-warn">Near Expiry (≤30 days)</span>';
+    case "Upcoming Expiry":
+      return '<span class="badge badge-info">Upcoming Expiry (≤90 days)</span>';
+    case "Disposed":
+      return '<span class="badge badge-danger">Disposed</span>';
+    case "Empty":
+      return '<span class="badge badge-warn">Empty</span>';
+    default:
+      return '<span class="badge badge-ok">Active</span>';
+  }
+}
+
+export function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-IN");
+}
+
+export function getFEFOBatches(productId, batches, quantity) {
+  const productBatches = batches
+    .filter(b => b.productId === productId)
+    .filter(b => {
+      const status = getBatchStatus(b);
+      return status !== "Expired" && status !== "Disposed" && status !== "Empty" && (b.remainingQuantity || 0) > 0;
+    })
+    .sort((a, b) => {
+      if (!a.expiryDate && !b.expiryDate) return 0;
+      if (!a.expiryDate) return 1;
+      if (!b.expiryDate) return -1;
+      return a.expiryDate.localeCompare(b.expiryDate);
+    });
+  
+  const selected = [];
+  let remainingQty = quantity;
+  
+  for (const batch of productBatches) {
+    if (remainingQty <= 0) break;
+    const available = Number(batch.remainingQuantity || 0);
+    const take = Math.min(available, remainingQty);
+    selected.push({ batch, quantity: take });
+    remainingQty -= take;
+  }
+  
+  return { selected, remainingQty, totalAvailable: productBatches.reduce((sum, b) => sum + Number(b.remainingQuantity || 0), 0) };
+}
+
+export function isBlockedForSale(product, batches) {
+  if (!batches || !batches.length) return true;
+  const productBatches = batches.filter(b => b.productId === product.id);
+  const availableBatches = productBatches.filter(b => {
+    const status = getBatchStatus(b);
+    return status !== "Expired" && status !== "Disposed" && status !== "Empty" && (b.remainingQuantity || 0) > 0;
+  });
+  return availableBatches.length === 0;
+}
+
+export function getProductBatchInfo(product, batches) {
+  const productBatches = batches.filter(b => b.productId === product.id);
+  const activeBatches = productBatches.filter(b => {
+    const status = getBatchStatus(b);
+    return status !== "Disposed" && status !== "Empty";
+  });
+  
+  const totalStock = activeBatches.reduce((sum, b) => sum + Number(b.remainingQuantity || 0), 0);
+  const expiredCount = productBatches.filter(b => getBatchStatus(b) === "Expired").length;
+  const nearExpiryCount = productBatches.filter(b => {
+    const s = getBatchStatus(b);
+    return s === "Critical Expiry" || s === "Near Expiry" || s === "Upcoming Expiry";
+  }).length;
+  
+  return { totalStock, expiredCount, nearExpiryCount, activeBatches, allBatches: productBatches };
+}
+
 export function emptyState(
   title = "No data yet",
   text = "Add data to see it here.",
@@ -637,7 +752,74 @@ export async function createNotification(message, type = "info") {
   }).catch(() => {});
 }
 
+export async function checkAndCreateBatchAlerts() {
+  try {
+    const products = await fetchAll("products");
+    const batches = await fetchAll("productBatches");
+    
+    for (const batch of batches) {
+      const product = products.find(p => p.id === batch.productId);
+      if (!product) continue;
+      
+      const status = getBatchStatus(batch);
+      const lastAlertKey = `batchAlert_${batch.id}_${status}`;
+      const lastAlert = localStorage.getItem(lastAlertKey);
+      const now = Date.now();
+      
+      if (status === "Expired" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
+        await createNotification(
+          `⚠ EXPIRED: ${product.name} (Batch: ${batch.batchNumber}) expired on ${formatDate(batch.expiryDate)}. Cannot be sold.`,
+          "stock"
+        );
+        localStorage.setItem(lastAlertKey, now.toString());
+      } else if (status === "Critical Expiry" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
+        await createNotification(
+          `🔥 CRITICAL EXPIRY (≤7 days): ${product.name} (Batch: ${batch.batchNumber}) expires on ${formatDate(batch.expiryDate)}. Priority sell or dispose!`,
+          "stock"
+        );
+        localStorage.setItem(lastAlertKey, now.toString());
+      } else if (status === "Near Expiry" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
+        await createNotification(
+          `⚡ NEAR EXPIRY (≤30 days): ${product.name} (Batch: ${batch.batchNumber}) expires on ${formatDate(batch.expiryDate)}. Consider discounting.`,
+          "stock"
+        );
+        localStorage.setItem(lastAlertKey, now.toString());
+      } else if (status === "Empty" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
+        await createNotification(
+          `📦 EMPTY BATCH: ${product.name} (Batch: ${batch.batchNumber}) is now empty.`,
+          "stock"
+        );
+        localStorage.setItem(lastAlertKey, now.toString());
+      }
+    }
+    
+    for (const product of products) {
+      if (product.stock <= product.minStock) {
+        const key = `productAlert_${product.id}_lowstock`;
+        const lastAlert = localStorage.getItem(key);
+        if (!lastAlert || now - Number(lastAlert) > 86400000) {
+          await createNotification(
+            `📉 LOW STOCK: ${product.name} has ${product.stock} units (min: ${product.minStock}).`,
+            "stock"
+          );
+          localStorage.setItem(key, now.toString());
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Batch alert check failed:", err);
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   initSplash();
   initClickSpark();
+  
+  setTimeout(() => {
+    checkAndCreateBatchAlerts();
+  }, 3000);
+  
+  setInterval(() => {
+    checkAndCreateBatchAlerts();
+  }, 300000);
 });

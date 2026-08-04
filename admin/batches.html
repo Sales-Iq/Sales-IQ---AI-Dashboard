@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SalesIQ - Batch Management</title>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f172a" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { inter: ['Inter','system-ui','sans-serif'] }, animation: { floaty:'floaty 7s ease-in-out infinite', shimmer:'shimmer 2.6s linear infinite', pulseSoft:'pulseSoft 2.8s ease-in-out infinite', slideUp:'slideUp .65s cubic-bezier(.2,.9,.2,1) both' }, keyframes: { floaty:{'0%,100%':{transform:'translateY(0)'},'50%':{transform:'translateY(-18px)'}}, shimmer:{'0%':{backgroundPosition:'-200% 0'},'100%':{backgroundPosition:'200% 0'}}, pulseSoft:{'0%,100%':{opacity:'.65',transform:'scale(1)'},'50%':{opacity:'1',transform:'scale(1.04)'}}, slideUp:{'0%':{opacity:'0',transform:'translateY(22px)'},'100%':{opacity:'1',transform:'translateY(0)'}} } } } }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css" />
+<link rel="stylesheet" href="../css/liquid-glass.css" />
+<link rel="stylesheet" href="css/admin.css" />
+
+
+</head>
+<body class="font-inter bg-slate-950 text-slate-100 app-body" data-role="admin" data-active="batches">
+  <div id="animatedBg" class="animated-bg"></div>
+  <div id="splashScreen" class="splash-screen"><div class="splash-orb"></div><h2>SalesIQ</h2><p>Opening Batch Management...</p></div>
+  <div class="app-shell">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+    <div class="app-main">
+      <header id="appHeader" class="app-header"></header>
+      <main class="page-container animate-slideUp">
+        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Batch Management</h2><p class="page-subtitle">View, edit, dispose and print labels for all product batches.</p></div><div class="flex flex-wrap gap-3"><button id="exportBatches" class="btn btn-success">Export Batches</button></div></div>
+<div class="stats-grid mb-6" id="batchStats"></div>
+<div class="glass p-5 mb-5 grid md:grid-cols-5 gap-4"><input id="batchSearch" class="input" placeholder="Search batch #..."><input id="batchProductFilter" class="input" placeholder="Filter product..."><select id="batchStatusFilter" class="select"><option value="">All status</option><option>Active</option><option>Upcoming Expiry</option><option>Near Expiry</option><option>Critical Expiry</option><option>Expired</option><option>Disposed</option><option>Empty</option></select><select id="batchSupplierFilter" class="select"><option value="">All suppliers</option></select><button id="refreshBatches" class="btn btn-ghost">Refresh</button></div><div class="glass p-5"><div id="batchesTable"></div></div>
+<div id="batchEditModal" class="modal-backdrop"><div class="modal-card glass-strong p-6 max-w-xl"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black">Edit Batch</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="batchEditForm" class="space-y-4"><input type="hidden" id="editBatchId"><div><label class="label">Batch Number</label><input id="editBatchNumber" class="input" required></div><div class="md:grid md:grid-cols-2 gap-4"><div><label class="label">Manufacture Date</label><input id="editManufactureDate" class="input" type="date" required></div><div><label class="label">Expiry Date</label><input id="editExpiryDate" class="input" type="date" required></div></div><div class="md:grid md:grid-cols-2 gap-4"><div><label class="label">Purchased Quantity</label><input id="editPurchasedQty" class="input" type="number" min="0" required></div><div><label class="label">Remaining Quantity</label><input id="editRemainingQty" class="input" type="number" min="0" required></div></div><div><label class="label">Supplier</label><input id="editSupplier" class="input"></div><div class="md:grid md:grid-cols-2 gap-4"><div><label class="label">Purchase Price</label><input id="editPurchasePrice" class="input" type="number" min="0" step="0.01"></div><div><label class="label">Status</label><select id="editStatus" class="select"><option>Active</option><option>Disposed</option><option>Empty</option></select></div></div><div><label class="label">Notes</label><textarea id="editNotes" class="textarea" rows="2"></textarea></div><div class="flex gap-3"><button class="btn btn-primary w-full">Save Changes</button><button type="button" class="btn btn-danger w-full" id="disposeFromEdit">Dispose</button></div></form></div></div>
+<div id="batchDisposeModal" class="modal-backdrop"><div class="modal-card glass-strong p-6"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black">Dispose Batch</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="batchDisposeForm" class="space-y-4"><input type="hidden" id="disposeBatchId"><div><label class="label">Batch</label><input id="disposeBatchInfo" class="input" disabled></div><div><label class="label">Quantity to Dispose</label><input id="disposeQty" class="input" type="number" min="1" required></div><div><label class="label">Reason</label><select id="disposeReason" class="select" required><option value="Expired">Expired</option><option value="Damaged">Damaged</option><option value="Recalled">Recalled</option><option value="Lost">Lost</option><option value="Returned">Returned</option><option value="Other">Other</option></select></div><div><label class="label">Remarks</label><textarea id="disposeRemarks" class="textarea" rows="3"></textarea></div><button class="btn btn-danger w-full">Dispose Stock</button></form></div></div>
+<div id="batchLabelModal" class="modal-backdrop"><div class="modal-card glass-strong p-6 max-w-xs"><div class="flex justify-between items-center mb-5"><h3 class="text-xl font-black">Batch Label</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><div id="batchLabelContent" class="bg-white text-black p-6 rounded-xl font-mono text-sm leading-relaxed"></div><button class="btn btn-primary w-full mt-4" id="printBatchLabel">Print Label</button></div></div>
+
+      </main>
+    </div>
+  </div>
+  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="../js/fallback-ui.js"></script>
+  <script src="../js/liquid-glass.js"></script>
+<script type="module" src="../js/shared.js"></script>
+  <script type="module" src="js/batches.js"></script>
+</body>
+</html>

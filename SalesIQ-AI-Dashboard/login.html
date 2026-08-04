@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SalesIQ Login</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode:'class', theme:{ extend:{ fontFamily:{ inter:['Inter','system-ui','sans-serif'] } } } }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/shared.css" />
+  <link rel="stylesheet" href="css/liquid-glass.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body class="font-inter bg-slate-950 text-white overflow-x-hidden">
+  <div id="animatedBg" class="animated-bg"></div>
+  <div id="splashScreen" class="splash-screen"><div class="splash-orb"></div><h2>SalesIQ</h2><p>Opening secure login...</p></div>
+  <section class="auth-scene">
+    <div class="auth-grid-bg"></div>
+    <div class="auth-orb one"></div>
+    <div class="auth-orb two"></div>
+    <div class="auth-orb three"></div>
+    <div class="auth-card">
+      <a href="index.html" class="auth-brand"><span class="auth-logo">SIQ</span><span>SalesIQ</span></a>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Login to your AI sales and inventory dashboard.</p>
+      <form id="loginForm" class="auth-form">
+        <div class="auth-form-row"><label>Email</label><input class="input" type="email" id="loginEmail" required placeholder="you@example.com"></div>
+        <div class="auth-form-row"><label>Password</label><input class="input" type="password" id="loginPassword" required placeholder="Enter password"></div>
+        <button class="btn btn-primary auth-main-btn" type="submit">Login</button>
+      </form>
+      <div class="auth-divider"><span></span><p>OR</p><span></span></div>
+      <button id="googleLogin" class="google-3d" type="button"><span>G</span> Continue with Google</button>
+      <div class="auth-links"><button id="forgotPassword" type="button">Forgot password?</button><a href="register.html">Create Account</a></div>
+      <a class="auth-back" href="index.html">← Back to home</a>
+    </div>
+  </section>
+  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="js/liquid-glass.js"></script>
+  <script src="js/auth-3d.js"></script>
+  <script type="module" src="js/shared.js"></script>
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>

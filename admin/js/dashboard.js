@@ -9,7 +9,10 @@ import {
   statusFor,
   watchCollection,
   toast,
-  setBusy
+  setBusy,
+  getBatchStatus,
+  badgeForBatchStatus,
+  formatDate,
 } from '../../js/shared.js';
 
 import {
@@ -27,6 +30,7 @@ initAppShell('admin', 'dashboard', profile);
 let products = [];
 let sales = [];
 let customers = [];
+let batches = [];
 let stopDemoRunner = null;
 
 function saleDate(sale) {
@@ -40,6 +44,71 @@ function sourceBadge(source) {
   if (source === 'dummy') return '<span class="badge badge-warn">Dummy</span>';
   if (source === 'admin') return '<span class="badge badge-ok">Admin</span>';
   return '<span class="badge badge-ok">Staff</span>';
+}
+
+function renderBatchAlerts() {
+  const expiredBatches = batches.filter(b => getBatchStatus(b) === "Expired");
+  const criticalBatches = batches.filter(b => getBatchStatus(b) === "Critical Expiry");
+  const nearExpiryBatches = batches.filter(b => getBatchStatus(b) === "Near Expiry");
+  const upcomingBatches = batches.filter(b => getBatchStatus(b) === "Upcoming Expiry");
+
+  let alertsHtml = "";
+  if (expiredBatches.length > 0) {
+    alertsHtml += `<div class="glass p-4 border-l-4 border-red-500 mb-3">
+      <div class="font-bold text-red-400">⚠ ${expiredBatches.length} Expired Batch${expiredBatches.length > 1 ? "es" : ""}</div>
+      <div class="text-sm text-slate-400 mt-1">These batches cannot be sold and should be disposed.</div>
+      <div class="mt-2 flex flex-wrap gap-2">
+        ${expiredBatches.slice(0, 5).map(b => {
+          const p = products.find(x => x.id === b.productId);
+          return `<span class="badge badge-danger">${p?.name || "Product"} - ${b.batchNumber} (${formatDate(b.expiryDate)})</span>`;
+        }).join("")}
+        ${expiredBatches.length > 5 ? `<span class="badge badge-info">+${expiredBatches.length - 5} more</span>` : ""}
+      </div>
+    </div>`;
+  }
+  if (criticalBatches.length > 0) {
+    alertsHtml += `<div class="glass p-4 border-l-4 border-orange-500 mb-3">
+      <div class="font-bold text-orange-400">🔥 ${criticalBatches.length} Critical Expiry Batch${criticalBatches.length > 1 ? "es" : ""} (≤7 days)</div>
+      <div class="text-sm text-slate-400 mt-1">Urgent action needed - sell or dispose immediately.</div>
+      <div class="mt-2 flex flex-wrap gap-2">
+        ${criticalBatches.slice(0, 5).map(b => {
+          const p = products.find(x => x.id === b.productId);
+          return `<span class="badge badge-danger">${p?.name || "Product"} - ${b.batchNumber} (${formatDate(b.expiryDate)})</span>`;
+        }).join("")}
+        ${criticalBatches.length > 5 ? `<span class="badge badge-info">+${criticalBatches.length - 5} more</span>` : ""}
+      </div>
+    </div>`;
+  }
+  if (nearExpiryBatches.length > 0) {
+    alertsHtml += `<div class="glass p-4 border-l-4 border-amber-500 mb-3">
+      <div class="font-bold text-amber-400">⚡ ${nearExpiryBatches.length} Near Expiry Batch${nearExpiryBatches.length > 1 ? "es" : ""} (≤30 days)</div>
+      <div class="text-sm text-slate-400 mt-1">Consider discounting or prioritizing these in sales.</div>
+      <div class="mt-2 flex flex-wrap gap-2">
+        ${nearExpiryBatches.slice(0, 5).map(b => {
+          const p = products.find(x => x.id === b.productId);
+          return `<span class="badge badge-warn">${p?.name || "Product"} - ${b.batchNumber} (${formatDate(b.expiryDate)})</span>`;
+        }).join("")}
+        ${nearExpiryBatches.length > 5 ? `<span class="badge badge-info">+${nearExpiryBatches.length - 5} more</span>` : ""}
+      </div>
+    </div>`;
+  }
+  if (upcomingBatches.length > 0) {
+    alertsHtml += `<div class="glass p-4 border-l-4 border-blue-500 mb-3">
+      <div class="font-bold text-blue-400">📅 ${upcomingBatches.length} Upcoming Expiry Batch${upcomingBatches.length > 1 ? "es" : ""} (≤90 days)</div>
+      <div class="text-sm text-slate-400 mt-1">Plan restocking and sales strategies.</div>
+      <div class="mt-2 flex flex-wrap gap-2">
+        ${upcomingBatches.slice(0, 5).map(b => {
+          const p = products.find(x => x.id === b.productId);
+          return `<span class="badge badge-info">${p?.name || "Product"} - ${b.batchNumber} (${formatDate(b.expiryDate)})</span>`;
+        }).join("")}
+        ${upcomingBatches.length > 5 ? `<span class="badge badge-info">+${upcomingBatches.length - 5} more</span>` : ""}
+      </div>
+    </div>`;
+  }
+  if (!alertsHtml) {
+    alertsHtml = '<div class="glass p-4 text-center text-slate-400">✅ All batches are within safe expiry range.</div>';
+  }
+  $("#batchAlerts").innerHTML = alertsHtml;
 }
 
 function renderDemoControls() {
@@ -206,6 +275,7 @@ function renderDashboard() {
   renderRecentSales();
   renderAiSummary({ low, out });
   renderDemoControls();
+  renderBatchAlerts();
 }
 
 $('#seedDemoProducts')?.addEventListener('click', async e => {
@@ -254,6 +324,10 @@ const unsubs = [
   }),
   watchCollection('customers', rows => {
     customers = rows;
+    renderDashboard();
+  }),
+  watchCollection('productBatches', rows => {
+    batches = rows;
     renderDashboard();
   })
 ];

@@ -9,6 +9,9 @@ import {
   uid,
   statusFor,
   createNotification,
+  getFEFOBatches,
+  getBatchStatus,
+  isBlockedForSale,
 } from "../../js/shared.js";
 
 import {
@@ -28,43 +31,23 @@ const { profile } = await requireAuth(
 initAppShell(isStaff ? "sales" : "admin", "add-sale", profile);
 
 let products = [];
+let batches = [];
 let selected = null;
 
-const PERISHABLE_CATEGORIES = new Set(["food", "medicine"]);
-
-function isPerishable(category) {
-  return PERISHABLE_CATEGORIES.has(
-    String(category || "")
-      .trim()
-      .toLowerCase(),
-  );
-}
-
-function isBlockedForSale(product) {
-  if (!isPerishable(product?.category)) {
-    return false;
-  }
-
-  if (!product.expiryDate) {
-    return true;
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  return product.expiryDate < today;
-}
-
 async function loadProducts() {
-  products = (await fetchAll("products")).filter((product) => {
+  products = await fetchAll("products");
+  batches = await fetchAll("productBatches");
+
+  const sellableProducts = products.filter((product) => {
     const hasStock = Number(product.stock || 0) > 0;
-    const allowedForSale = !isBlockedForSale(product);
+    const allowedForSale = !isBlockedForSale(product, batches);
 
     return hasStock && allowedForSale;
   });
 
   $("#saleProduct").innerHTML =
     '<option value="">Choose product</option>' +
-    products
+    sellableProducts
       .map(
         (product) => `
       <option value="${product.id}">${product.name} — ${product.stock} in stock</option>
@@ -85,29 +68,35 @@ function updatePreview() {
   const total = Number(selected?.price || 0) * qty;
   $("#saleTotal").value = total;
 
+  let batchInfo = "";
+  if (selected) {
+    const { selected: fefoBatches, remainingQty, totalAvailable } = getFEFOBatches(selected.id, batches, qty);
+    if (fefoBatches.length > 0) {
+      batchInfo = `
+        <div class="mt-3 p-3 bg-slate-800/50 rounded-lg">
+          <b>FEFO Batches to be used:</b>
+          <div class="mt-2 space-y-1">
+            ${fefoBatches.map(({ batch, quantity }) => `
+              <div class="text-sm flex justify-between">
+                <span>${batch.batchNumber} (MFG: ${batch.manufactureDate || "-"}, EXP: ${batch.expiryDate || "-"})</span>
+                <span class="font-mono">${quantity} units</span>
+              </div>
+            `).join('')}
+            ${remainingQty > 0 ? `<div class="text-red-400 text-sm">⚠ Shortage: ${remainingQty} units cannot be fulfilled</div>` : ""}
+          </div>
+        </div>
+      `;
+    }
+  }
+
   $("#invoicePreview").innerHTML = selected
     ? `
       <div><b>Invoice:</b> SIQ-${uid()}</div>
       <div><b>Product:</b> ${selected.name}</div>
-<div><b>Category:</b> ${selected.category || "-"}</div>
-
-${
-  isPerishable(selected.category)
-    ? `
-      <div>
-        <b>Manufacture Date:</b>
-        ${selected.manufactureDate || "-"}
-      </div>
-
-      <div>
-        <b>Expiry Date:</b>
-        ${selected.expiryDate || "-"}
-      </div>
-    `
-    : ""
-}
-
-<div><b>Quantity:</b> ${qty}</div>
+      <div><b>Category:</b> ${selected.category || "-"}</div>
+      <div><b>Available Stock:</b> ${selected.stock || 0}</div>
+      ${batchInfo}
+      <div><b>Quantity:</b> ${qty}</div>
       <div><b>Total:</b> ${money(total)}</div>
       <div><b>Customer:</b> ${$("#customerName").value || "-"}</div>
       <div><b>Payment:</b> ${$("#paymentMethod").value}</div>
@@ -136,8 +125,14 @@ $("#billingForm").onsubmit = async (e) => {
     const quantity = Number($("#saleQty").value);
     if (quantity <= 0) throw new Error("Quantity must be greater than 0.");
 
+    const { selected: fefoBatches, remainingQty } = getFEFOBatches(selected.id, batches, quantity);
+    if (remainingQty > 0) {
+      throw new Error(`Insufficient stock. Only ${quantity - remainingQty} units available across valid batches.`);
+    }
+
     const invoiceNumber = `SIQ-${Date.now().toString().slice(-8)}`;
     let newStock = 0;
+    const batchUpdates = [];
 
     await runTransaction(db, async (tx) => {
       const productRef = doc(db, "products", selected.id);
@@ -148,15 +143,26 @@ $("#billingForm").onsubmit = async (e) => {
       const product = productSnap.data();
       const stock = Number(product.stock || 0);
 
-      if (isBlockedForSale(product)) {
-        throw new Error(
-          `${product.name || selected.name} is expired or has no expiry date and cannot be sold.`,
-        );
-      }
-
       if (quantity > stock) throw new Error(`Only ${stock} units available.`);
 
       newStock = stock - quantity;
+
+      for (const { batch, quantity: batchQty } of fefoBatches) {
+        const batchRef = doc(db, "productBatches", batch.id);
+        const batchSnap = await tx.get(batchRef);
+        if (!batchSnap.exists()) throw new Error(`Batch ${batch.batchNumber} not found.`);
+        
+        const batchData = batchSnap.data();
+        const newRemaining = Number(batchData.remainingQuantity || 0) - batchQty;
+        const newStatus = newRemaining <= 0 ? "Empty" : getBatchStatus({ ...batchData, remainingQuantity: newRemaining });
+        
+        tx.update(batchRef, {
+          remainingQuantity: newRemaining,
+          status: newStatus,
+          updatedAt: serverTimestamp(),
+        });
+        batchUpdates.push({ batchId: batch.id, batchNumber: batch.batchNumber, quantity: batchQty });
+      }
 
       tx.update(productRef, {
         stock: newStock,
@@ -167,8 +173,6 @@ $("#billingForm").onsubmit = async (e) => {
 
     const sale = {
       category: selected.category || "",
-      manufactureDate: selected.manufactureDate || "",
-      expiryDate: selected.expiryDate || "",
       invoiceNumber,
       productId: selected.id,
       productName: selected.name,
@@ -184,6 +188,7 @@ $("#billingForm").onsubmit = async (e) => {
       salespersonName: profile.name || profile.email,
       source: isStaff ? "staff" : "admin",
       isDemo: false,
+      batchesUsed: batchUpdates,
       createdAt: serverTimestamp(),
     };
 
