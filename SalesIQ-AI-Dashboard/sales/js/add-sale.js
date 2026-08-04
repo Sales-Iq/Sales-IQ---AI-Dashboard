@@ -9,6 +9,9 @@ import {
   uid,
   statusFor,
   createNotification,
+  getFEFOBatches,
+  getBatchStatus,
+  isBlockedForSale,
 } from "../../js/shared.js";
 
 import {
@@ -34,47 +37,6 @@ initAppShell(isStaff ? "sales" : "admin", "add-sale", profile);
 let products = [];
 let batches = [];
 let selected = null;
-
-const PERISHABLE_CATEGORIES = new Set(["food", "medicine"]);
-
-function isPerishable(category) {
-  return PERISHABLE_CATEGORIES.has(
-    String(category || "")
-      .trim()
-      .toLowerCase(),
-  );
-}
-
-function getBatchStatus(batch) {
-  const today = new Date().toISOString().slice(0, 10);
-  
-  if (batch.status === "Disposed" || batch.status === "Empty") {
-    return batch.status;
-  }
-  
-  if (!batch.expiryDate) {
-    return "Active";
-  }
-  
-  if (batch.expiryDate < today) {
-    return "Expired";
-  }
-  
-  const todayDate = new Date(`${today}T00:00:00`);
-  const expiryDate = new Date(`${batch.expiryDate}T00:00:00`);
-  const daysLeft = Math.ceil((expiryDate.getTime() - todayDate.getTime()) / 86400000);
-  
-  if (daysLeft <= 30) {
-    return "Near Expiry";
-  }
-  
-  return "Active";
-}
-
-function isBlockedForSale(batch) {
-  const status = getBatchStatus(batch);
-  return status === "Expired" || status === "Disposed" || status === "Empty";
-}
 
 async function loadProducts() {
   products = await fetchAll("products");

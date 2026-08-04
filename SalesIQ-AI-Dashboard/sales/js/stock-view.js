@@ -8,6 +8,9 @@ import {
   emptyState,
   badgeForStatus,
   statusFor,
+  getBatchStatus,
+  badgeForBatchStatus,
+  formatDate,
 } from "../../js/shared.js";
 import {
   db,
@@ -22,56 +25,6 @@ initAppShell("sales", "stock-view", profile);
 
 let products = [];
 let batches = [];
-
-function getBatchStatus(batch) {
-  const today = new Date().toISOString().slice(0, 10);
-
-  if (batch.status === "Disposed" || batch.status === "Empty") {
-    return batch.status;
-  }
-
-  if (!batch.expiryDate) {
-    return "Active";
-  }
-
-  if (batch.expiryDate < today) {
-    return "Expired";
-  }
-
-  const todayDate = new Date(`${today}T00:00:00`);
-  const expiryDate = new Date(`${batch.expiryDate}T00:00:00`);
-  const daysLeft = Math.ceil(
-    (expiryDate.getTime() - todayDate.getTime()) / 86400000,
-  );
-
-  if (daysLeft <= 30) {
-    return "Near Expiry";
-  }
-
-  return "Active";
-}
-
-function formatDate(value) {
-  if (!value) return "-";
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-IN");
-}
-
-function badgeForBatchStatus(status) {
-  switch (status) {
-    case "Expired":
-      return '<span class="badge badge-danger">Expired</span>';
-    case "Near Expiry":
-      return '<span class="badge badge-warn">Near Expiry</span>';
-    case "Disposed":
-      return '<span class="badge badge-danger">Disposed</span>';
-    case "Empty":
-      return '<span class="badge badge-warn">Empty</span>';
-    default:
-      return '<span class="badge badge-ok">Active</span>';
-  }
-}
 
 function render() {
   const q = $("#stockSearch").value.toLowerCase();

@@ -40,6 +40,12 @@ service cloud.firestore {
         .hasOnly(['stock', 'status', 'updatedAt']);
     }
 
+    function batchStockOnlyUpdate() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly(['remainingQuantity', 'status', 'updatedAt']);
+    }
+
     match /admins/{uid} {
       allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
 
@@ -105,6 +111,18 @@ service cloud.firestore {
 
     match /purchases/{id} {
       allow read, write: if isActiveAdminOrManager();
+    }
+
+    match /productBatches/{id} {
+      allow read: if active();
+      allow create, delete: if isActiveAdminOrManager();
+      allow update: if isActiveAdminOrManager() || (active() && batchStockOnlyUpdate());
+    }
+
+    match /disposals/{id} {
+      allow read: if active();
+      allow create: if isActiveAdminOrManager();
+      allow update, delete: if isActiveAdminOnly();
     }
 
     match /notifications/{id} {

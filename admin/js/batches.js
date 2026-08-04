@@ -146,6 +146,8 @@ $("#batchEditForm").onsubmit = async (e) => {
       updatedBy: profile.id,
     };
     if (data.expiryDate <= data.manufactureDate) throw new Error("Expiry date must be after manufacture date.");
+    if (data.remainingQuantity > data.purchasedQuantity) throw new Error("Remaining quantity cannot exceed purchased quantity.");
+    if (data.remainingQuantity < 0) throw new Error("Remaining quantity cannot be negative.");
     await updateDoc(doc(db, "productBatches", id), data);
     toast("Batch updated.");
     editModal.classList.remove("show");
