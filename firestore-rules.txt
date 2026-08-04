@@ -2,148 +2,303 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function signedIn() {
       return request.auth != null;
     }
 
-    function isActiveAdminOrManager() {
+    function isAdminProfile() {
       return signedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active'
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function adminData() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
+    }
+
+    function isActiveAdminOrManager() {
+      return isAdminProfile()
+        && adminData().status == 'active'
         && (
-          get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'Admin'
-          || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'Manager'
+          adminData().role == 'Admin' ||
+          adminData().role == 'Manager'
         );
     }
 
     function isActiveAdminOnly() {
+      return isAdminProfile()
+        && adminData().status == 'active'
+        && adminData().role == 'Admin';
+    }
+
+    function isStaffProfile() {
       return signedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active'
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'Admin';
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    function staffData() {
+      return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
     }
 
     function isActiveStaff() {
-      return signedIn()
-        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.status == 'active'
-        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'Sales Staff';
+      return isStaffProfile()
+        && staffData().status == 'active'
+        && staffData().role == 'Sales Staff';
     }
 
-    function active() {
+    function activeUser() {
       return isActiveAdminOrManager() || isActiveStaff();
     }
 
     function stockOnlyUpdate() {
-      return request.resource.data.diff(resource.data)
+      return request.resource.data
+        .diff(resource.data)
         .affectedKeys()
-        .hasOnly(['stock', 'status', 'updatedAt']);
+        .hasOnly([
+          'stock',
+          'status',
+          'updatedAt'
+        ]);
     }
 
     function batchStockOnlyUpdate() {
-      return request.resource.data.diff(resource.data)
+      return request.resource.data
+        .diff(resource.data)
         .affectedKeys()
-        .hasOnly(['remainingQuantity', 'status', 'updatedAt']);
+        .hasOnly([
+          'remainingQuantity',
+          'status',
+          'updatedAt'
+        ]);
     }
 
     function isSelfRegistration() {
       return signedIn()
-        && uid == request.auth.uid
+        && request.auth.uid == request.resource.data.id
         && request.resource.data.role == 'Sales Staff'
         && request.resource.data.status == 'pending_assignment'
         && request.resource.data.assignedAdminId == null;
     }
 
-    function canManageStaff() {
-      return isActiveAdminOrManager();
+    function staffOnlyProfileUpdate() {
+      return request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasOnly([
+          'name',
+          'photoURL',
+          'lastLoginAt'
+        ]);
     }
 
-    match /admins/{uid} {
-      allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
+    // ==========================
+    // Admin Accounts
+    // ==========================
 
-       allow create: if isActiveAdminOnly()
+    match /admins/{uid} {
+
+      allow get:
+        if (signedIn() && uid == request.auth.uid)
+        || isActiveAdminOrManager();
+
+      allow list:
+        if isActiveAdminOrManager();
+
+      allow create:
+        if isActiveAdminOnly()
         || (
           signedIn()
           && uid == request.auth.uid
           && request.resource.data.status == 'active'
-          && request.resource.data.role in ['Admin', 'Manager']
+          && request.resource.data.role in ['Admin','Manager']
         );
 
-      allow update: if isActiveAdminOnly()
+      allow update:
+        if isActiveAdminOnly()
         || (
           signedIn()
           && uid == request.auth.uid
           && request.resource.data.role == resource.data.role
+          && request.resource.data.status == resource.data.status
         );
 
-      allow delete: if isActiveAdminOnly();
-   } 
+      allow delete:
+        if isActiveAdminOnly();
+    }
+
+    // ==========================
+    // Staff
+    // ==========================
 
     match /staff/{uid} {
-      allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
-      
-      allow create: if isActiveAdminOnly() || isSelfRegistration();
-      
-      allow update: if isActiveAdminOnly()
+
+      allow get:
+        if (signedIn() && uid == request.auth.uid)
+        || isActiveAdminOrManager();
+
+      allow list:
+        if isActiveAdminOrManager();
+
+      allow create:
+        if isActiveAdminOnly()
+        || isSelfRegistration();
+
+      allow update:
+        if isActiveAdminOnly()
         || (
           signedIn()
           && uid == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['name', 'photoURL', 'lastLoginAt'])
+          && staffOnlyProfileUpdate()
         );
-      
-      allow delete: if isActiveAdminOnly() || (signedIn() && uid == request.auth.uid);
+
+      allow delete:
+        if isActiveAdminOnly()
+        || (signedIn() && uid == request.auth.uid);
     }
+
+    // ==========================
+    // Products
+    // ==========================
 
     match /products/{id} {
-      allow read: if active();
-      allow create, delete: if isActiveAdminOrManager();
-      allow update: if isActiveAdminOrManager() || (active() && stockOnlyUpdate());
+
+      allow read:
+        if activeUser();
+
+      allow create, delete:
+        if isActiveAdminOrManager();
+
+      allow update:
+        if isActiveAdminOrManager()
+        || (
+          activeUser()
+          && stockOnlyUpdate()
+        );
     }
 
-    match /sales/{id} {
-      allow read: if active();
-      allow create: if active();
-      allow update, delete: if isActiveAdminOrManager();
-    }
-
-    match /customers/{id} {
-      allow read, create: if active();
-      allow update, delete: if isActiveAdminOrManager();
-    }
-
-    match /suppliers/{id} {
-      allow read, write: if isActiveAdminOrManager();
-    }
-
-    match /purchases/{id} {
-      allow read, write: if isActiveAdminOrManager();
-    }
+    // ==========================
+    // Product Batches
+    // ==========================
 
     match /productBatches/{id} {
-      allow read: if active();
-      allow create, delete: if isActiveAdminOrManager();
-      allow update: if isActiveAdminOrManager() || (active() && batchStockOnlyUpdate());
+
+      allow read:
+        if activeUser();
+
+      allow create:
+        if isActiveAdminOrManager();
+
+      allow update:
+        if isActiveAdminOrManager()
+        || (
+          activeUser()
+          && batchStockOnlyUpdate()
+        );
+
+      allow delete:
+        if isActiveAdminOnly();
     }
+
+    // ==========================
+    // Sales
+    // ==========================
+
+    match /sales/{id} {
+
+      allow read:
+        if activeUser();
+
+      allow create:
+        if activeUser();
+
+      allow update, delete:
+        if isActiveAdminOrManager();
+    }
+
+    // ==========================
+    // Customers
+    // ==========================
+
+    match /customers/{id} {
+
+      allow read, create:
+        if activeUser();
+
+      allow update, delete:
+        if isActiveAdminOrManager();
+    }
+
+    // ==========================
+    // Suppliers
+    // ==========================
+
+    match /suppliers/{id} {
+
+      allow read, write:
+        if isActiveAdminOrManager();
+    }
+
+    // ==========================
+    // Purchases
+    // ==========================
+
+    match /purchases/{id} {
+
+      allow read, write:
+        if isActiveAdminOrManager();
+    }
+
+    // ==========================
+    // Disposal Records
+    // ==========================
 
     match /disposals/{id} {
-      allow read: if active();
-      allow create: if isActiveAdminOrManager();
-      allow update, delete: if isActiveAdminOnly();
+
+      allow read:
+        if activeUser();
+
+      allow create:
+        if isActiveAdminOrManager();
+
+      allow update, delete:
+        if false;
     }
+
+    // ==========================
+    // Notifications
+    // ==========================
 
     match /notifications/{id} {
-      allow read: if active();
-      allow write: if isActiveAdminOrManager();
+
+      allow read:
+        if activeUser();
+
+      allow write:
+        if isActiveAdminOrManager();
     }
+
+    // ==========================
+    // Forecasting
+    // ==========================
 
     match /forecasting/{id} {
-      allow read, write: if isActiveAdminOrManager();
+
+      allow read, write:
+        if isActiveAdminOrManager();
     }
 
+    // ==========================
+    // Business Settings
+    // ==========================
+
     match /businessSettings/{id} {
-      allow read: if active();
-      allow write: if isActiveAdminOrManager();
+
+      allow read:
+        if activeUser();
+
+      allow write:
+        if isActiveAdminOrManager();
     }
+
   }
 }
