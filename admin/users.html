@@ -27,9 +27,66 @@
     <div class="app-main">
       <header id="appHeader" class="app-header"></header>
       <main class="page-container animate-slideUp">
-        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Admin & Staff Management</h2><p class="page-subtitle">Separate admin and staff collections with role changes, activate/deactivate, and account creation.</p></div><div class="flex flex-wrap gap-3"><button id="openUserModal" class="btn btn-primary">+ Add Account</button></div></div>
-<div class="glass p-5"><div id="usersTable"></div></div>
-<div id="userModal" class="modal-backdrop"><div class="modal-card glass-strong p-6"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black">Add Admin or Staff</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="userForm" class="form-grid"><div><label class="label">Name</label><input id="staffName" class="input" required></div><div><label class="label">Email</label><input id="staffEmail" class="input" type="email" required></div><div><label class="label">Password</label><input id="staffPassword" class="input" type="password" minlength="6" required></div><div><label class="label">Role</label><select id="staffRole" class="select"><option>Sales Staff</option><option>Manager</option><option>Admin</option></select></div><div class="md:col-span-2"><button class="btn btn-primary w-full">Create User</button></div></form></div></div>
+        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div>
+            <h2 class="page-title">Admin & Staff Management</h2>
+            <p class="page-subtitle">Manage staff assignments, create accounts, and assign staff to admins.</p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button id="openUserModal" class="btn btn-primary">+ Add Account</button>
+          </div>
+        </div>
+
+        <div class="stats-grid mb-6" id="userStats"></div>
+
+        <div class="glass p-5 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-lg">Unassigned Staff</h3>
+            <button id="bulkAssignBtn" class="btn btn-primary btn-sm" style="display:none">Assign Selected to Me</button>
+          </div>
+          <div id="unassignedTable"></div>
+        </div>
+
+        <div class="glass p-5 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-lg">My Staff</h3>
+            <button id="refreshMyStaff" class="btn btn-ghost btn-sm">Refresh</button>
+          </div>
+          <div id="myStaffTable"></div>
+        </div>
+
+        <div class="glass p-5 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-lg">Other Admins' Staff</h3>
+          </div>
+          <div id="otherStaffTable"></div>
+        </div>
+
+        <div class="glass p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-lg">Admin Accounts</h3>
+          </div>
+          <div id="adminsTable"></div>
+        </div>
+
+        <div id="userModal" class="modal-backdrop"><div class="modal-card glass-strong p-6"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black">Add Admin or Staff</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="userForm" class="form-grid"><div><label class="label">Name</label><input id="staffName" class="input" required></div><div><label class="label">Email</label><input id="staffEmail" class="input" type="email" required></div><div><label class="label">Password</label><input id="staffPassword" class="input" type="password" minlength="6" required></div><div><label class="label">Role</label><select id="staffRole" class="select"><option>Sales Staff</option><option>Manager</option><option>Admin</option></select></div><div class="md:col-span-2"><button class="btn btn-primary w-full">Create User</button></div></form></div></div>
+
+        <div id="reassignModal" class="modal-backdrop">
+          <div class="modal-card glass-strong p-6">
+            <div class="flex justify-between items-center mb-5">
+              <h3 class="text-2xl font-black">Reassign Staff</h3>
+              <button class="btn btn-ghost btn-sm" data-close-modal>✕</button>
+            </div>
+            <div class="space-y-4">
+              <p class="text-slate-400 text-sm">Select an admin to assign this staff member to:</p>
+              <select id="reassignAdminSelect" class="select w-full"></select>
+              <div class="flex gap-3">
+                <button id="reassignConfirm" class="btn btn-primary flex-1">Confirm Reassign</button>
+                <button id="reassignCancel" class="btn btn-ghost flex-1">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
 
       </main>
     </div>

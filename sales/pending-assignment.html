@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>SalesIQ - Pending Assignment</title>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: { inter: ["Inter", "system-ui", "sans-serif"] },
+            animation: {
+              floaty: "floaty 7s ease-in-out infinite",
+              shimmer: "shimmer 2.6s linear infinite",
+              pulseSoft: "pulseSoft 2.8s ease-in-out infinite",
+              slideUp: "slideUp .65s cubic-bezier(.2,.9,.2,1) both",
+            },
+            keyframes: {
+              floaty: {
+                "0%,100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-18px)" },
+              },
+              shimmer: {
+                "0%": { backgroundPosition: "-200% 0" },
+                "100%": { backgroundPosition: "200% 0" },
+              },
+              pulseSoft: {
+                "0%,100%": { opacity: ".65", transform: "scale(1)" },
+                "50%": { opacity: "1", transform: "scale(1.04)" },
+              },
+              slideUp: {
+                "0%": { opacity: "0", transform: "translateY(22px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/liquid-glass.css" />
+    <link rel="stylesheet" href="css/sales.css" />
+  </head>
+  <body
+    class="font-inter bg-slate-950 text-slate-100 app-body"
+    data-role="sales"
+    data-active="pending-assignment"
+  >
+    <div id="animatedBg" class="animated-bg"></div>
+    <div id="splashScreen" class="splash-screen">
+      <div class="splash-orb"></div>
+      <h2>SalesIQ</h2>
+      <p>Loading...</p>
+    </div>
+
+    <nav
+      class="max-w-7xl mx-auto px-5 py-6 flex items-center justify-between relative z-10"
+    >
+      <a href="../index.html" class="flex items-center gap-3 font-black text-2xl">
+        <span class="logo-mark">SIQ</span> SalesIQ
+      </a>
+      <div class="flex gap-3">
+        <button id="refreshBtn" class="btn btn-ghost">Refresh</button>
+        <button id="logoutBtn" class="btn btn-danger">Logout</button>
+      </div>
+    </nav>
+
+    <section class="relative min-h-[calc(100vh-96px)] flex items-center justify-center overflow-hidden">
+      <div class="hero-grid"></div>
+      <div class="max-w-2xl mx-auto px-5 text-center relative z-10 animate-slideUp">
+        <div class="glass p-8 md:p-12">
+          <div class="text-6xl mb-6">⏳</div>
+          <h1 class="text-3xl md:text-4xl font-black tracking-tight mb-4">
+            Account Pending Assignment
+          </h1>
+          <p class="text-slate-300 text-lg mb-6">
+            Your account is registered but waiting for an administrator to assign you.
+            Contact your administrator to complete setup.
+          </p>
+          <div class="glass p-4 mb-6 text-left">
+            <h3 class="font-bold text-slate-400 mb-2">Your Profile</h3>
+            <div id="profileInfo" class="space-y-2">
+              <p class="text-sm">Loading profile...</p>
+            </div>
+          </div>
+          <div class="glass p-4 mb-6 text-left">
+            <h3 class="font-bold text-slate-400 mb-2">Edit Profile</h3>
+            <form id="profileForm" class="space-y-4">
+              <div>
+                <label class="label">Name</label>
+                <input id="profileName" class="input" placeholder="Your name" />
+              </div>
+              <div>
+                <label class="label">Photo URL</label>
+                <input id="profilePhoto" class="input" placeholder="https://..." />
+              </div>
+              <button type="submit" class="btn btn-primary">Save Profile</button>
+            </form>
+          </div>
+          <p class="text-slate-500 text-sm">
+            You will be redirected to the dashboard once an administrator assigns you.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <canvas
+      id="clickSparkCanvas"
+      class="click-spark-canvas"
+      aria-hidden="true"
+    ></canvas>
+    <div id="toastRoot" class="toast-root"></div>
+    <script src="../js/fallback-ui.js"></script>
+    <script src="../js/liquid-glass.js"></script>
+    <script type="module" src="../js/shared.js"></script>
+    <script type="module" src="js/pending-assignment.js"></script>
+  </body>
+</html>

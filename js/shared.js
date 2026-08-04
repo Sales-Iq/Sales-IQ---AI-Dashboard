@@ -356,6 +356,16 @@ export async function requireAuth(
           return;
         }
 
+        // Staff with pending_assignment → redirect to pending page (except on pending page itself)
+        if (profile.role === "Sales Staff" && profile.status === "pending_assignment") {
+          if (!location.pathname.includes("pending-assignment")) {
+            location.href = location.pathname.includes("/admin/") || location.pathname.includes("/sales/")
+              ? "../sales/pending-assignment.html"
+              : "sales/pending-assignment.html";
+            return;
+          }
+        }
+
         if (!allowed.includes(profile.role)) {
           location.href =
             profile.role === "Sales Staff"

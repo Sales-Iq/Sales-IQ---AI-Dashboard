@@ -46,6 +46,18 @@ service cloud.firestore {
         .hasOnly(['remainingQuantity', 'status', 'updatedAt']);
     }
 
+    function isSelfRegistration() {
+      return signedIn()
+        && uid == request.auth.uid
+        && request.resource.data.role == 'Sales Staff'
+        && request.resource.data.status == 'pending_assignment'
+        && request.resource.data.assignedAdminId == null;
+    }
+
+    function canManageStaff() {
+      return isActiveAdminOrManager();
+    }
+
     match /admins/{uid} {
       allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
 
@@ -68,25 +80,20 @@ service cloud.firestore {
    } 
 
     match /staff/{uid} {
-  allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
-
-  allow create: if isActiveAdminOnly()
-    || (
-      signedIn()
-      && uid == request.auth.uid
-      && request.resource.data.status == 'active'
-      && request.resource.data.role == 'Sales Staff'
-    );
-
-  allow update: if isActiveAdminOnly()
-    || (
-      signedIn()
-      && uid == request.auth.uid
-      && request.resource.data.role == resource.data.role
-    );
-
-  allow delete: if isActiveAdminOnly() || (signedIn() && uid == request.auth.uid);
-}
+      allow read: if isActiveAdminOrManager() || (signedIn() && uid == request.auth.uid);
+      
+      allow create: if isActiveAdminOnly() || isSelfRegistration();
+      
+      allow update: if isActiveAdminOnly()
+        || (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['name', 'photoURL', 'lastLoginAt'])
+        );
+      
+      allow delete: if isActiveAdminOnly() || (signedIn() && uid == request.auth.uid);
+    }
 
     match /products/{id} {
       allow read: if active();

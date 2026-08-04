@@ -55,6 +55,12 @@ async function redirectByRole(user) {
     return;
   }
 
+  // Staff with pending_assignment → pending page
+  if (data.role === "Sales Staff" && data.status === "pending_assignment") {
+    location.href = "sales/pending-assignment.html";
+    return;
+  }
+
   location.href =
     data.role === "Sales Staff"
       ? "sales/dashboard.html"
@@ -97,11 +103,16 @@ $("#registerForm")?.addEventListener("submit", async (e) => {
 
     const cred = await createUserWithEmailAndPassword(auth, email, password);
 
+    // Self-registered staff get pending_assignment, admin-created get active
+    const isSelfReg = role === "Sales Staff";
+
     await setDoc(doc(db, accountCollection, cred.user.uid), {
       name,
       email,
       role,
-      status: "active",
+      status: isSelfReg ? "pending_assignment" : "active",
+      assignedAdminId: null,
+      assignedAt: null,
       photoURL: "",
       createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
@@ -133,11 +144,16 @@ async function googleFlow(roleFromSelect = false) {
       const newCollection = accountCollectionForRole(selectedRole);
       const oldCollection = existingProfile?.accountCollection;
 
+      // Determine status: self-registered staff get pending_assignment
+      const isNewStaff = !existingProfile && selectedRole === "Sales Staff";
+
       const accountData = {
         name: existingProfile?.name || cred.user.displayName || "Google User",
         email: existingProfile?.email || cred.user.email || "",
         role: selectedRole,
-        status: existingProfile?.status || "active",
+        status: isNewStaff ? "pending_assignment" : (existingProfile?.status || "active"),
+        assignedAdminId: existingProfile?.assignedAdminId || null,
+        assignedAt: existingProfile?.assignedAt || null,
         photoURL: cred.user.photoURL || existingProfile?.photoURL || "",
         createdAt: existingProfile?.createdAt || serverTimestamp(),
         lastLoginAt: serverTimestamp(),
