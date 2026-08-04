@@ -1,0 +1,34 @@
+# SalesIQ AI Dashboard - Git Ignore
+
+# AI Context File (contains project context for AI assistants)
+AI_CONTEXT.md
+
+# Firebase credentials (if any local config)
+firebase-config.local.js
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build outputs (if any)
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local documentation (not committed)
+STAFF_ADMIN_ASSIGNMENT_EVALUATION.md
+SAAS_PRODUCTION_READINESS_EVALUATION.md
