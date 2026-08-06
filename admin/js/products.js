@@ -15,6 +15,7 @@ import {
   badgeForBatchStatus,
   formatDate,
   getProductBatchInfo,
+  fetchByAdminId,
 } from "../../js/shared.js";
 
 import {
@@ -25,9 +26,13 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  query,
+  where,
+  onSnapshot,
+  getDocs,
 } from "../../js/firebase-config.js";
 
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "products", profile);
 
 let products = [];
@@ -36,6 +41,46 @@ let batches = [];
 const modal = $("#productModal");
 const form = $("#productForm");
 const batchDetailModal = $("#batchDetailModal");
+
+function watchByAdminId(name, callback) {
+  if (!profile.id) {
+    console.warn(`watchByAdminId skipped for ${name}: profile.id is undefined`);
+    return () => {};
+  }
+  const ref = query(collection(db, name), where("adminId", "==", profile.id));
+  const mapDocs = (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => {
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return tb - ta;
+    });
+    return rows;
+  };
+
+  try {
+    return onSnapshot(
+      ref,
+      (snap) => callback(mapDocs(snap)),
+      (err) => {
+        console.warn(`Realtime listener failed for ${name}:`, err);
+        fetchByAdminId(name, profile.id).then(callback);
+        setTimeout(
+          () =>
+            toast(
+              `Live update failed for ${name}. Showing latest loaded data.`,
+              "err",
+            ),
+          700,
+        );
+      },
+    );
+  } catch (err) {
+    console.warn(`Could not start realtime listener for ${name}:`, err);
+    fetchByAdminId(name, profile.id).then(callback);
+    return () => {};
+  }
+}
 
 function ensureCategoryOption(category) {
   if (!category) return;
@@ -71,8 +116,31 @@ function openModal(product = null) {
   $("#productSupplier").value = product?.supplierName || "";
   $("#productImage").value = product?.imageUrl || "";
   $("#productDescription").value = product?.description || "";
+  $("#productMfgDate").value = product?.manufactureDate || "";
+  $("#productExpiryDate").value = product?.expiryDate || "";
+
+  toggleExpiryFields($("#productCategory").value);
 
   modal.classList.add("show");
+}
+
+function toggleExpiryFields(category) {
+  const expiryFields = $("#expiryFields");
+  const mfgInput = $("#productMfgDate");
+  const expiryInput = $("#productExpiryDate");
+  const isPerishable = category === "Food" || category === "Medicine";
+
+  if (isPerishable) {
+    expiryFields.style.display = "grid";
+    mfgInput.required = true;
+    expiryInput.required = true;
+  } else {
+    expiryFields.style.display = "none";
+    mfgInput.required = false;
+    expiryInput.required = false;
+    mfgInput.value = "";
+    expiryInput.value = "";
+  }
 }
 
 function closeModal() {
@@ -86,11 +154,18 @@ window.editProduct = (id) => {
 };
 
 window.deleteProduct = async (id) => {
-  if (!confirm("Delete this product?")) return;
+  if (!confirm("Delete this product and its batches?")) return;
 
   try {
+    // Delete associated batches first
+    const batchQuery = query(collection(db, "productBatches"), where("productId", "==", id));
+    const batchSnap = await getDocs(batchQuery);
+    const batchDeletePromises = batchSnap.docs.map(d => deleteDoc(doc(db, "productBatches", d.id)));
+    await Promise.all(batchDeletePromises);
+
+    // Delete the product
     await deleteDoc(doc(db, "products", id));
-    toast("Product deleted.");
+    toast("Product and batches deleted.");
     await load();
   } catch (error) {
     toast(error.message, "err");
@@ -269,10 +344,21 @@ function render() {
 }
 
 async function load() {
-  products = await fetchAll("products");
-  batches = await fetchAll("productBatches");
+  products = await fetchByAdminId("products", profile.id);
+  batches = await fetchByAdminId("productBatches", profile.id);
   render();
 }
+
+const unsubs = [
+  watchByAdminId('products', rows => {
+    products = rows;
+    render();
+  }),
+  watchByAdminId('productBatches', rows => {
+    batches = rows;
+    render();
+  })
+];
 
 $("#openProductModal").onclick = () => openModal();
 
@@ -288,6 +374,8 @@ $("#refreshProducts").onclick = load;
 $("#productSearch").oninput = render;
 $("#categoryFilter").oninput = render;
 
+$("#productCategory").onchange = (e) => toggleExpiryFields(e.target.value);
+
 form.onsubmit = async (event) => {
   event.preventDefault();
 
@@ -296,6 +384,7 @@ form.onsubmit = async (event) => {
 
   try {
     const category = $("#productCategory").value.trim();
+    const isPerishable = category === "Food" || category === "Medicine";
 
     const data = {
       name: $("#productName").value.trim(),
@@ -307,8 +396,15 @@ form.onsubmit = async (event) => {
       supplierName: $("#productSupplier").value.trim(),
       imageUrl: $("#productImage").value.trim(),
       description: $("#productDescription").value.trim(),
+      adminId: profile.id,
+      adminName: profile.name || profile.email,
       updatedAt: serverTimestamp(),
     };
+
+    if (isPerishable) {
+      data.manufactureDate = $("#productMfgDate").value;
+      data.expiryDate = $("#productExpiryDate").value;
+    }
 
     data.status = statusFor(data.stock, data.minStock);
 
@@ -339,5 +435,10 @@ form.onsubmit = async (event) => {
     setBusy(button, false);
   }
 };
+
+// Cleanup on unload
+window.addEventListener('beforeunload', () => {
+  unsubs.forEach(unsub => unsub?.());
+});
 
 load();

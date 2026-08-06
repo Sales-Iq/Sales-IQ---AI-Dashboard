@@ -14,9 +14,9 @@ import {
   auth,
   updatePassword,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "settings", profile);
-const ref = doc(db, "businessSettings", "main");
+const ref = doc(db, "businessSettings", profile.id);
 try {
   const snap = await getDoc(ref);
   if (snap.exists()) {
@@ -42,6 +42,7 @@ $("#businessSettingsForm").onsubmit = async (e) => {
     taxPercent: Number($("#taxPercent").value || 0),
     invoicePrefix: $("#invoicePrefix").value.trim() || "SIQ",
     theme: $("#themeMode").value,
+    adminId: profile.id,
     updatedAt: serverTimestamp(),
   };
   try {

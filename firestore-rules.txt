@@ -16,19 +16,16 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
     }
 
-    function isActiveAdminOrManager() {
-      return isAdminProfile()
-        && adminData().status == 'active'
-        && (
-          adminData().role == 'Admin' ||
-          adminData().role == 'Manager'
-        );
-    }
-
-    function isActiveAdminOnly() {
+    function isActiveAdmin() {
       return isAdminProfile()
         && adminData().status == 'active'
         && adminData().role == 'Admin';
+    }
+
+    function canCreateAdminProfile() {
+      return signedIn()
+        && request.resource.data.status == 'active'
+        && request.resource.data.role == 'Admin';
     }
 
     function isStaffProfile() {
@@ -46,30 +43,33 @@ service cloud.firestore {
         && staffData().role == 'Sales Staff';
     }
 
+    function isOwnerOfData(adminId) {
+      return signedIn() && adminId == request.auth.uid;
+    }
+
     function activeUser() {
-      return isActiveAdminOrManager() || isActiveStaff();
+      return isActiveAdmin() || isActiveStaff();
+    }
+
+    function isStaffForAdmin(adminId) {
+      return isStaffProfile()
+        && staffData().status == 'active'
+        && staffData().role == 'Sales Staff'
+        && staffData().adminId == adminId;
     }
 
     function stockOnlyUpdate() {
       return request.resource.data
         .diff(resource.data)
         .affectedKeys()
-        .hasOnly([
-          'stock',
-          'status',
-          'updatedAt'
-        ]);
+        .hasOnly(['stock', 'status', 'updatedAt']);
     }
 
     function batchStockOnlyUpdate() {
       return request.resource.data
         .diff(resource.data)
         .affectedKeys()
-        .hasOnly([
-          'remainingQuantity',
-          'status',
-          'updatedAt'
-        ]);
+        .hasOnly(['remainingQuantity', 'status', 'updatedAt']);
     }
 
     function isSelfRegistration() {
@@ -77,228 +77,104 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.id
         && request.resource.data.role == 'Sales Staff'
         && request.resource.data.status == 'pending_assignment'
-        && request.resource.data.assignedAdminId == null;
+        && request.resource.data.assignedAdminId == null
+        && request.resource.data.username != null
+        && request.resource.data.username != '';
+    }
+
+    function usernameUnique() {
+      return !exists(/databases/$(database)/documents/staff/$(request.resource.data.username));
     }
 
     function staffOnlyProfileUpdate() {
       return request.resource.data
         .diff(resource.data)
         .affectedKeys()
-        .hasOnly([
-          'name',
-          'photoURL',
-          'lastLoginAt'
-        ]);
+        .hasOnly(['name', 'photoURL', 'lastLoginAt']);
     }
-
-    // ==========================
-    // Admin Accounts
-    // ==========================
 
     match /admins/{uid} {
-
-      allow get:
-        if (signedIn() && uid == request.auth.uid)
-        || isActiveAdminOrManager();
-
-      allow list:
-        if isActiveAdminOrManager();
-
-      allow create:
-        if isActiveAdminOnly()
-        || (
-          signedIn()
-          && uid == request.auth.uid
-          && request.resource.data.status == 'active'
-          && request.resource.data.role in ['Admin','Manager']
-        );
-
-      allow update:
-        if isActiveAdminOnly()
-        || (
-          signedIn()
-          && uid == request.auth.uid
-          && request.resource.data.role == resource.data.role
-          && request.resource.data.status == resource.data.status
-        );
-
-      allow delete:
-        if isActiveAdminOnly();
+      allow get: if (signedIn() && uid == request.auth.uid) || isActiveAdmin();
+      allow list: if isActiveAdmin();
+      allow create: if isActiveAdmin() || canCreateAdminProfile();
+      allow update: if isActiveAdmin() || (signedIn() && uid == request.auth.uid && request.resource.data.role == resource.data.role && request.resource.data.status == resource.data.status);
+      allow delete: if isActiveAdmin();
     }
-
-    // ==========================
-    // Staff
-    // ==========================
 
     match /staff/{uid} {
-
-      allow get:
-        if (signedIn() && uid == request.auth.uid)
-        || isActiveAdminOrManager();
-
-      allow list:
-        if isActiveAdminOrManager();
-
-      allow create:
-        if isActiveAdminOnly()
-        || isSelfRegistration();
-
-      allow update:
-        if isActiveAdminOnly()
-        || (
-          signedIn()
-          && uid == request.auth.uid
-          && staffOnlyProfileUpdate()
-        );
-
-      allow delete:
-        if isActiveAdminOnly()
-        || (signedIn() && uid == request.auth.uid);
+      allow get: if (signedIn() && uid == request.auth.uid) || isActiveAdmin();
+      allow list: if isActiveAdmin();
+      allow create: if isActiveAdmin() || (isSelfRegistration() && usernameUnique());
+      allow update: if isActiveAdmin() || (signedIn() && uid == request.auth.uid && staffOnlyProfileUpdate());
+      allow delete: if isActiveAdmin() || (signedIn() && uid == request.auth.uid);
     }
-
-    // ==========================
-    // Products
-    // ==========================
 
     match /products/{id} {
-
-      allow read:
-        if activeUser();
-
-      allow create, delete:
-        if isActiveAdminOrManager();
-
-      allow update:
-        if isActiveAdminOrManager()
-        || (
-          activeUser()
-          && stockOnlyUpdate()
-        );
+      allow read: if isOwnerOfData(resource.data.adminId) || (isActiveAdmin() && resource.data.adminId == request.auth.uid) || (isStaffForAdmin(resource.data.adminId));
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update: if (isActiveAdmin() && resource.data.adminId == request.auth.uid) 
+        || (isActiveAdmin() && (resource.data.adminId == null || resource.data.adminId == ''))
+        || (isStaffForAdmin(resource.data.adminId) && stockOnlyUpdate());
+      allow delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid;
     }
-
-    // ==========================
-    // Product Batches
-    // ==========================
 
     match /productBatches/{id} {
-
-      allow read:
-        if activeUser();
-
-      allow create:
-        if isActiveAdminOrManager();
-
-      allow update:
-        if isActiveAdminOrManager()
-        || (
-          activeUser()
-          && batchStockOnlyUpdate()
-        );
-
-      allow delete:
-        if isActiveAdminOnly();
+      allow read: if isOwnerOfData(resource.data.adminId) || (isActiveAdmin() && resource.data.adminId == request.auth.uid) || (isStaffForAdmin(resource.data.adminId));
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update: if (isActiveAdmin() && resource.data.adminId == request.auth.uid)
+        || (isActiveAdmin() && (resource.data.adminId == null || resource.data.adminId == ''))
+        || (isStaffForAdmin(resource.data.adminId) && batchStockOnlyUpdate());
+      allow delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid;
     }
-
-    // ==========================
-    // Sales
-    // ==========================
 
     match /sales/{id} {
-
-      allow read:
-        if activeUser();
-
-      allow create:
-        if activeUser();
-
-      allow update, delete:
-        if isActiveAdminOrManager();
+      allow read: if isOwnerOfData(resource.data.adminId) || (isActiveAdmin() && resource.data.adminId == request.auth.uid) || (isStaffForAdmin(resource.data.adminId));
+      allow create: if (isActiveAdmin() && request.resource.data.adminId == request.auth.uid) || (isStaffForAdmin(request.resource.data.adminId));
+      allow update, delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid
+        || (isActiveAdmin() && (resource.data.adminId == null || resource.data.adminId == ''));
     }
-
-    // ==========================
-    // Customers
-    // ==========================
 
     match /customers/{id} {
-
-      allow read, create:
-        if activeUser();
-
-      allow update, delete:
-        if isActiveAdminOrManager();
+      allow read: if isOwnerOfData(resource.data.adminId) || (isActiveAdmin() && resource.data.adminId == request.auth.uid) || (isStaffForAdmin(resource.data.adminId));
+      allow create: if (isActiveAdmin() && request.resource.data.adminId == request.auth.uid) || (isStaffForAdmin(request.resource.data.adminId));
+      allow update, delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid
+        || (isActiveAdmin() && (resource.data.adminId == null || resource.data.adminId == ''));
     }
-
-    // ==========================
-    // Suppliers
-    // ==========================
 
     match /suppliers/{id} {
-
-      allow read, write:
-        if isActiveAdminOrManager();
+      allow read: if isOwnerOfData(resource.data.adminId) || isActiveAdmin();
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid;
     }
-
-    // ==========================
-    // Purchases
-    // ==========================
 
     match /purchases/{id} {
-
-      allow read, write:
-        if isActiveAdminOrManager();
+      allow read: if isOwnerOfData(resource.data.adminId) || isActiveAdmin();
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid;
     }
-
-    // ==========================
-    // Disposal Records
-    // ==========================
 
     match /disposals/{id} {
-
-      allow read:
-        if activeUser();
-
-      allow create:
-        if isActiveAdminOrManager();
-
-      allow update, delete:
-        if false;
+      allow read: if isOwnerOfData(resource.data.adminId) || (isActiveAdmin() && resource.data.adminId == request.auth.uid) || (isStaffForAdmin(resource.data.adminId));
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if false;
     }
-
-    // ==========================
-    // Notifications
-    // ==========================
 
     match /notifications/{id} {
-
-      allow read:
-        if activeUser();
-
-      allow write:
-        if isActiveAdminOrManager();
+      allow read: if isOwnerOfData(resource.data.adminId) || (isActiveAdmin() && resource.data.adminId == request.auth.uid) || (isStaffForAdmin(resource.data.adminId));
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid;
     }
-
-    // ==========================
-    // Forecasting
-    // ==========================
 
     match /forecasting/{id} {
-
-      allow read, write:
-        if isActiveAdminOrManager();
+      allow read: if isOwnerOfData(resource.data.adminId) || isActiveAdmin();
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid;
     }
-
-    // ==========================
-    // Business Settings
-    // ==========================
 
     match /businessSettings/{id} {
-
-      allow read:
-        if activeUser();
-
-      allow write:
-        if isActiveAdminOrManager();
+      allow read: if isOwnerOfData(resource.data.adminId) || (isActiveAdmin() && resource.data.adminId == request.auth.uid) || (isStaffForAdmin(resource.data.adminId));
+      allow create: if isActiveAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update, delete: if isActiveAdmin() && resource.data.adminId == request.auth.uid;
     }
-
   }
 }

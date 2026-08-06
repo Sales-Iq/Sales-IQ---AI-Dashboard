@@ -28,12 +28,13 @@
     <div class="auth-card large">
       <a href="index.html" class="auth-brand"><span class="auth-logo">SIQ</span><span>SalesIQ</span></a>
       <h1 class="auth-title">Create Account</h1>
-      <p class="auth-subtitle">Register as Admin, Manager, or Sales Staff.</p>
+      <p class="auth-subtitle">Register as Admin or Sales Staff.</p>
       <form id="registerForm" class="auth-form">
         <div class="auth-form-row"><label>Full Name</label><input class="input" type="text" id="regName" required placeholder="Your name"></div>
         <div class="auth-form-row"><label>Email</label><input class="input" type="email" id="regEmail" required placeholder="you@example.com"></div>
+        <div class="auth-form-row"><label>Username</label><input class="input" type="text" id="regUsername" placeholder="Unique username (required for staff)" pattern="[a-zA-Z0-9_]+"></div>
         <div class="auth-form-row"><label>Password</label><input class="input" type="password" id="regPassword" required minlength="6" placeholder="At least 6 characters"></div>
-        <div class="auth-form-row"><label>Role</label><select class="select" id="regRole"><option>Admin</option><option>Sales Staff</option><option>Manager</option></select></div>
+        <div class="auth-form-row"><label>Role</label><select class="select" id="regRole"><option>Admin</option><option>Sales Staff</option></select></div>
         <button class="btn btn-primary auth-main-btn" type="submit">Create Account</button>
       </form>
       <div class="auth-divider"><span></span><p>OR</p><span></span></div>

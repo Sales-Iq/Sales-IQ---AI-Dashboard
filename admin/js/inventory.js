@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   $$,
   toast,
@@ -22,7 +23,7 @@ import {
   addDoc,
   runTransaction,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "inventory", profile);
 let products = [],
   sales = [],
@@ -256,9 +257,9 @@ $("#generateStockAlerts").onclick = async () => {
   toast(count ? `${count} alerts generated.` : "No alerts needed.");
 };
 async function load() {
-  products = await fetchAll("products");
-  sales = await fetchAll("sales");
-  batches = await fetchAll("productBatches");
+  products = await fetchByAdminId("products", profile.id);
+  sales = await fetchByAdminId("sales", profile.id);
+  batches = await fetchByAdminId("productBatches", profile.id);
   $("#inventoryCategory").innerHTML =
     '<option value="">All categories</option>' +
     [...new Set(products.map((p) => p.category).filter(Boolean))]

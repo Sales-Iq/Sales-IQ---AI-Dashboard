@@ -29,7 +29,7 @@ import {
 
 const isStaff = document.body.dataset.role === "sales";
 const { profile } = await requireAuth(
-  isStaff ? ["Sales Staff"] : ["Admin", "Manager"],
+  isStaff ? ["Sales Staff"] : ["Admin"],
 );
 
 initAppShell(isStaff ? "sales" : "admin", "add-sale", profile);

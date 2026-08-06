@@ -8,14 +8,24 @@ import {
   badgeForStatus,
   statusFor,
   makeChart,
-  watchCollection,
   getBatchStatus,
   badgeForBatchStatus,
   formatDate,
+  fetchByAdminId,
 } from '../../js/shared.js';
+
+import {
+  db,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from '../../js/firebase-config.js';
 
 const { profile } = await requireAuth(['Sales Staff']);
 initAppShell('sales', 'dashboard', profile);
+
+const adminId = profile.adminId || profile.id;
 
 let sales = [];
 let products = [];
@@ -208,16 +218,48 @@ function renderDashboard() {
   renderBatchAlerts();
 }
 
+function watchByAdminId(name, callback) {
+  if (!adminId) {
+    console.warn(`watchByAdminId skipped for ${name}: adminId is undefined`);
+    return () => {};
+  }
+  const ref = query(collection(db, name), where("adminId", "==", adminId));
+  const mapDocs = (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => {
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return tb - ta;
+    });
+    return rows;
+  };
+
+  try {
+    return onSnapshot(
+      ref,
+      (snap) => callback(mapDocs(snap)),
+      (err) => {
+        console.warn(`Realtime listener failed for ${name}:`, err);
+        fetchByAdminId(name, adminId).then(callback);
+      },
+    );
+  } catch (err) {
+    console.warn(`Could not start realtime listener for ${name}:`, err);
+    fetchByAdminId(name, adminId).then(callback);
+    return () => {};
+  }
+}
+
 const unsubs = [
-  watchCollection('sales', rows => {
+  watchByAdminId('sales', rows => {
     sales = rows;
     renderDashboard();
   }),
-  watchCollection('products', rows => {
+  watchByAdminId('products', rows => {
     products = rows;
     renderDashboard();
   }),
-  watchCollection('productBatches', rows => {
+  watchByAdminId('productBatches', rows => {
     batches = rows;
     renderDashboard();
   })

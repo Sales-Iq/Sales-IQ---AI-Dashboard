@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   toast,
   setBusy,
@@ -20,15 +21,15 @@ import {
   serverTimestamp,
   runTransaction,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "purchases", profile);
 let products = [],
   purchases = [],
   batches = [];
 async function load() {
-  products = await fetchAll("products");
-  purchases = await fetchAll("purchases");
-  batches = await fetchAll("productBatches");
+  products = await fetchByAdminId("products", profile.id);
+  purchases = await fetchByAdminId("purchases", profile.id);
+  batches = await fetchByAdminId("productBatches", profile.id);
   $("#purchaseProduct").innerHTML =
     '<option value="">Choose product</option>' +
     products
@@ -86,6 +87,8 @@ $("#purchaseForm").onsubmit = async (e) => {
       purchasePrice: Number($("#purchasePrice").value || 0),
       purchaseDate: $("#purchaseDate").value,
       status: "Active",
+      adminId: profile.id,
+      adminName: profile.name || profile.email,
       createdAt: serverTimestamp(),
       createdBy: profile.id,
     };

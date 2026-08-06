@@ -2,12 +2,14 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   $$,
   toast,
   money,
   emptyState,
 } from "../../js/shared.js";
+
 import {
   db,
   collection,
@@ -16,11 +18,57 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  query,
+  where,
+  onSnapshot,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "customers", profile);
+
 let rows = [];
 const modal = $("#customerModal");
+
+function watchByAdminId(name, callback) {
+  if (!profile.id) {
+    console.warn(`watchByAdminId skipped for ${name}: profile.id is undefined`);
+    return () => {};
+  }
+  const ref = query(collection(db, name), where("adminId", "==", profile.id));
+  const mapDocs = (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => {
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return tb - ta;
+    });
+    return rows;
+  };
+
+  try {
+    return onSnapshot(
+      ref,
+      (snap) => callback(mapDocs(snap)),
+      (err) => {
+        console.warn(`Realtime listener failed for ${name}:`, err);
+        fetchByAdminId(name, profile.id).then(callback);
+        setTimeout(
+          () =>
+            toast(
+              `Live update failed for ${name}. Showing latest loaded data.`,
+              "err",
+            ),
+          700,
+        );
+      },
+    );
+  } catch (err) {
+    console.warn(`Could not start realtime listener for ${name}:`, err);
+    fetchByAdminId(name, profile.id).then(callback);
+    return () => {};
+  }
+}
+
 function open(c = {}) {
   $("#customerId").value = c.id || "";
   $("#custName").value = c.name || "";
@@ -30,7 +78,9 @@ function open(c = {}) {
   $("#custLast").value = c.lastPurchaseDate || "";
   modal.classList.add("show");
 }
+
 window.editCustomer = (id) => open(rows.find((x) => x.id === id));
+
 window.deleteCustomer = async (id) => {
   if (confirm("Delete customer?")) {
     await deleteDoc(doc(db, "customers", id));
@@ -38,10 +88,13 @@ window.deleteCustomer = async (id) => {
     load();
   }
 };
+
 $$("[data-close-modal]").forEach(
   (b) => (b.onclick = () => modal.classList.remove("show")),
 );
+
 $("#openCustomerModal").onclick = () => open();
+
 function render() {
   const q = $("#customerSearch").value.toLowerCase();
   const f = rows.filter(
@@ -59,6 +112,7 @@ function render() {
         .join("")}</tbody></table></div>`
     : emptyState("No customers", "Add or create sales to store customers.");
 }
+
 $("#customerForm").onsubmit = async (e) => {
   e.preventDefault();
   const data = {
@@ -67,6 +121,8 @@ $("#customerForm").onsubmit = async (e) => {
     email: $("#custEmail").value.trim(),
     totalSpent: Number($("#custSpent").value || 0),
     lastPurchaseDate: $("#custLast").value,
+    adminId: profile.id,
+    adminName: profile.name || profile.email,
     updatedAt: serverTimestamp(),
   };
   const id = $("#customerId").value;
@@ -80,9 +136,23 @@ $("#customerForm").onsubmit = async (e) => {
   modal.classList.remove("show");
   load();
 };
+
 $("#customerSearch").oninput = render;
+
+const unsubs = [
+  watchByAdminId('customers', data => {
+    rows = data;
+    render();
+  })
+];
+
 async function load() {
-  rows = await fetchAll("customers");
+  rows = await fetchByAdminId("customers", profile.id);
   render();
 }
+
+window.addEventListener('beforeunload', () => {
+  unsubs.forEach(unsub => unsub?.());
+});
+
 load();

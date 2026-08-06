@@ -49,6 +49,17 @@
 
         <div class="glass p-5 mb-6">
           <div class="flex justify-between items-center mb-4">
+            <h3 class="font-black text-lg">Assign Staff by Username</h3>
+          </div>
+          <div class="flex gap-3 mb-4">
+            <input id="assignUsername" class="input flex-1" type="text" placeholder="Enter staff username (e.g., john01)" />
+            <button id="assignByUsernameBtn" class="btn btn-primary">Find & Assign</button>
+          </div>
+          <p class="text-slate-400 text-sm">Enter the unique username of a staff member who has self-registered and is pending assignment.</p>
+        </div>
+
+        <div class="glass p-5 mb-6">
+          <div class="flex justify-between items-center mb-4">
             <h3 class="font-black text-lg">My Staff</h3>
             <button id="refreshMyStaff" class="btn btn-ghost btn-sm">Refresh</button>
           </div>
@@ -69,7 +80,7 @@
           <div id="adminsTable"></div>
         </div>
 
-        <div id="userModal" class="modal-backdrop"><div class="modal-card glass-strong p-6"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black">Add Admin or Staff</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="userForm" class="form-grid"><div><label class="label">Name</label><input id="staffName" class="input" required></div><div><label class="label">Email</label><input id="staffEmail" class="input" type="email" required></div><div><label class="label">Password</label><input id="staffPassword" class="input" type="password" minlength="6" required></div><div><label class="label">Role</label><select id="staffRole" class="select"><option>Sales Staff</option><option>Manager</option><option>Admin</option></select></div><div class="md:col-span-2"><button class="btn btn-primary w-full">Create User</button></div></form></div></div>
+        <div id="userModal" class="modal-backdrop"><div class="modal-card glass-strong p-6"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black">Add Admin or Staff</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="userForm" class="form-grid"><div><label class="label">Name</label><input id="staffName" class="input" required></div><div><label class="label">Email</label><input id="staffEmail" class="input" type="email" required></div><div><label class="label">Username</label><input id="staffUsername" class="input" placeholder="Unique username (required for staff)" required></div><div><label class="label">Password</label><input id="staffPassword" class="input" type="password" minlength="6" required></div><div><label class="label">Role</label><select id="staffRole" class="select"><option>Sales Staff</option><option>Admin</option></select></div><div class="md:col-span-2"><button class="btn btn-primary w-full">Create User</button></div></form></div></div>
 
         <div id="reassignModal" class="modal-backdrop">
           <div class="modal-card glass-strong p-6">

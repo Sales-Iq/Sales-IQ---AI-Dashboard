@@ -4,19 +4,59 @@ import {
   $,
   makeChart,
   emptyState,
-  watchCollection,
   getBatchStatus,
   formatDate,
   money,
+  fetchByAdminId,
 } from '../../js/shared.js';
 
-const { profile } = await requireAuth(['Admin', 'Manager']);
+import {
+  db,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from '../../js/firebase-config.js';
+
+const { profile } = await requireAuth(['Admin']);
 initAppShell('admin', 'analytics', profile);
 
 let sales = [];
 let products = [];
 let batches = [];
 let disposals = [];
+
+function watchByAdminId(name, callback) {
+  if (!profile.id) {
+    console.warn(`watchByAdminId skipped for ${name}: profile.id is undefined`);
+    return () => {};
+  }
+  const ref = query(collection(db, name), where("adminId", "==", profile.id));
+  const mapDocs = (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => {
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return tb - ta;
+    });
+    return rows;
+  };
+
+  try {
+    return onSnapshot(
+      ref,
+      (snap) => callback(mapDocs(snap)),
+      (err) => {
+        console.warn(`Realtime listener failed for ${name}:`, err);
+        fetchByAdminId(name, profile.id).then(callback);
+      },
+    );
+  } catch (err) {
+    console.warn(`Could not start realtime listener for ${name}:`, err);
+    fetchByAdminId(name, profile.id).then(callback);
+    return () => {};
+  }
+}
 
 function saleDate(sale) {
   if (!sale?.createdAt) return null;
@@ -274,19 +314,19 @@ function renderCharts() {
 }
 
 const unsubs = [
-  watchCollection('sales', rows => {
+  watchByAdminId('sales', rows => {
     sales = rows;
     renderCharts();
   }),
-  watchCollection('products', rows => {
+  watchByAdminId('products', rows => {
     products = rows;
     renderCharts();
   }),
-  watchCollection('productBatches', rows => {
+  watchByAdminId('productBatches', rows => {
     batches = rows;
     renderCharts();
   }),
-  watchCollection('disposals', rows => {
+  watchByAdminId('disposals', rows => {
     disposals = rows;
     renderCharts();
   })

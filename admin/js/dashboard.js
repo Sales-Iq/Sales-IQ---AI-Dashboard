@@ -6,25 +6,36 @@ import {
   dateText,
   emptyState,
   makeChart,
-  statusFor,
   watchCollection,
   toast,
   setBusy,
   getBatchStatus,
   badgeForBatchStatus,
   formatDate,
+  fetchByAdminId,
+  statusFor,
 } from '../../js/shared.js';
 
 import {
   createDummySale,
   seedDemoProducts,
+  restockRandomProducts,
+  createRandomBatches,
   startDemoLiveSales,
   isDemoLiveEnabled,
   setDemoLiveEnabled,
   getDemoInterval
 } from '../../js/demo-live-data.js';
 
-const { profile } = await requireAuth(['Admin', 'Manager']);
+import {
+  db,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from '../../js/firebase-config.js';
+
+const { profile } = await requireAuth(['Admin']);
 initAppShell('admin', 'dashboard', profile);
 
 let products = [];
@@ -32,6 +43,47 @@ let sales = [];
 let customers = [];
 let batches = [];
 let stopDemoRunner = null;
+
+// Helper to watch with adminId filter
+function watchByAdminId(name, callback) {
+  if (!profile.id) {
+    console.warn(`watchByAdminId skipped for ${name}: profile.id is undefined`);
+    return () => {};
+  }
+  const ref = query(collection(db, name), where("adminId", "==", profile.id));
+  const mapDocs = (snap) => {
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => {
+      const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return tb - ta;
+    });
+    return rows;
+  };
+
+  try {
+    return onSnapshot(
+      ref,
+      (snap) => callback(mapDocs(snap)),
+      (err) => {
+        console.warn(`Realtime listener failed for ${name}:`, err);
+        fetchByAdminId(name, profile.id).then(callback);
+        setTimeout(
+          () =>
+            toast(
+              `Live update failed for ${name}. Showing latest loaded data.`,
+              "err",
+            ),
+          700,
+        );
+      },
+    );
+  } catch (err) {
+    console.warn(`Could not start realtime listener for ${name}:`, err);
+    fetchByAdminId(name, profile.id).then(callback);
+    return () => {};
+  }
+}
 
 function saleDate(sale) {
   if (!sale?.createdAt) return null;
@@ -138,7 +190,7 @@ function startRunnerIfNeeded() {
   if (!isDemoLiveEnabled()) return;
 
   stopDemoRunner = startDemoLiveSales({
-    profile,
+    profile: { ...profile, adminId: profile.id, adminName: profile.name || profile.email },
     onSale: sale => toast(`Dummy sale added: ${sale.productName} x ${sale.quantity}`),
     onError: err => toast(err.message || 'Dummy live data failed.', 'err')
   });
@@ -278,13 +330,27 @@ function renderDashboard() {
   renderBatchAlerts();
 }
 
-$('#seedDemoProducts')?.addEventListener('click', async e => {
+$('#restockRandomProducts')?.addEventListener('click', async e => {
   const btn = e.currentTarget;
-  setBusy(btn, true, 'Adding...');
+  setBusy(btn, true, 'Restocking...');
 
   try {
-    const result = await seedDemoProducts({ restock: true });
-    toast(`Demo products ready. Created: ${result.created}, restocked: ${result.updated}.`);
+    const result = await restockRandomProducts({ adminId: profile.id });
+    toast(`Restocked ${result.count} products with random quantities.`);
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setBusy(btn, false);
+  }
+});
+
+$('#createRandomBatches')?.addEventListener('click', async e => {
+  const btn = e.currentTarget;
+  setBusy(btn, true, 'Creating batches...');
+
+  try {
+    const result = await createRandomBatches({ adminId: profile.id, adminName: profile.name || profile.email });
+    toast(`Created ${result.count} new batches for random products.`);
   } catch (err) {
     toast(err.message, 'err');
   } finally {
@@ -297,7 +363,7 @@ $('#generateDemoSale')?.addEventListener('click', async e => {
   setBusy(btn, true, 'Generating...');
 
   try {
-    const sale = await createDummySale(profile);
+    const sale = await createDummySale({ ...profile, adminId: profile.id, adminName: profile.name || profile.email });
     toast(`Dummy sale added: ${sale.productName} x ${sale.quantity}`);
   } catch (err) {
     toast(err.message, 'err');
@@ -314,19 +380,19 @@ $('#toggleDemoLive')?.addEventListener('click', () => {
 });
 
 const unsubs = [
-  watchCollection('products', rows => {
+  watchByAdminId('products', rows => {
     products = rows;
     renderDashboard();
   }),
-  watchCollection('sales', rows => {
+  watchByAdminId('sales', rows => {
     sales = rows;
     renderDashboard();
   }),
-  watchCollection('customers', rows => {
+  watchByAdminId('customers', rows => {
     customers = rows;
     renderDashboard();
   }),
-  watchCollection('productBatches', rows => {
+  watchByAdminId('productBatches', rows => {
     batches = rows;
     renderDashboard();
   })

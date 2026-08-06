@@ -47,10 +47,19 @@ export const firebaseConfig = {
   measurementId: "G-4R3ZMRHE0V",
 };
 
-// Warning: browser-only Gemini keys are visible to users. Restrict this key in Google Cloud before hosting.
-export const GEMINI_API_KEY =
-  "AQ.Ab8RN6Ime3YdCe8BjzSvALYbeK5h7zq4v94GZfYDlOe_v4U9Nw";
-export const GEMINI_MODEL = "gemini-1.5-flash";
+// Warning: browser-only API keys are visible to users. Restrict this key in Groq Console before hosting.
+export const GROQ_API_KEY =
+  "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";
+
+// Groq models - tried in order (currently supported as of 2024)
+export const GROQ_MODELS = [
+  "llama-3.1-8b-instant",      // Fast, good quality
+  "llama-3.3-70b-versatile",   // Higher quality, slower
+  "mixtral-8x7b-32768",        // Good alternative
+];
+
+// Default to first in chain
+export const DEFAULT_GROQ_MODEL = GROQ_MODELS[0];
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);

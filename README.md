@@ -7,7 +7,7 @@ This is a normal **HTML + CSS + Tailwind CDN + Vanilla JavaScript** project. It 
 1. Open the folder in VS Code.
 2. Install the **Live Server** extension.
 3. Right click `index.html` and choose **Open with Live Server**.
-4. Register one Admin account first. The app now stores Admin/Manager accounts in `admins` and Sales Staff accounts in `staff`.
+4. Register one Admin account first. The app now stores Admin accounts in `admins` and Sales Staff accounts in `staff`.
 5. Add products, then create sales. The dashboard, analytics, forecasting, reports, and AI pages will start showing real data.
 
 ## Firebase setup required
@@ -129,7 +129,7 @@ This version does not use a `users` collection for login profiles.
 
 Use these collections instead:
 
-- `admins` for Admin and Manager login accounts
+- `admins` for Admin login accounts
 - `staff` for Sales Staff login accounts
 - `customers` for buyers/customers
 

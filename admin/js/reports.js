@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   money,
   dateText,
@@ -11,7 +12,7 @@ import {
   getBatchStatus,
   formatDate,
 } from "../../js/shared.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "reports", profile);
 let products = [],
   sales = [],
@@ -34,19 +35,13 @@ const cards = [
   ["Disposals", "disposals"],
 ];
 async function load() {
-  [products, sales, purchases, batches, disposals, admins, staff] = await Promise.all([
-    fetchAll("products"),
-    fetchAll("sales"),
-    fetchAll("purchases"),
-    fetchAll("productBatches"),
-    fetchAll("disposals"),
-    fetchAll("admins"),
-    fetchAll("staff"),
+  [products, sales, purchases, batches, disposals] = await Promise.all([
+    fetchByAdminId("products", profile.id),
+    fetchByAdminId("sales", profile.id),
+    fetchByAdminId("purchases", profile.id),
+    fetchByAdminId("productBatches", profile.id),
+    fetchByAdminId("disposals", profile.id),
   ]);
-  accounts = [
-    ...admins.map((a) => ({ ...a, accountCollection: "admins" })),
-    ...staff.map((s) => ({ ...s, accountCollection: "staff" })),
-  ];
   $("#reportCards").innerHTML = cards
     .map(
       (c) =>
@@ -54,7 +49,7 @@ async function load() {
     )
     .join("");
   $("#reportPreview").innerHTML = sales.length
-    ? `<p>Total sales records: <b>${sales.length}</b></p><p>Total inventory items: <b>${products.length}</b></p><p>Total batches: <b>${batches.length}</b></p><p>Admin accounts: <b>${admins.length}</b> | Staff accounts: <b>${staff.length}</b></p>`
+    ? `<p>Total sales records: <b>${sales.length}</b></p><p>Total inventory items: <b>${products.length}</b></p><p>Total batches: <b>${batches.length}</b></p>`
     : emptyState(
         "No report data",
         "Add sales/products to download detailed reports.",
@@ -218,7 +213,7 @@ window.downloadReport = (type, fmt) => {
 };
 $("#exportAllJson").onclick = () =>
   downloadJSON(
-    { products, sales, purchases, batches, disposals, admins, staff, accounts },
+    { products, sales, purchases, batches, disposals },
     "salesiq-backup.json",
   );
 load();

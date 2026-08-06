@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   $$,
   toast,
@@ -23,7 +24,7 @@ import {
   addDoc,
   runTransaction,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "batches", profile);
 let products = [],
   batches = [];
@@ -256,8 +257,8 @@ $("#exportBatches").onclick = () => {
   toCSV(rows, "batches-report.csv");
 };
 async function load() {
-  products = await fetchAll("products");
-  batches = await fetchAll("productBatches");
+  products = await fetchByAdminId("products", profile.id);
+  batches = await fetchByAdminId("productBatches", profile.id);
   const suppliers = [...new Set(batches.map(b => b.supplierName).filter(Boolean))];
   $("#batchSupplierFilter").innerHTML = '<option value="">All suppliers</option>' + suppliers.map(s => `<option>${s}</option>`).join("");
   renderStats();

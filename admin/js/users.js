@@ -18,12 +18,16 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   db,
+  collection,
   doc,
   setDoc,
   updateDoc,
   deleteDoc,
   serverTimestamp,
   runTransaction,
+  query,
+  where,
+  getDocs,
 } from "../../js/firebase-config.js";
 
 import { accountCollectionForRole } from "../../js/account.js";
@@ -50,7 +54,7 @@ function renderStats() {
     ["Unassigned Staff", unassigned, "Awaiting assignment"],
     ["My Staff", myStaff, "Assigned to you"],
     ["Other Admins' Staff", otherStaff, "Assigned to other admins"],
-    ["Admin Accounts", admins.length, "Admin & Manager"],
+    ["Admin Accounts", admins.length, "Admin"],
   ].map(x => `<div class="glass stat-card"><div class="stat-label">${x[0]}</div><div class="stat-value">${x[1]}</div><div class="stat-hint">${x[2]}</div></div>`).join("");
 }
 
@@ -65,11 +69,12 @@ function renderUnassigned() {
   }
 
   $("#unassignedTable").innerHTML = unassigned.length
-    ? `<div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="selectAllUnassigned" class="checkbox"></th><th>Name</th><th>Email</th><th>Status</th><th>Created</th><th>Action</th></tr></thead><tbody>${unassigned.map(u => `
+    ? `<div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="selectAllUnassigned" class="checkbox"></th><th>Name</th><th>Email</th><th>Username</th><th>Status</th><th>Created</th><th>Action</th></tr></thead><tbody>${unassigned.map(u => `
         <tr>
           <td><input type="checkbox" id="check_${u.id}" class="checkbox unassigned-check" value="${u.id}"></td>
           <td class="font-black">${u.name || "-"}</td>
           <td>${u.email || "-"}</td>
+          <td>${u.username || "-"}</td>
           <td><span class="badge badge-warn">Pending</span></td>
           <td>${dateText(u.createdAt)}</td>
           <td>
@@ -84,10 +89,11 @@ function renderMyStaff() {
   const myStaff = staff.filter(s => s.assignedAdminId === profile.id);
 
   $("#myStaffTable").innerHTML = myStaff.length
-    ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>${myStaff.map(u => `
+    ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Username</th><th>Status</th><th>Assigned</th><th>Actions</th></tr></thead><tbody>${myStaff.map(u => `
         <tr>
           <td class="font-black">${u.name || "-"}</td>
           <td>${u.email || "-"}</td>
+          <td>${u.username || "-"}</td>
           <td>${badgeForStatus(u.status || "active")}</td>
           <td>${dateText(u.assignedAt)}</td>
           <td>
@@ -117,10 +123,11 @@ function renderOtherStaff() {
   admins.forEach(a => { adminMap[a.id] = a.name || a.email; });
 
   $("#otherStaffTable").innerHTML = otherStaff.length
-    ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Assigned To</th></tr></thead><tbody>${otherStaff.map(u => `
+    ? `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Username</th><th>Status</th><th>Assigned To</th></tr></thead><tbody>${otherStaff.map(u => `
         <tr class="opacity-60">
           <td class="font-black">${u.name || "-"}</td>
           <td>${u.email || "-"}</td>
+          <td>${u.username || "-"}</td>
           <td>${badgeForStatus(u.status || "active")}</td>
           <td>${adminMap[u.assignedAdminId] || "Unknown Admin"}</td>
         </tr>
@@ -155,6 +162,50 @@ function render() {
   renderOtherStaff();
   renderAdmins();
 }
+
+window.assignByUsername = async () => {
+  const username = $("#assignUsername").value.trim().toLowerCase();
+  if (!username) return toast("Enter a username.", "err");
+
+  try {
+    // Find staff by username in the staff collection
+    const staffRef = collection(db, "staff");
+    const q = query(staffRef, where("username", "==", username));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      return toast("No staff found with that username.", "err");
+    }
+
+    const staffDoc = snap.docs[0];
+    const staffData = staffDoc.data();
+
+    if (staffData.assignedAdminId) {
+      return toast("This staff is already assigned to another Admin.", "err");
+    }
+
+    if (staffData.status !== "pending_assignment") {
+      return toast("Staff is not in pending assignment status.", "err");
+    }
+
+    await runTransaction(db, async (tx) => {
+      const staffRef = doc(db, "staff", staffDoc.id);
+      tx.update(staffRef, {
+        assignedAdminId: profile.id,
+        adminName: profile.name || profile.email,
+        status: "active",
+        assignedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    toast(`Staff "${staffData.name}" assigned to you.`);
+    $("#assignUsername").value = "";
+    await load();
+  } catch (err) {
+    toast(err.message, "err");
+  }
+};
 
 window.assignToMe = async (staffId) => {
   try {
@@ -216,6 +267,7 @@ window.unassign = async (staffId) => {
 
       tx.update(staffRef, {
         assignedAdminId: null,
+        adminName: null,
         status: "pending_assignment",
         assignedAt: null,
         updatedAt: serverTimestamp(),
@@ -267,6 +319,9 @@ $("#reassignConfirm")?.addEventListener("click", async () => {
   const newAdminId = $("#reassignAdminSelect").value;
   if (!newAdminId) return toast("Select an admin.", "err");
 
+  const newAdmin = admins.find(a => a.id === newAdminId);
+  const newAdminName = newAdmin ? (newAdmin.name || newAdmin.email) : "Unknown Admin";
+
   try {
     await runTransaction(db, async (tx) => {
       const staffRef = doc(db, "staff", selectedStaffId);
@@ -275,6 +330,7 @@ $("#reassignConfirm")?.addEventListener("click", async () => {
 
       tx.update(staffRef, {
         assignedAdminId: newAdminId,
+        adminName: newAdminName,
         updatedAt: serverTimestamp(),
       });
     });
@@ -316,6 +372,7 @@ $("#bulkAssignBtn")?.addEventListener("click", async () => {
 
         tx.update(staffRef, {
           assignedAdminId: profile.id,
+          adminName: profile.name || profile.email,
           status: "active",
           assignedAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -331,6 +388,8 @@ $("#bulkAssignBtn")?.addEventListener("click", async () => {
     setBusy($("#bulkAssignBtn"), false, "Assign Selected to Me");
   }
 });
+
+$("#assignByUsernameBtn")?.addEventListener("click", window.assignByUsername);
 
 $("#openUserModal").onclick = () => $("#userModal").classList.add("show");
 
@@ -349,9 +408,16 @@ $("#userForm").onsubmit = async (e) => {
   try {
     const name = $("#staffName").value.trim();
     const email = $("#staffEmail").value.trim();
+    const username = $("#staffUsername").value.trim().toLowerCase();
     const password = $("#staffPassword").value;
     const role = $("#staffRole").value;
     const accountCollection = accountCollectionForRole(role);
+
+    // Validate username for staff
+    if (role === "Sales Staff") {
+      if (!username) return toast("Username is required for staff.", "err");
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) return toast("Username can only contain letters, numbers, and underscores.", "err");
+    }
 
     secondary = initializeApp(firebaseConfig, "secondary-" + Date.now());
     const secondaryAuth = getAuth(secondary);
@@ -368,9 +434,11 @@ $("#userForm").onsubmit = async (e) => {
     await setDoc(doc(db, accountCollection, cred.user.uid), {
       name,
       email,
+      username: isStaff ? username : "",
       role,
       status: "active",
       assignedAdminId: isStaff ? profile.id : null,
+      adminName: isStaff ? (profile.name || profile.email) : null,
       assignedAt: isStaff ? serverTimestamp() : null,
       photoURL: "",
       createdAt: serverTimestamp(),

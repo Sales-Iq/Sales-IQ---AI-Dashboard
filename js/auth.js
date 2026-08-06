@@ -10,6 +10,10 @@ import {
   signInWithPopup,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  collection,
+  query,
+  where,
+  getDocs,
 } from "./firebase-config.js";
 
 import { $, toast, setBusy } from "./shared.js";
@@ -99,19 +103,45 @@ $("#registerForm")?.addEventListener("submit", async (e) => {
     const email = $("#regEmail").value.trim();
     const password = $("#regPassword").value;
     const role = $("#regRole").value;
+    const username = $("#regUsername")?.value?.trim().toLowerCase() || "";
     const accountCollection = accountCollectionForRole(role);
+
+    if (role === "Sales Staff") {
+      if (!username) {
+        toast("Username is required for staff.", "err");
+        setBusy(btn, false);
+        return;
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        toast("Username can only contain letters, numbers, and underscores.", "err");
+        setBusy(btn, false);
+        return;
+      }
+
+      const staffRef = collection(db, "staff");
+      const q = query(staffRef, where("username", "==", username));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        toast("Username already taken. Choose another username.", "err");
+        setBusy(btn, false);
+        return;
+      }
+    }
 
     const cred = await createUserWithEmailAndPassword(auth, email, password);
 
-    // Self-registered staff get pending_assignment, admin-created get active
     const isSelfReg = role === "Sales Staff";
+    const isAdmin = role === "Admin";
 
     await setDoc(doc(db, accountCollection, cred.user.uid), {
       name,
       email,
+      username: isSelfReg ? username : "",
       role,
       status: isSelfReg ? "pending_assignment" : "active",
       assignedAdminId: null,
+      adminId: isAdmin ? cred.user.uid : null,
+      adminName: isAdmin ? name : null,
       assignedAt: null,
       photoURL: "",
       createdAt: serverTimestamp(),
@@ -144,8 +174,8 @@ async function googleFlow(roleFromSelect = false) {
       const newCollection = accountCollectionForRole(selectedRole);
       const oldCollection = existingProfile?.accountCollection;
 
-      // Determine status: self-registered staff get pending_assignment
       const isNewStaff = !existingProfile && selectedRole === "Sales Staff";
+      const isAdmin = selectedRole === "Admin";
 
       const accountData = {
         name: existingProfile?.name || cred.user.displayName || "Google User",
@@ -153,6 +183,8 @@ async function googleFlow(roleFromSelect = false) {
         role: selectedRole,
         status: isNewStaff ? "pending_assignment" : (existingProfile?.status || "active"),
         assignedAdminId: existingProfile?.assignedAdminId || null,
+        adminId: isAdmin ? cred.user.uid : (existingProfile?.adminId || null),
+        adminName: isAdmin ? (existingProfile?.name || cred.user.displayName || "Google User") : (existingProfile?.adminName || null),
         assignedAt: existingProfile?.assignedAt || null,
         photoURL: cred.user.photoURL || existingProfile?.photoURL || "",
         createdAt: existingProfile?.createdAt || serverTimestamp(),

@@ -30,6 +30,7 @@ function renderProfile(profile) {
   $("#profileInfo").innerHTML = `
     <p class="text-sm"><b>Name:</b> ${profile.name || "-"}</p>
     <p class="text-sm"><b>Email:</b> ${profile.email || "-"}</p>
+    <p class="text-sm"><b>Username:</b> ${profile.username || "Not set"}</p>
     <p class="text-sm"><b>Role:</b> ${profile.role || "-"}</p>
     <p class="text-sm"><b>Status:</b> <span class="badge badge-warn">Pending Assignment</span></p>
     <p class="text-sm"><b>Registered:</b> ${profile.createdAt ? new Date(profile.createdAt?.toDate ? profile.createdAt.toDate() : profile.createdAt).toLocaleDateString("en-IN") : "-"}</p>

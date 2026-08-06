@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   toast,
   setBusy,
@@ -9,8 +10,8 @@ import {
   formatDate,
   badgeForBatchStatus,
 } from "../../js/shared.js";
-import { GEMINI_API_KEY, GEMINI_MODEL } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+import { GROQ_API_KEY, GROQ_MODELS } from "../../js/firebase-config.js";
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "ai-insights", profile);
 const examples = [
   "Which batch should I discount first?",
@@ -38,10 +39,10 @@ document.querySelectorAll("[data-question]").forEach(
 );
 async function buildContext() {
   const [products, sales, batches, disposals] = await Promise.all([
-    fetchAll("products"),
-    fetchAll("sales"),
-    fetchAll("productBatches"),
-    fetchAll("disposals"),
+    fetchByAdminId("products", profile.id),
+    fetchByAdminId("sales", profile.id),
+    fetchByAdminId("productBatches", profile.id),
+    fetchByAdminId("disposals", profile.id),
   ]);
   const batchSummary = {
     total: batches.length,
@@ -117,8 +118,9 @@ async function askGemini(question, btn) {
   setBusy(btn, true, "Thinking...");
   $("#aiAnswer").textContent = "Analyzing your Firestore data with batch details...";
   try {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("PASTE"))
-      throw new Error("Gemini API key missing in js/firebase-config.js");
+    if (!GROQ_API_KEY || GROQ_API_KEY.includes("PASTE"))
+      throw new Error("Groq API key missing in js/firebase-config.js");
+    
     const context = await buildContext();
     const prompt = `You are an AI business analyst for SalesIQ, a batch-based inventory management system. 
 Use the provided JSON data which includes product details, sales, batch information, and disposal records.
@@ -136,22 +138,57 @@ ${context}
 
 QUESTION:
 ${question}`;
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-      },
-    );
-    const data = await res.json();
-    if (!res.ok)
-      throw new Error(data.error?.message || "Gemini request failed");
-    $("#aiAnswer").textContent =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "No answer returned.";
+
+    let lastError = null;
+    
+    for (const model of GROQ_MODELS) {
+      try {
+        $("#aiAnswer").textContent = `Trying ${model}...`;
+        
+        const res = await fetch(
+          "https://api.groq.com/openai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+              model,
+              messages: [{ role: "user", content: prompt }],
+              max_tokens: 2048,
+              temperature: 0.3,
+            }),
+          },
+        );
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          const errorMsg = data.error?.message || `HTTP ${res.status}`;
+          lastError = new Error(`${model}: ${errorMsg}`);
+          console.warn(`Model ${model} failed:`, errorMsg);
+          continue; // Try next model
+        }
+        
+        // Success!
+        const answer = data.choices?.[0]?.message?.content || "No answer returned.";
+        $("#aiAnswer").textContent = `[${model}] ${answer}`;
+        return;
+        
+      } catch (err) {
+        lastError = err;
+        console.warn(`Model ${model} error:`, err.message);
+        continue;
+      }
+    }
+    
+    // All models failed
+    throw lastError || new Error("All models failed");
+    
   } catch (err) {
     $("#aiAnswer").textContent =
-      `AI error: ${err.message}\n\nCheck API key, API restrictions, billing/API enablement, and browser console.`;
+      `AI error: ${err.message}\n\nCheck API key, Groq Console, and browser console.`;
     toast(err.message, "err");
   } finally {
     setBusy(btn, false);

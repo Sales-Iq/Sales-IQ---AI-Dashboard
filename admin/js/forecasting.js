@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   money,
   emptyState,
@@ -16,7 +17,7 @@ import {
   addDoc,
   serverTimestamp,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "forecasting", profile);
 let products = [],
   sales = [],
@@ -26,9 +27,9 @@ function daysBetween(a, b) {
   return Math.max(1, Math.ceil((b - a) / 86400000));
 }
 async function load() {
-  products = await fetchAll("products");
-  sales = await fetchAll("sales");
-  batches = await fetchAll("productBatches");
+  products = await fetchByAdminId("products", profile.id);
+  sales = await fetchByAdminId("sales", profile.id);
+  batches = await fetchByAdminId("productBatches", profile.id);
   $("#forecastProduct").innerHTML =
     '<option value="">Select product</option>' +
     products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
@@ -217,6 +218,8 @@ $("#saveForecast").onclick = async () => {
   if (!latest) return toast("Run forecast first.", "err");
   await addDoc(collection(db, "forecasting"), {
     ...latest,
+    adminId: profile.id,
+    adminName: profile.name || profile.email,
     createdAt: serverTimestamp(),
     savedBy: profile.id,
   });

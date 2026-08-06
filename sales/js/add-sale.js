@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   toast,
   setBusy,
@@ -25,18 +26,20 @@ import {
 
 const isStaff = document.body.dataset.role === "sales";
 const { profile } = await requireAuth(
-  isStaff ? ["Sales Staff"] : ["Admin", "Manager"],
+  isStaff ? ["Sales Staff"] : ["Admin"],
 );
 
 initAppShell(isStaff ? "sales" : "admin", "add-sale", profile);
+
+const adminId = isStaff ? (profile.adminId || profile.id) : profile.id;
 
 let products = [];
 let batches = [];
 let selected = null;
 
 async function loadProducts() {
-  products = await fetchAll("products");
-  batches = await fetchAll("productBatches");
+  products = await fetchByAdminId("products", adminId);
+  batches = await fetchByAdminId("productBatches", adminId);
 
   const sellableProducts = products.filter((product) => {
     const hasStock = Number(product.stock || 0) > 0;
@@ -186,6 +189,8 @@ $("#billingForm").onsubmit = async (e) => {
       paymentMethod: $("#paymentMethod").value,
       salespersonId: profile.id,
       salespersonName: profile.name || profile.email,
+      adminId: adminId,
+      adminName: isStaff ? profile.adminName : (profile.name || profile.email),
       source: isStaff ? "staff" : "admin",
       isDemo: false,
       batchesUsed: batchUpdates,
@@ -199,6 +204,8 @@ $("#billingForm").onsubmit = async (e) => {
         name: sale.customerName,
         totalSpent: sale.totalAmount,
         lastPurchaseDate: new Date().toISOString().slice(0, 10),
+        adminId: adminId,
+        adminName: sale.adminName,
         createdAt: serverTimestamp(),
         source: sale.source,
       }).catch(() => {});
@@ -207,12 +214,14 @@ $("#billingForm").onsubmit = async (e) => {
     await createNotification(
       `New sale ${invoiceNumber}: ${selected.name} x ${quantity}. Stock left: ${newStock}.`,
       "sale",
+      adminId,
     );
 
     if (statusFor(newStock, selected.minStock) !== "Available") {
       await createNotification(
         `${selected.name} is ${statusFor(newStock, selected.minStock)}. Current stock: ${newStock}.`,
         "stock",
+        adminId,
       );
     }
 

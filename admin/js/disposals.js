@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   $$,
   toast,
@@ -10,7 +11,7 @@ import {
   emptyState,
   toCSV,
 } from "../../js/shared.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "disposals", profile);
 let disposals = [],
   products = [];
@@ -76,8 +77,8 @@ $("#exportDisposals").onclick = () => {
   toCSV(rows, "disposals-report.csv");
 };
 async function load() {
-  products = await fetchAll("products");
-  disposals = await fetchAll("disposals");
+  products = await fetchByAdminId("products", profile.id);
+  disposals = await fetchByAdminId("disposals", profile.id);
   renderStats();
   renderTable();
 }

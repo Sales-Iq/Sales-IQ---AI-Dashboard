@@ -1,7 +1,9 @@
-import { requireAuth, initAppShell, fetchAll, $, $$, money, emptyState, badgeForStatus, statusFor, getBatchStatus, badgeForBatchStatus, formatDate } from '../../js/shared.js';
+import { requireAuth, initAppShell, fetchAll, fetchByAdminId, $, $$, money, emptyState, badgeForStatus, statusFor, getBatchStatus, badgeForBatchStatus, formatDate } from '../../js/shared.js';
 
 const { profile } = await requireAuth(['Sales Staff']);
 initAppShell('sales', 'stock-view', profile);
+
+const adminId = profile.adminId || profile.id;
 
 let products = [];
 let batches = [];
@@ -84,8 +86,8 @@ function render() {
 }
 
 async function load() {
-  products = await fetchAll("products");
-  batches = await fetchAll("productBatches");
+  products = await fetchByAdminId("products", adminId);
+  batches = await fetchByAdminId("productBatches", adminId);
   render();
 }
 

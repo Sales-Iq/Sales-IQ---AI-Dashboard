@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   $$,
   toast,
@@ -20,8 +21,11 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  query,
+  where,
+  onSnapshot,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "suppliers", profile);
 let suppliers = [];
 let batches = [];
@@ -141,6 +145,8 @@ $("#supplierForm").onsubmit = async (e) => {
     productsSupplied: $("#supProducts").value.trim(),
     lastOrderDate: $("#supLast").value,
     paymentStatus: $("#supPayment").value,
+    adminId: profile.id,
+    adminName: profile.name || profile.email,
     updatedAt: serverTimestamp(),
   };
   const id = $("#supplierId").value;
@@ -184,9 +190,9 @@ $("#exportSuppliers").onclick = () => {
 $("#supplierSearch").oninput = render;
 $("#supplierFilter").onchange = render;
 async function load() {
-  suppliers = await fetchAll("suppliers");
-  batches = await fetchAll("productBatches");
-  products = await fetchAll("products");
+  suppliers = await fetchByAdminId("suppliers", profile.id);
+  batches = await fetchByAdminId("productBatches", profile.id);
+  products = await fetchByAdminId("products", profile.id);
   renderStats();
   render();
 }

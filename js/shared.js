@@ -10,6 +10,7 @@ import {
   query,
   orderBy,
   onSnapshot,
+  where,
 } from "./firebase-config.js";
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -292,7 +293,7 @@ export function initAppShell(
 }
 
 export async function requireAuth(
-  allowed = ["Admin", "Manager", "Sales Staff"],
+  allowed = ["Admin", "Sales Staff"],
 ) {
   return new Promise((resolve) => {
     let settled = false;
@@ -441,6 +442,33 @@ export async function fetchAll(name, sorted = true) {
       );
       return [];
     }
+  }
+}
+
+export async function fetchByAdminId(name, adminId, sorted = true) {
+  if (!adminId) {
+    console.warn(`fetchByAdminId called with undefined/null adminId for ${name}`);
+    return [];
+  }
+  try {
+    const ref = query(collection(db, name), where("adminId", "==", adminId));
+    const snap = await getDocs(ref);
+    const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (sorted) {
+      rows.sort((a, b) => {
+        const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return tb - ta;
+      });
+    }
+    return rows;
+  } catch (e) {
+    console.warn(`Firestore read failed for ${name}. Returning empty list.`, e);
+    setTimeout(
+      () => toast(`Could not read ${name}. Check Firestore rules.`, "err"),
+      700,
+    );
+    return [];
   }
 }
 
@@ -754,19 +782,21 @@ export function makeChart(canvas, type, data, options = {}) {
   return canvas._chart;
 }
 
-export async function createNotification(message, type = "info") {
+export async function createNotification(message, type = "info", adminId = null) {
   await addDoc(collection(db, "notifications"), {
     message,
     type,
     read: false,
+    adminId: adminId,
     createdAt: serverTimestamp(),
   }).catch(() => {});
 }
 
-export async function checkAndCreateBatchAlerts() {
+export async function checkAndCreateBatchAlerts(adminId) {
+  if (!adminId) return;
   try {
-    const products = await fetchAll("products");
-    const batches = await fetchAll("productBatches");
+    const products = await fetchByAdminId("products", adminId);
+    const batches = await fetchByAdminId("productBatches", adminId);
     
     for (const batch of batches) {
       const product = products.find(p => p.id === batch.productId);
@@ -780,25 +810,29 @@ export async function checkAndCreateBatchAlerts() {
       if (status === "Expired" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
         await createNotification(
           `⚠ EXPIRED: ${product.name} (Batch: ${batch.batchNumber}) expired on ${formatDate(batch.expiryDate)}. Cannot be sold.`,
-          "stock"
+          "stock",
+          batch.adminId || null
         );
         localStorage.setItem(lastAlertKey, now.toString());
       } else if (status === "Critical Expiry" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
         await createNotification(
           `🔥 CRITICAL EXPIRY (≤7 days): ${product.name} (Batch: ${batch.batchNumber}) expires on ${formatDate(batch.expiryDate)}. Priority sell or dispose!`,
-          "stock"
+          "stock",
+          batch.adminId || null
         );
         localStorage.setItem(lastAlertKey, now.toString());
       } else if (status === "Near Expiry" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
         await createNotification(
           `⚡ NEAR EXPIRY (≤30 days): ${product.name} (Batch: ${batch.batchNumber}) expires on ${formatDate(batch.expiryDate)}. Consider discounting.`,
-          "stock"
+          "stock",
+          batch.adminId || null
         );
         localStorage.setItem(lastAlertKey, now.toString());
       } else if (status === "Empty" && (!lastAlert || now - Number(lastAlert) > 86400000)) {
         await createNotification(
           `📦 EMPTY BATCH: ${product.name} (Batch: ${batch.batchNumber}) is now empty.`,
-          "stock"
+          "stock",
+          batch.adminId || null
         );
         localStorage.setItem(lastAlertKey, now.toString());
       }
@@ -811,7 +845,8 @@ export async function checkAndCreateBatchAlerts() {
         if (!lastAlert || now - Number(lastAlert) > 86400000) {
           await createNotification(
             `📉 LOW STOCK: ${product.name} has ${product.stock} units (min: ${product.minStock}).`,
-            "stock"
+            "stock",
+            product.adminId || null
           );
           localStorage.setItem(key, now.toString());
         }
@@ -826,11 +861,16 @@ window.addEventListener("DOMContentLoaded", () => {
   initSplash();
   initClickSpark();
   
+  const getAdminId = () => {
+    const profile = JSON.parse(localStorage.getItem("salesiq_user") || "{}");
+    return profile.id || null;
+  };
+
   setTimeout(() => {
-    checkAndCreateBatchAlerts();
+    checkAndCreateBatchAlerts(getAdminId());
   }, 3000);
   
   setInterval(() => {
-    checkAndCreateBatchAlerts();
+    checkAndCreateBatchAlerts(getAdminId());
   }, 300000);
 });

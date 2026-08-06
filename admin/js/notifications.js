@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  fetchByAdminId,
   $,
   toast,
   dateText,
@@ -14,7 +15,7 @@ import {
   deleteDoc,
   serverTimestamp,
 } from "../../js/firebase-config.js";
-const { profile } = await requireAuth(["Admin", "Manager"]);
+const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "notifications", profile);
 let rows = [];
 function icon(t) {
@@ -61,7 +62,7 @@ $("#clearRead").onclick = async () => {
   load();
 };
 async function load() {
-  rows = await fetchAll("notifications");
+  rows = await fetchByAdminId("notifications", profile.id);
   render();
 }
 load();
