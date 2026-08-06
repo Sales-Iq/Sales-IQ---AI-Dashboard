@@ -59,8 +59,8 @@ async function redirectByRole(user) {
     return;
   }
 
-  // Staff with pending_assignment → pending page
-  if (data.role === "Sales Staff" && data.status === "pending_assignment") {
+  // Unassigned staff → pending page (regardless of status)
+  if (data.role === "Sales Staff" && !data.assignedAdminId) {
     location.href = "sales/pending-assignment.html";
     return;
   }

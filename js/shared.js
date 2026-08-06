@@ -3,6 +3,7 @@ import {
   db,
   collection,
   doc,
+  getDoc,
   getDocs,
   addDoc,
   serverTimestamp,
@@ -317,7 +318,8 @@ export async function requireAuth(
           name: user.displayName || "User",
           email: user.email,
           role: failSafeRole(),
-          status: "active",
+          status: failSafeRole() === "Sales Staff" ? "pending_assignment" : "active",
+          assignedAdminId: failSafeRole() === "Sales Staff" ? null : user.uid,
           accountCollection:
             failSafeRole() === "Sales Staff" ? "staff" : "admins",
           photoURL: user.photoURL || "",
@@ -357,8 +359,8 @@ export async function requireAuth(
           return;
         }
 
-        // Staff with pending_assignment → redirect to pending page (except on pending page itself)
-        if (profile.role === "Sales Staff" && profile.status === "pending_assignment") {
+        // Unassigned staff → redirect to pending page (except on pending page itself)
+        if (profile.role === "Sales Staff" && !profile.assignedAdminId) {
           if (!location.pathname.includes("pending-assignment")) {
             location.href = location.pathname.includes("/admin/") || location.pathname.includes("/sales/")
               ? "../sales/pending-assignment.html"
@@ -376,6 +378,9 @@ export async function requireAuth(
         }
 
         localStorage.setItem("salesiq_user", JSON.stringify(profile));
+        if (profile.role === "Sales Staff" && profile.assignedAdminId) {
+          startAssignmentMonitor(profile.id);
+        }
         settled = true;
         resolve({ user, profile });
       },
@@ -416,6 +421,35 @@ export async function requireAuth(
       }
     }, 4500);
   });
+}
+
+let assignmentMonitorStarted = false;
+
+export function startAssignmentMonitor(uid) {
+  if (!uid || assignmentMonitorStarted) return;
+  assignmentMonitorStarted = true;
+
+  const goPending = () => {
+    location.href = location.pathname.includes("/sales/")
+      ? "pending-assignment.html"
+      : "../sales/pending-assignment.html";
+  };
+
+  const check = async () => {
+    try {
+      const snap = await getDoc(doc(db, "staff", uid));
+      if (snap.exists() && !snap.data().assignedAdminId) goPending();
+    } catch (err) {
+      console.warn("Assignment monitor failed:", err);
+    }
+  };
+
+  onSnapshot(doc(db, "staff", uid), (snap) => {
+    if (snap.exists() && !snap.data().assignedAdminId) goPending();
+  });
+
+  check();
+  setInterval(check, 4000);
 }
 
 export async function fetchAll(name, sorted = true) {

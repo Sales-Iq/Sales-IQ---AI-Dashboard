@@ -1,12 +1,17 @@
 import {
+  onAuthStateChanged,
+} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+import {
   auth,
   db,
   doc,
+  onSnapshot,
+  getDoc,
   updateDoc,
   serverTimestamp,
   signOut,
-  onAuthStateChanged,
-} from "../js/firebase-config.js";
+} from "../../js/firebase-config.js";
 
 import {
   $,
@@ -14,9 +19,10 @@ import {
   setBusy,
   initSplash,
   initClickSpark,
-  getAccountProfile,
   applyTheme,
-} from "../js/shared.js";
+} from "../../js/shared.js";
+
+import { getAccountProfile } from "../../js/account.js";
 
 initSplash();
 initClickSpark();
@@ -24,6 +30,45 @@ applyTheme();
 
 let currentUser = null;
 let currentProfile = null;
+let unsubProfile = null;
+let redirected = false;
+let pollTimer = null;
+let reloadTimer = null;
+
+function redirectToDashboard() {
+  if (redirected) return;
+  redirected = true;
+  toast("You have been assigned! Redirecting...");
+  setTimeout(() => { location.href = "dashboard.html"; }, 1200);
+}
+
+async function checkAssignment() {
+  if (!currentUser || redirected) return;
+  try {
+    const snap = await getDoc(doc(db, "staff", currentUser.uid));
+    if (snap.exists() && snap.data().assignedAdminId) {
+      redirectToDashboard();
+    }
+  } catch (err) {
+    console.warn("Assignment check failed:", err);
+  }
+}
+
+function startAssignmentWatch() {
+  if (pollTimer) clearInterval(pollTimer);
+  if (reloadTimer) clearTimeout(reloadTimer);
+
+  checkAssignment();
+  pollTimer = setInterval(checkAssignment, 3000);
+
+  reloadTimer = setTimeout(() => {
+    if (!redirected) location.reload();
+  }, 15000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !redirected) checkAssignment();
+  });
+}
 
 function renderProfile(profile) {
   currentProfile = profile;
@@ -61,6 +106,14 @@ onAuthStateChanged(auth, async (user) => {
 
   currentUser = user;
   await loadProfile(user);
+
+  if (unsubProfile) unsubProfile();
+  unsubProfile = onSnapshot(doc(db, "staff", user.uid), (snap) => {
+    if (!snap.exists()) return;
+    if (snap.data().assignedAdminId) redirectToDashboard();
+  });
+
+  startAssignmentWatch();
 });
 
 $("#profileForm")?.addEventListener("submit", async (e) => {
@@ -96,6 +149,8 @@ $("#refreshBtn")?.addEventListener("click", () => {
 });
 
 $("#logoutBtn")?.addEventListener("click", async () => {
+  if (unsubProfile) unsubProfile();
+  if (pollTimer) clearInterval(pollTimer);
   await signOut(auth);
   location.href = "../login.html";
 });

@@ -38,12 +38,14 @@ export async function getAccountProfile(user) {
 export async function createAccountProfile(user, data = {}) {
   const role = data.role || "Sales Staff";
   const accountCollection = accountCollectionForRole(role);
+  const isStaff = role === "Sales Staff";
 
   const payload = {
     name: data.name || user?.displayName || "User",
     email: data.email || user?.email || "",
     role,
-    status: data.status || "active",
+    status: data.status || (isStaff ? "pending_assignment" : "active"),
+    assignedAdminId: isStaff ? (data.assignedAdminId ?? null) : user.uid,
     photoURL: data.photoURL || user?.photoURL || "",
     createdAt: data.createdAt || serverTimestamp(),
     lastLoginAt: data.lastLoginAt || serverTimestamp(),

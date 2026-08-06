@@ -2,6 +2,7 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  watchCollection,
   $,
   $$,
   toast,
@@ -23,6 +24,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   serverTimestamp,
   runTransaction,
   query,
@@ -46,7 +48,7 @@ function safeArg(value) {
 }
 
 function renderStats() {
-  const unassigned = staff.filter(s => s.status === "pending_assignment" && !s.assignedAdminId).length;
+  const unassigned = staff.filter(s => !s.assignedAdminId).length;
   const myStaff = staff.filter(s => s.assignedAdminId === profile.id).length;
   const otherStaff = staff.filter(s => s.assignedAdminId && s.assignedAdminId !== profile.id).length;
 
@@ -59,7 +61,7 @@ function renderStats() {
 }
 
 function renderUnassigned() {
-  const unassigned = staff.filter(s => s.status === "pending_assignment" && !s.assignedAdminId);
+  const unassigned = staff.filter(s => !s.assignedAdminId);
   const hasSelected = unassigned.some(s => $(`#check_${s.id}`)?.checked);
 
   if (hasSelected) {
@@ -184,10 +186,6 @@ window.assignByUsername = async () => {
       return toast("This staff is already assigned to another Admin.", "err");
     }
 
-    if (staffData.status !== "pending_assignment") {
-      return toast("Staff is not in pending assignment status.", "err");
-    }
-
     await runTransaction(db, async (tx) => {
       const staffRef = doc(db, "staff", staffDoc.id);
       tx.update(staffRef, {
@@ -266,10 +264,10 @@ window.unassign = async (staffId) => {
       if (!staffSnap.exists()) throw new Error("Staff not found");
 
       tx.update(staffRef, {
-        assignedAdminId: null,
-        adminName: null,
+        assignedAdminId: deleteField(),
+        adminName: deleteField(),
         status: "pending_assignment",
-        assignedAt: null,
+        assignedAt: deleteField(),
         updatedAt: serverTimestamp(),
       });
     });
@@ -475,4 +473,22 @@ async function load() {
   }
 }
 
-load();
+let unsubAdmins = null;
+let unsubStaff = null;
+
+function startLiveUpdates() {
+  if (unsubAdmins) unsubAdmins();
+  if (unsubStaff) unsubStaff();
+
+  unsubAdmins = watchCollection("admins", (rows) => {
+    admins = rows;
+    render();
+  });
+
+  unsubStaff = watchCollection("staff", (rows) => {
+    staff = rows;
+    render();
+  });
+}
+
+startLiveUpdates();
