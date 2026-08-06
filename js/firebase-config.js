@@ -55,7 +55,7 @@ export const GROQ_API_KEY =
 export const GROQ_MODELS = [
   "llama-3.1-8b-instant",      // Fast, good quality
   "llama-3.3-70b-versatile",   // Higher quality, slower
-  "mixtral-8x7b-32768",        // Good alternative
+  "gemma2-9b-it",              // Lightweight fallback
 ];
 
 // Default to first in chain

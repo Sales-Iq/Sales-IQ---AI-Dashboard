@@ -57,7 +57,7 @@ async function buildContext() {
   const nearExpiryBatches = batches.filter(b => {
     const s = getBatchStatus(b);
     return s === "Critical Expiry" || s === "Near Expiry" || s === "Upcoming Expiry";
-  }).slice(0, 20).map(b => {
+  }).slice(0, 10).map(b => {
     const p = products.find(x => x.id === b.productId);
     return {
       product: p?.name || "Unknown",
@@ -68,7 +68,7 @@ async function buildContext() {
       supplier: b.supplierName,
     };
   });
-  const expiredBatches = batches.filter(b => getBatchStatus(b) === "Expired").slice(0, 10).map(b => {
+  const expiredBatches = batches.filter(b => getBatchStatus(b) === "Expired").slice(0, 5).map(b => {
     const p = products.find(x => x.id === b.productId);
     return {
       product: p?.name || "Unknown",
@@ -82,7 +82,7 @@ async function buildContext() {
   disposals.forEach(d => { disposalSummary[d.reason] = (disposalSummary[d.reason] || 0) + Number(d.quantity || 0); });
   return JSON.stringify(
     {
-      products: products.slice(0, 50).map(p => {
+      products: products.slice(0, 25).map(p => {
         const pb = batches.filter(b => b.productId === p.id);
         const activeBatches = pb.filter(b => getBatchStatus(b) === "Active");
         return {
@@ -90,7 +90,6 @@ async function buildContext() {
           name: p.name,
           category: p.category,
           price: p.price,
-          costPrice: p.costPrice,
           stock: p.stock,
           minStock: p.minStock,
           totalBatches: pb.length,
@@ -103,8 +102,8 @@ async function buildContext() {
           oldestExpiry: activeBatches.length ? activeBatches.sort((a,b) => a.expiryDate.localeCompare(b.expiryDate))[0]?.expiryDate : null,
         };
       }),
-      sales: sales.slice(0, 80),
-      disposals: disposals.slice(0, 30),
+      sales: sales.slice(0, 30),
+      disposals: disposals.slice(0, 15),
       batchSummary,
       nearExpiryBatches,
       expiredBatches,
