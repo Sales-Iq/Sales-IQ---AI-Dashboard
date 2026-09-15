@@ -1,0 +1,240 @@
+.admin-accent {
+  background: linear-gradient(
+    135deg,
+    rgba(14, 165, 233, 0.18),
+    rgba(139, 92, 246, 0.16)
+  );
+}
+.admin-panel-title {
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+.admin-glow {
+  box-shadow:
+    0 0 40px rgba(56, 189, 248, 0.18),
+    0 24px 70px rgba(0, 0, 0, 0.32);
+}
+body[data-role="admin"] .page-title {
+  text-shadow: 0 18px 60px rgba(56, 189, 248, 0.18);
+}
+body[data-role="admin"] .btn-primary {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1, #8b5cf6);
+}
+/* Inventory table sizing fix */
+body[data-active="inventory"] #inventoryTable {
+  min-width: 0;
+  width: 100%;
+}
+
+body[data-active="inventory"] #inventoryTable .table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+body[data-active="inventory"] #inventoryTable table {
+  width: 100%;
+  min-width: 650px;
+  table-layout: fixed;
+}
+
+body[data-active="inventory"] #inventoryTable th,
+body[data-active="inventory"] #inventoryTable td {
+  padding: 0.9rem 0.7rem;
+}
+
+/* Inventory table column widths */
+body[data-active="inventory"] #inventoryTable th:nth-child(1) {
+  width: 27%;
+}
+
+body[data-active="inventory"] #inventoryTable th:nth-child(2) {
+  width: 18%;
+}
+
+body[data-active="inventory"] #inventoryTable th:nth-child(3) {
+  width: 12%;
+}
+
+body[data-active="inventory"] #inventoryTable th:nth-child(4) {
+  width: 13%;
+}
+
+body[data-active="inventory"] #inventoryTable th:nth-child(5) {
+  width: 17%;
+}
+
+body[data-active="inventory"] #inventoryTable th:nth-child(6) {
+  width: 13%;
+}
+
+body[data-active="inventory"] #inventoryTable td:nth-child(5),
+body[data-active="inventory"] #inventoryTable td:nth-child(6) {
+  white-space: nowrap;
+}
+
+body[data-active="inventory"] #inventoryTable .badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* =========================================
+   Supplier page sidebar and table fix
+========================================= */
+
+body[data-active="suppliers"] {
+  overflow-x: hidden;
+}
+
+/* Keep the sidebar at the same width as other pages */
+@media (min-width: 1101px) {
+  body[data-active="suppliers"] .app-sidebar {
+    left: 18px !important;
+    width: 286px !important;
+    min-width: 286px !important;
+    max-width: 286px !important;
+    transform: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  body[data-active="suppliers"] .app-main {
+    margin-left: 322px !important;
+    width: calc(100% - 322px) !important;
+    min-width: 0 !important;
+  }
+}
+
+/* Prevent sidebar text from wrapping or getting cut */
+body[data-active="suppliers"] .sidebar-logo {
+  min-width: 0;
+}
+
+body[data-active="suppliers"] .sidebar-logo > div:last-child {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+body[data-active="suppliers"] .nav-link {
+  width: 100%;
+  white-space: nowrap;
+}
+
+body[data-active="suppliers"] .nav-link span:last-child {
+  white-space: nowrap;
+}
+
+/* Keep the wide supplier table inside its card */
+body[data-active="suppliers"] .page-container,
+body[data-active="suppliers"] .glass,
+body[data-active="suppliers"] #suppliersTable {
+  min-width: 0;
+  width: 100%;
+}
+
+body[data-active="suppliers"] #suppliersTable .table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+body[data-active="suppliers"] #suppliersTable table {
+  width: 100%;
+  min-width: 1050px;
+}
+/* Product table with manufacture and expiry dates */
+body[data-active="products"] #productsTable {
+  min-width: 0;
+  width: 100%;
+}
+
+body[data-active="products"] #productsTable .table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+body[data-active="products"] #productsTable table {
+  width: 100%;
+  min-width: 1350px;
+}
+
+body[data-active="products"] #productsTable th,
+body[data-active="products"] #productsTable td {
+  white-space: nowrap;
+}
+
+/* Staff dropdown in users page */
+body[data-active="users"] .staff-dropdown-row td {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+body[data-active="users"] .staff-dropdown {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 0 0 16px 16px;
+  animation: dropdownSlide 0.2s ease;
+}
+
+body[data-active="users"] .staff-dropdown table {
+  margin-bottom: 0;
+}
+
+body[data-active="users"] .staff-dropdown th {
+  background: rgba(15, 23, 42, 0.6);
+  font-size: 0.7rem;
+  padding-left: 48px !important;
+}
+
+body[data-active="users"] .staff-dropdown td {
+  padding-left: 48px !important;
+  font-size: 0.85rem;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+body[data-active="users"] .staff-row:hover td {
+  background: rgba(56, 189, 248, 0.03);
+}
+
+body[data-active="users"] .toggle-staff-btn {
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+body[data-active="users"] .toggle-staff-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+body[data-active="users"] .admin-row:hover {
+  background: rgba(56, 189, 248, 0.04);
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body[data-active="users"] #adminsTable .table-wrap {
+  overflow: visible;
+}
+
+body[data-active="users"] #adminsTable table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+body[data-active="users"] #adminsTable tbody tr:not(.staff-dropdown-row):last-child td {
+  border-bottom: 1px solid var(--border);
+}
+
+body[data-active="users"] #adminsTable .staff-dropdown-row + .admin-row td:first-child {
+  border-top: 1px solid var(--border);
+}

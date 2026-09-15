@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SalesIQ - Settings</title>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f172a" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { inter: ['Inter','system-ui','sans-serif'] }, animation: { floaty:'floaty 7s ease-in-out infinite', shimmer:'shimmer 2.6s linear infinite', pulseSoft:'pulseSoft 2.8s ease-in-out infinite', slideUp:'slideUp .65s cubic-bezier(.2,.9,.2,1) both' }, keyframes: { floaty:{'0%,100%':{transform:'translateY(0)'},'50%':{transform:'translateY(-18px)'}}, shimmer:{'0%':{backgroundPosition:'-200% 0'},'100%':{backgroundPosition:'200% 0'}}, pulseSoft:{'0%,100%':{opacity:'.65',transform:'scale(1)'},'50%':{opacity:'1',transform:'scale(1.04)'}}, slideUp:{'0%':{opacity:'0',transform:'translateY(22px)'},'100%':{opacity:'1',transform:'translateY(0)'}} } } } }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css" />
+<link rel="stylesheet" href="../css/liquid-glass.css" />
+<link rel="stylesheet" href="css/admin.css" />
+
+
+</head>
+<body class="font-inter bg-slate-950 text-slate-100 app-body" data-role="admin" data-active="settings">
+  <div id="animatedBg" class="animated-bg"></div>
+  <div id="splashScreen" class="splash-screen hidden"></div>
+  <div class="app-shell">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+    <div class="app-main">
+      <header id="appHeader" class="app-header"></header>
+      <main class="page-container animate-slideUp">
+        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Settings</h2><p class="page-subtitle">Business name, logo, currency, tax, invoice prefix, theme and profile settings.</p></div><div class="flex flex-wrap gap-3"></div></div>
+<div class="grid xl:grid-cols-2 gap-6"><form id="businessSettingsForm" class="glass p-6 space-y-4"><h3 class="font-black text-xl">Business Settings</h3><div><label class="label">Business Name</label><input id="businessName" class="input" placeholder="SalesIQ Store"></div><div><label class="label">Logo URL</label><input id="businessLogo" class="input" placeholder="https://..."></div><div><label class="label">Currency</label><select id="currency" class="select"><option value="₹">₹ INR</option><option value="$">$ USD</option><option value="€">€ EUR</option><option value="£">£ GBP</option></select></div><div><label class="label">Tax Percentage</label><input id="taxPercent" class="input" type="number" min="0" step="0.01"></div><div><label class="label">Invoice Prefix</label><input id="invoicePrefix" class="input" placeholder="SIQ"></div><div><label class="label">Theme</label><select id="themeMode" class="select"><option value="dark">Dark</option><option value="light">Light</option></select></div><button class="btn btn-primary w-full">Save Settings</button></form><form id="passwordForm" class="glass p-6 space-y-4"><h3 class="font-black text-xl">Change Password</h3><p class="text-slate-400">Requires recent login. If it fails, use Forgot Password from login page.</p><div><label class="label">New Password</label><input id="newPassword" class="input" type="password" minlength="6"></div><button class="btn btn-warn w-full">Change Password</button></form></div>
+
+      </main>
+    </div>
+  </div>
+  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="../js/fallback-ui.js"></script>
+  <script src="../js/liquid-glass.js"></script>
+  <script type="module" src="js/settings.js"></script>
+</body>
+</html>
+
+
+
+

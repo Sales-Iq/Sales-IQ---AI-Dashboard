@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SalesIQ — AI Powered Dashboard</title>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f172a" />
+<link rel="preconnect" href="https://cdn.tailwindcss.com" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { inter: ['Inter', 'system-ui', 'sans-serif'] },
+        boxShadow: { glow: '0 0 35px rgba(56,189,248,.25)' },
+        animation: {
+          floaty: 'floaty 7s ease-in-out infinite',
+          shimmer: 'shimmer 2.6s linear infinite',
+          pulseSoft: 'pulseSoft 2.8s ease-in-out infinite',
+          slideUp: 'slideUp .65s cubic-bezier(.2,.9,.2,1) both'
+        },
+        keyframes: {
+          floaty: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-18px)' } },
+          shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+          pulseSoft: { '0%,100%': { opacity: '.65', transform: 'scale(1)' }, '50%': { opacity: '1', transform: 'scale(1.04)' } },
+          slideUp: { '0%': { opacity: '0', transform: 'translateY(22px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+        }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/shared.css" />
+<link rel="stylesheet" href="css/liquid-glass.css" />
+
+</head>
+<body class="font-inter bg-slate-950 text-white overflow-x-hidden">
+  <div id="animatedBg" class="animated-bg"></div>
+  <div id="splashScreen" class="splash-screen hidden"></div>
+
+<nav class="max-w-7xl mx-auto px-5 py-6 flex items-center justify-between relative z-10">
+  <a href="index.html" class="flex items-center gap-3 font-black text-2xl"><span class="logo-mark">SIQ</span> SalesIQ</a>
+  <div class="flex gap-3"><a class="btn btn-ghost" href="login.html">Login</a><a class="btn btn-primary" href="register.html">Create Account</a></div>
+</nav>
+<section class="relative min-h-[calc(100vh-96px)] flex items-center overflow-hidden">
+  <div class="hero-grid"></div>
+  <div class="max-w-7xl mx-auto px-5 grid lg:grid-cols-2 gap-12 items-center relative z-10">
+    <div class="animate-slideUp">
+      <div class="badge badge-info mb-5">⚡ AI Powered Sales & Inventory Forecasting</div>
+      <h1 class="text-5xl md:text-7xl font-black tracking-[-.07em] leading-[.95]">SalesIQ — Real business dashboard for smarter stock decisions.</h1>
+      <p class="text-slate-300 text-lg mt-6 max-w-xl">Manage products, sales, customers, suppliers, reports, AI insights, and forecasting in one animated web app made for MCA projects.</p>
+      <div class="flex flex-wrap gap-4 mt-8"><a class="btn btn-primary" href="login.html">Login to Dashboard</a><a class="btn btn-ghost" href="register.html">Create Account</a></div>
+    </div>
+    <div class="glass p-5 md:p-7 animate-floaty glass-card-hover">
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="glass p-5"><div class="stat-label">Today Sales</div><div class="stat-value">₹0</div></div>
+        <div class="glass p-5"><div class="stat-label">Low Stock</div><div class="stat-value">0</div></div>
+      </div>
+      <div class="h-64 glass p-4"><canvas id="landingChart"></canvas></div>
+      <div class="grid md:grid-cols-3 gap-4 mt-4">
+        <div class="glass p-4 glass-card-hover"><b>📈 Sales Analytics</b><p class="text-sm text-slate-400">Daily, monthly, category and product charts.</p></div>
+        <div class="glass p-4 glass-card-hover"><b>🔮 Inventory Forecasting</b><p class="text-sm text-slate-400">Estimate stock finish dates and reorder quantity.</p></div>
+        <div class="glass p-4 glass-card-hover"><b>🤖 AI Insights</b><p class="text-sm text-slate-400">Ask Gemini business questions from your data.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+  <div id="toastRoot" class="toast-root"></div>
+  <script src="js/liquid-glass.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="js/landing.js"></script>
+</body>
+</html>
+
+
+
+
