@@ -1,0 +1,237 @@
+SalesIQ — AI Powered Sales & Inventory Forecasting Dashboard
+================================================================
+Complete Feature List
+
+1. PROJECT OVERVIEW
+------------------
+- Name: SalesIQ — AI Powered Sales & Inventory Forecasting Dashboard
+- Type: Web dashboard for sales, inventory, customers, suppliers, forecasting and AI business insights.
+- Stack: HTML + CSS + Tailwind CSS (CDN) + Vanilla JavaScript (ES Modules)
+- Backend: Firebase Authentication + Cloud Firestore (realtime database)
+- Charts: Chart.js 4.4.1 (line, bar, pie, doughnut, area)
+- Exports: jsPDF (PDF), SheetJS / XLSX (Excel), CSV, JSON
+- AI: Google Gemini API (gemini-1.5-flash) for business insights and summaries
+- Design: Liquid Glass / Glassmorphism + 3D auth pages, dark/light theme, animated background,
+  skeleton loaders, click-spark effects, toasts, responsive sidebar layout.
+- Run: VS Code Live Server from index.html or login.html. No build step.
+
+2. TECH / ARCHITECTURE FEATURES
+------------------------------
+- No-framework frontend, modular ES modules per page.
+- Shared core modules:
+  - js/firebase-config.js : Firebase init, Auth + Firestore exports, Gemini key/model config
+  - js/shared.js : shell layout, auth guard, currency/theme helpers, money/date formatting,
+    toast, busy buttons, fetchAll/watchCollection (realtime), makeChart wrapper, CSV/JSON export,
+    createNotification, skeleton loader, click sparks
+  - js/auth.js : email/password + Google login/register, password reset, role redirect
+  - js/account.js : admins/staff profile lookup, create, last-login touch
+  - js/profile.js : profile view/update
+  - js/liquid-glass.js, js/auth-3d.js, js/landing.js, js/fallback-ui.js, js/demo-live-data.js
+  - css/shared.css : common layout + UI components
+  - css/auth.css : login/register 3D design
+  - css/liquid-glass.css : glass / animation layer
+  - admin/css/admin.css, sales/css/sales.css for role-specific styling
+- Firestore collections: admins, staff, products, productBatches, sales, customers,
+  suppliers, purchases, notifications, forecasting, businessSettings
+- Firestore security rules in firestore-rules.txt with:
+  - signedIn(), isActiveAdmin(), isActiveStaff(), active() helpers
+  - Admins: full control; Staff: limited (read products, stock-only product update,
+    create sales, read customers, read notifications/settings)
+  - stockOnlyUpdate() guard allows staff billing to change only stock/status/updatedAt
+  - suppliers/purchases/forecasting admin-only; sales update/delete admin-only
+- Currency helper with localStorage cache (default INR ₹, changeable in Settings)
+- Light/dark theme toggle with localStorage persistence (salesiq_theme, salesiq_currency)
+- Central app shell: sidebar nav + header (date, title, theme toggle, profile avatar, logout),
+  mobile sidebar toggle, logged-in user card.
+- Realtime listeners (onSnapshot) with graceful fallback to one-time fetch + toast on failure.
+- Chart helper: auto palette, pie-slice colors, theme-aware ticks/grid/legend/tooltip,
+  in-place update without destroy when type is same.
+- Toast notification system + skeleton page loader + animated background + click sparks.
+- PWA-ish meta: theme-color, SEO description, preconnect to Tailwind/Fonts/Firestore.
+
+3. AUTHENTICATION & ROLES
+------------------------
+- Landing page (index.html): hero, live preview cards (Today Sales, Low Stock),
+  landing chart, feature cards (Analytics, Forecasting, AI Insights), Login / Create Account CTA.
+- Register (register.html): Full Name, Email, Password (min 6), Role select (Admin / Sales Staff),
+  email/password signup, Register with Google (uses selected role), link to Login.
+- Login (login.html): Email + Password login, Continue with Google, Forgot password
+  (Firebase sendPasswordResetEmail via prompt), link to Register, back to home.
+- Role-based redirect after login:
+  - Admin -> admin/dashboard.html
+  - Sales Staff -> sales/dashboard.html
+- Auth guard (requireAuth): blocks unauthenticated, blocks inactive accounts (?inactive=1),
+  auto-redirects wrong role to correct dashboard, stores profile in localStorage salesiq_user.
+- Separate profile collections: admins (Admin), staff (Sales Staff), customers (buyers only).
+  Google login auto-creates/merges profile and deletes duplicate across collections on role change.
+- Inactive status handling: toast + sign out + redirect to login?inactive=1.
+- Logout from header/sidebar/profile.
+- Profile page (profile.html): avatar preview, name title, role label, editable Name + Photo URL,
+  read-only Email, Update Profile, Toggle Dark/Light, Logout, Back to Dashboard button.
+- 404 page (404.html) for unknown routes.
+
+4. ADMIN PANEL (15 pages in admin/)
+----------------------------------
+4.1 Admin Dashboard (admin/dashboard.html, admin/js/dashboard.js — 404 lines)
+  - KPI stats: Today Sales, Total Revenue, Total Orders, Low Stock count, Total Products, etc.
+  - Sales Chart (daily trend) + Inventory Chart (stock levels) — Chart.js, realtime.
+  - Recent Sales table (live via watchCollection).
+  - AI Business Summary panel (Gemini-generated summary from current data).
+  - Dummy Live Data toolbox (demo only):
+    - Seed / Restock Demo Products
+    - Generate 1 Dummy Sale
+    - Start / Stop Dummy Live Data (auto-creates demo sales every few seconds, source=dummy, isDemo=true)
+    - Demo products tagged source=demo; demo sales reduce only demo-product stock; keeps
+      staff (source=staff) and admin billing (source=admin) sales separate.
+
+4.2 Product Management (admin/products.html, admin/js/products.js — 297 lines)
+  - Add Product form (name, category, price, cost, stock, minStock, SKU, etc.)
+  - Product table with search/filter, edit, delete.
+  - Auto status: Available / Low Stock / Out of Stock via statusFor().
+  - Stock auto-reduced on sale; validation against negative stock.
+
+4.3 Inventory (admin/inventory.html, admin/js/inventory.js — 267 lines)
+  - Current Stock List table.
+  - Fast / Slow Moving Products section (ranked by total sold from sales history).
+  - Update Stock form/modal (manual stock correction, min-stock threshold).
+  - Low-stock / out-of-stock badges.
+
+4.4 Sales Records (admin/sales.html, admin/js/sales.js — 74 lines)
+  - All sales table (admin + staff + dummy sources), date/customer/product/qty/total.
+  - View, delete (admin-only per rules), filter/search by date/customer/source.
+
+4.5 Add Sale / Billing (admin/add-sale.html, admin/js/add-sale.js — 277 lines)
+  - Billing form: select product, quantity, customer, payment method, discount/tax.
+  - Live stock check, total calculation, invoice preview panel.
+  - Creates sale with source=admin, reduces product stock transactionally, creates notification.
+
+4.6 Forecasting (admin/forecasting.html, admin/js/forecasting.js)
+  - Inventory Forecasting table per product.
+  - Past Sales + Future Demand chart (Chart.js line/bar).
+  - Forecast Output: Average Daily Sales, Stock Finish Days, Suggested Reorder.
+  - Formulas:
+    Average Daily Sales = Total Sold / Number of Days
+    Stock Finish Days = Current Stock / Average Daily Sales
+    Suggested Reorder = Average Daily Sales × 30 Days
+  - Results storable in forecasting collection.
+
+4.7 AI Insights (admin/ai-insights.html, admin/js/ai-insights.js)
+  - Ask AI Business Questions chatbot (Gemini 1.5 Flash with live sales/inventory context).
+  - Example Questions shortcuts.
+  - Displays AI answer in glass card; used for restock advice, trends, slow movers.
+
+4.8 Analytics (admin/analytics.html, admin/js/analytics.js — 163 lines)
+  - 5 charts: Daily Sales Trend (line), Monthly Sales (bar), Top Selling Products (bar),
+    Category-wise Sales (pie/doughnut), Revenue Growth Area (area).
+  - Computed from Firestore sales + products in browser.
+
+4.9 Customer Management (admin/customers.html, admin/js/customers.js)
+  - Add Customer form (name, email, phone, address).
+  - Customer list with search, edit, delete (admin-only delete per rules).
+  - Staff can read + create customers; linked to sales billing dropdown.
+
+4.10 Supplier Management (admin/suppliers.html, admin/js/suppliers.js)
+  - Add Supplier form (name, contact, product/category supplied).
+  - Supplier list, edit/delete. Admin-only (read+write restricted in rules).
+  - Used as source selector in Purchase/Restock.
+
+4.11 Purchase / Restock (admin/purchases.html, admin/js/purchases.js — 154 lines)
+  - Restock form: supplier + product + quantity + purchase price + date.
+  - Increases product stock, writes to purchases collection.
+  - Restock History table.
+
+4.12 Reports (admin/reports.html, admin/js/reports.js)
+  - Report Preview (sales summary filtered by date range / category / product).
+  - Export to: PDF (jsPDF), Excel (SheetJS), CSV (toCSV helper), JSON (downloadJSON).
+  - Printable invoice-style layout.
+
+4.13 User Management (admin/users.html, admin/js/users.js — 374 lines)
+  - Sections: Admins list, Search & Invite Staff, Sales Staff list, Unassigned accounts.
+  - Add Admin or Staff form, change role/status (active/inactive), delete.
+  - Search staff by name/email; activate/deactivate to gate login.
+
+4.14 Notifications (admin/notifications.html, admin/js/notifications.js)
+  - Notifications feed (low stock alerts, new sale, restock, system messages).
+  - Auto-created via createNotification() on sale/stock events.
+  - Mark read / clear; realtime updates.
+
+4.15 Settings (admin/settings.html, admin/js/settings.js)
+  - Business Settings form: shop name, currency symbol, low-stock defaults, etc.
+    (stored in businessSettings, readable by staff).
+  - Change Password (Firebase updatePassword).
+  - Theme preference, currency persistence.
+
+- Also: admin/cleanup-duplicates.js utility to remove duplicate product/sale docs.
+
+5. SALES STAFF PANEL (4 pages in sales/)
+---------------------------------------
+5.1 Staff Dashboard (sales/dashboard.html, sales/js/dashboard.js — 241 lines)
+  - My Performance cards (my total sales, orders today, revenue).
+  - Recent Sales (only my UID sales).
+  - Basic Stock View (read-only product stock table).
+  - New Connection Request banner (for admin linkage/invite flow).
+
+5.2 Add Sale / Billing (sales/add-sale.html, sales/js/add-sale.js — 245 lines)
+  - Same billing UX as admin but source=staff.
+  - Firestore rules allow staff sale create + stock-only product decrement.
+  - Invoice Preview + customer select + payment method.
+
+5.3 My Sales (sales/my-sales.html, sales/js/my-sales.js)
+  - Personal sales history filtered by auth UID.
+  - Date/total display, no edit/delete (admin-only per rules).
+
+5.4 Stock View (sales/stock-view.html, sales/js/stock-view.js — 33 lines)
+  - Read-only Product Stock View with search, status badges, low-stock highlight.
+  - Cannot edit price or delete (blocked by rules).
+
+6. CROSS-CUTTING BUSINESS LOGIC
+-------------------------------
+- Sale creation reduces product stock; blocks oversell; updates status (Available/Low/Out).
+- Low-stock detection: stock <= minStock -> Low Stock badge + notification.
+- Out-of-stock: stock <= 0 -> Out of Stock badge.
+- Sales sources: admin / staff / dummy (+ demo products source=demo, isDemo flag) for
+  clean separation of real vs demo data in dashboard/analytics.
+- Customer linkage: sales store customerId/name; supplier linkage: purchases store supplierId.
+- Date helpers: toDate(), dateText(), onlyDate(), todayKey() handle Firestore Timestamp/Date/ISO.
+- Money formatting: Indian locale (en-IN) with configurable currency symbol.
+- IDs: uid() random helper; Firestore auto-IDs for docs; Auth UID as admins/staff doc ID.
+- Timestamps: serverTimestamp() on create, updatedAt on stock change, lastLoginAt on login.
+
+7. UI/UX FEATURES
+----------------
+- Liquid Glass cards, orbs, grid backgrounds, floating hero, shimmer/pulse/slideUp animations.
+- 3D tilt on auth cards (auth-3d.js), animated gradient background, floating cubes.
+- Responsive: sidebar collapses to hamburger on mobile, grids stack, hide-mobile helpers.
+- Dark mode default + light mode toggle (body.light), theme-aware charts.
+- Skeleton loader on dashboard pages (~2.5s), splash safety-net timeout, error/unhandledrejection hide.
+- Toasts (ok/err, 4.2s), busy-button spinner text, empty-state placeholders, status badges
+  (Available green, Low Stock amber, Out of Stock red, Active/Inactive).
+- Avatar with initials fallback + photoURL with onerror fallback.
+- Click-spark canvas particles, toast root + modal + form-grid + stat card components.
+- Inter font, Tailwind utility classes + custom shared/admin/sales CSS.
+
+8. SECURITY & DATA NOTES
+-----------------------
+- Firebase config + Gemini key are frontend-visible; README warns to restrict Gemini key
+  or proxy via backend/Cloudflare Worker before hosting.
+- Must enable Auth Email/Password + Google, create Firestore DB, add Live Server origin
+  to Auth authorized domains, publish firestore-rules.txt.
+- First Admin bootstrap: manually create admins/{UID} with name/email/role=Admin/status=active,
+  or register first Admin (self-create allowed once per rules).
+- Staff product update limited to stock/status/updatedAt; all destructive ops admin-only.
+
+9. DEMO / SEED DATA
+------------------
+- admin/js/demoSeeder.js (773 lines) + js/demo-live-data.js (208 lines):
+  Seed demo products, generate single dummy sale, start/stop interval dummy sales,
+  realtime dashboard reflection, safe isolation from real products.
+- Useful for MCA / college project demos without real data.
+
+10. PAGE / FILE MAP
+------------------
+- /index.html, /login.html, /register.html, /profile.html, /404.html
+- /admin/dashboard.html, products.html, inventory.html, sales.html, add-sale.html,
+  forecasting.html, ai-insights.html, analytics.html, customers.html, suppliers.html,
+  purchases.html, reports.html, users.html, notifications.html, settings.html
+- /sales/dashboard.html, add-sale.html, my-sales.html, stock-view.html
+- Total: ~23 HTML pages (landing + auth + profile + 404 + 15 admin + 4 staff).

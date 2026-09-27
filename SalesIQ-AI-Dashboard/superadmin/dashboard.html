@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>SalesIQ - Super Admin</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SalesIQ — Super Admin Control Panel." />
+    <meta name="theme-color" content="#0f172a" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: { inter: ["Inter", "system-ui", "sans-serif"] },
+            animation: {
+              floaty: "floaty 7s ease-in-out infinite",
+              shimmer: "shimmer 2.6s linear infinite",
+              pulseSoft: "pulseSoft 2.8s ease-in-out infinite",
+              slideUp: "slideUp .65s cubic-bezier(.2,.9,.2,1) both",
+            },
+            keyframes: {
+              floaty: {
+                "0%,100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-18px)" },
+              },
+              shimmer: {
+                "0%": { backgroundPosition: "-200% 0" },
+                "100%": { backgroundPosition: "200% 0" },
+              },
+              pulseSoft: {
+                "0%,100%": { opacity: ".65", transform: "scale(1)" },
+                "50%": { opacity: "1", transform: "scale(1.04)" },
+              },
+              slideUp: {
+                "0%": { opacity: "0", transform: "translateY(22px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/liquid-glass.css" />
+    <link rel="stylesheet" href="../admin/css/admin.css" />
+    <style>
+      /* ── Super Admin accent colours ── */
+      body[data-role="superadmin"] .page-title {
+        text-shadow: 0 18px 60px rgba(251, 191, 36, 0.22);
+      }
+      body[data-role="superadmin"] .btn-primary {
+        background: linear-gradient(135deg, #f59e0b, #ef4444, #a855f7);
+      }
+      .superadmin-crown {
+        background: linear-gradient(135deg, #f59e0b, #f97316);
+        box-shadow: 0 0 32px rgba(245, 158, 11, 0.4), inset 0 2px 8px rgba(255,255,255,.2);
+      }
+      .badge-crown {
+        background: rgba(245, 158, 11, 0.16);
+        color: #fcd34d;
+      }
+      /* Stat card glow variants */
+      .stat-glow-gold   { box-shadow: 0 0 36px rgba(245,158,11,.14), 0 24px 70px rgba(0,0,0,.28); }
+      .stat-glow-purple { box-shadow: 0 0 36px rgba(168,85,247,.14), 0 24px 70px rgba(0,0,0,.28); }
+      .stat-glow-red    { box-shadow: 0 0 36px rgba(239,68,68,.14),  0 24px 70px rgba(0,0,0,.28); }
+      /* Staff → Admin pill */
+      .admin-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 900;
+        background: rgba(56,189,248,.13);
+        color: #7dd3fc;
+        border: 1px solid rgba(56,189,248,.22);
+      }
+      .unconnected-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 900;
+        background: rgba(100,116,139,.13);
+        color: #94a3b8;
+        border: 1px solid rgba(100,116,139,.22);
+      }
+      /* Confirm-delete modal */
+      #confirmModal { animation: toastIn .2s ease both; }
+      @keyframes toastIn {
+        from { opacity:0; transform:scale(.95) translateY(12px); }
+        to   { opacity:1; transform:scale(1)   translateY(0);    }
+      }
+    </style>
+  </head>
+  <body
+    class="font-inter bg-slate-950 text-slate-100 app-body"
+    data-role="superadmin"
+    data-active="dashboard"
+  >
+    <div id="animatedBg" class="animated-bg"></div>
+    <div id="splashScreen" class="splash-screen hidden"></div>
+    <div class="app-shell">
+      <aside id="appSidebar" class="app-sidebar"></aside>
+      <div class="app-main">
+        <header id="appHeader" class="app-header"></header>
+        <main class="page-container animate-slideUp">
+
+          <!-- Page heading -->
+          <div class="mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="superadmin-crown w-10 h-10 rounded-2xl grid place-items-center text-xl">👑</span>
+                <span class="badge badge-crown text-sm font-black px-3 py-1">Super Admin</span>
+              </div>
+              <h2 class="page-title">Control Panel</h2>
+              <p class="page-subtitle">
+                Full visibility over all admin and staff accounts. Remove any account instantly.
+              </p>
+            </div>
+          </div>
+
+          <!-- Stat cards -->
+          <div class="stats-grid mb-8">
+            <div class="glass stat-card stat-glow-gold">
+              <div class="stat-label">Total Admins</div>
+              <div id="totalAdmins" class="stat-value text-amber-400">—</div>
+              <div class="stat-hint">Registered admin accounts</div>
+            </div>
+            <div class="glass stat-card stat-glow-purple">
+              <div class="stat-label">Total Staff</div>
+              <div id="totalStaff" class="stat-value text-purple-400">—</div>
+              <div class="stat-hint">Registered sales staff</div>
+            </div>
+            <div class="glass stat-card stat-glow-gold">
+              <div class="stat-label">Connected Staff</div>
+              <div id="connectedStaff" class="stat-value text-sky-400">—</div>
+              <div class="stat-hint">Staff assigned to an admin</div>
+            </div>
+            <div class="glass stat-card stat-glow-red">
+              <div class="stat-label">Unconnected Staff</div>
+              <div id="unconnectedStaff" class="stat-value text-red-400">—</div>
+              <div class="stat-hint">Staff with no admin assigned</div>
+            </div>
+          </div>
+
+          <!-- Admins section -->
+          <section class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xl font-black flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-amber-500/20 grid place-items-center text-amber-400 text-sm">🛡️</span>
+                All Admins
+              </h3>
+              <span id="adminBadge" class="badge badge-crown">0</span>
+            </div>
+            <div class="glass p-5" id="adminsTable">
+              <div class="empty-state">
+                <strong>Loading admins…</strong>
+                <span>Fetching data from Firestore.</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Staff section -->
+          <section class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xl font-black flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-purple-500/20 grid place-items-center text-purple-400 text-sm">👥</span>
+                All Sales Staff
+              </h3>
+              <span id="staffBadge" class="badge badge-purple">0</span>
+            </div>
+            <div class="glass p-5" id="staffTable">
+              <div class="empty-state">
+                <strong>Loading staff…</strong>
+                <span>Fetching data from Firestore.</span>
+              </div>
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+
+    <!-- Confirm Remove Modal -->
+    <div id="confirmModalBackdrop" class="modal-backdrop">
+      <div id="confirmModal" class="modal-card glass-strong p-7 text-center" style="max-width:440px">
+        <div class="text-4xl mb-3">🗑️</div>
+        <h3 class="text-2xl font-black mb-2">Remove Account?</h3>
+        <p id="confirmModalText" class="text-slate-400 font-semibold mb-6">
+          This will delete the Firestore profile. The Firebase Auth account will remain until removed via the Firebase Console.
+        </p>
+        <div class="flex gap-3 justify-center">
+          <button id="confirmCancelBtn" class="btn btn-ghost">Cancel</button>
+          <button id="confirmDeleteBtn" class="btn btn-danger">Yes, Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+    <div id="toastRoot" class="toast-root"></div>
+    <script src="../js/fallback-ui.js" defer></script>
+    <script src="../js/liquid-glass.js" defer></script>
+    <script type="module" src="../js/shared.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
+  </body>
+</html>
+

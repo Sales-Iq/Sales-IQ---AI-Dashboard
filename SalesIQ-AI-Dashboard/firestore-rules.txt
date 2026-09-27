@@ -1,0 +1,159 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Core auth helpers ────────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Super Admin is identified by email only — no Firestore document needed.
+    function isSuperAdmin() {
+      return signedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() == 'boss@gmail.com';
+    }
+
+    function isActiveAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.status == 'active'
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    function isActiveStaff() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid))
+        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.status == 'active'
+        && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.role == 'Sales Staff';
+    }
+
+    // Any authenticated, active user (admin or staff)
+    function active() {
+      return isActiveAdmin() || isActiveStaff();
+    }
+
+    // Staff may only update stock-related fields on products
+    function stockOnlyUpdate() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly(['stock', 'status', 'updatedAt']);
+    }
+
+    // ── /admins collection ───────────────────────────────────────────────────
+    // Super Admin: full read + delete access over all admin documents.
+    // Admin:       read own doc + all admin docs; create/update own or others.
+    // Staff:       no access.
+
+    match /admins/{uid} {
+      allow read: if isSuperAdmin()
+        || isActiveAdmin()
+        || (signedIn() && uid == request.auth.uid);
+
+      allow create: if isSuperAdmin()
+        || isActiveAdmin()
+        || (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.status == 'active'
+          && request.resource.data.role == 'Admin'
+        );
+
+      allow update: if isSuperAdmin()
+        || isActiveAdmin()
+        || (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.role == resource.data.role
+        );
+
+      // Super Admin can remove any admin; admins can only remove others (not self).
+      allow delete: if isSuperAdmin() || isActiveAdmin();
+    }
+
+    // ── /staff collection ────────────────────────────────────────────────────
+    // Super Admin: full read + delete access over all staff documents.
+    // Admin:       full read + manage their connected staff.
+    // Staff:       read/update own doc only.
+
+    match /staff/{uid} {
+      allow read: if isSuperAdmin()
+        || isActiveAdmin()
+        || (signedIn() && uid == request.auth.uid);
+
+      allow create: if isSuperAdmin()
+        || isActiveAdmin()
+        || (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.status == 'active'
+          && request.resource.data.role == 'Sales Staff'
+        );
+
+      allow update: if isSuperAdmin()
+        || isActiveAdmin()
+        || (
+          signedIn()
+          && uid == request.auth.uid
+          && request.resource.data.role == resource.data.role
+        );
+
+      // Super Admin can remove any staff member.
+      allow delete: if isSuperAdmin()
+        || isActiveAdmin()
+        || (signedIn() && uid == request.auth.uid);
+    }
+
+    // ── Business data collections ────────────────────────────────────────────
+    // Super Admin has read-only visibility. Write access stays with admins only.
+
+    match /products/{id} {
+      allow read: if isSuperAdmin() || active();
+      allow create, delete: if isActiveAdmin();
+      allow update: if isActiveAdmin() || (active() && stockOnlyUpdate());
+    }
+
+    match /productBatches/{id} {
+      allow read: if isSuperAdmin() || active();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /sales/{id} {
+      allow read: if isSuperAdmin() || active();
+      allow create: if active();
+      allow update, delete: if isActiveAdmin();
+    }
+
+    match /customers/{id} {
+      allow read, create: if isSuperAdmin() || active();
+      allow update, delete: if isSuperAdmin() || isActiveAdmin();
+    }
+
+    match /suppliers/{id} {
+      allow read: if isSuperAdmin() || isActiveAdmin();
+      allow write: if isActiveAdmin();
+    }
+
+    match /purchases/{id} {
+      allow read: if isSuperAdmin() || isActiveAdmin();
+      allow write: if isActiveAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read: if isSuperAdmin() || active();
+      allow write: if isActiveAdmin();
+    }
+
+    match /forecasting/{id} {
+      allow read: if isSuperAdmin() || isActiveAdmin();
+      allow write: if isActiveAdmin();
+    }
+
+    match /businessSettings/{id} {
+      allow read: if isSuperAdmin() || active();
+      allow write: if isActiveAdmin();
+    }
+  }
+}

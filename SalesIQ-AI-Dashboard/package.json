@@ -1,0 +1,16 @@
+{
+  "name": "salesiq-ai-dashboard",
+  "version": "1.0.0",
+  "description": "This is a normal **HTML + CSS + Tailwind CDN + Vanilla JavaScript** project. It uses Firebase Authentication, Firebase Firestore, Chart.js, jsPDF, SheetJS, and Gemini API.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}
