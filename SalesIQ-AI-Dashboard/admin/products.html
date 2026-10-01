@@ -5,8 +5,11 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="SalesIQ — AI powered sales, inventory and forecasting dashboard." />
-<meta name="theme-color" content="#0f172a" />
+    <meta
+      name="description"
+      content="SalesIQ — AI powered sales, inventory and forecasting dashboard."
+    />
+    <meta name="theme-color" content="#0f172a" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -44,7 +47,7 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://firestore.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
@@ -52,6 +55,7 @@
     <link rel="stylesheet" href="../css/shared.css" />
     <link rel="stylesheet" href="../css/liquid-glass.css" />
     <link rel="stylesheet" href="css/admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   </head>
   <body
     class="font-inter bg-slate-950 text-slate-100 app-body"
@@ -74,194 +78,364 @@
                 Add, edit, delete and track product status.
               </p>
             </div>
-            <div class="flex flex-wrap gap-3">
+            <div class="flex flex-wrap gap-2.5 items-center">
+              <button
+                class="btn btn-ghost btn-sm"
+                id="downloadSampleTemplate"
+                title="Download sample CSV/Excel template"
+              >
+                📄 Template
+              </button>
+              <button
+                class="btn btn-ghost btn-sm"
+                id="triggerImportFile"
+                title="Upload and import CSV or Excel file"
+              >
+                📥 Import Excel / CSV
+              </button>
+              <input
+                type="file"
+                id="importProductFileInput"
+                accept=".csv, .xlsx, .xls"
+                class="hidden"
+              />
+              <button
+                class="btn btn-ghost btn-sm"
+                id="exportProductsCsv"
+                title="Export product catalog to CSV"
+              >
+                📊 Export CSV
+              </button>
               <button class="btn btn-primary" id="openProductModal">
                 + Add Product
               </button>
             </div>
           </div>
-          <div class="glass p-5 mb-5 grid md:grid-cols-3 gap-4">
-            <input
-              id="productSearch"
-              class="input"
-              placeholder="Search product..."
-            /><input
-              id="categoryFilter"
-              class="input"
-              placeholder="Filter category..."
-            /><button id="refreshProducts" class="btn btn-ghost">
-              Refresh
-            </button>
-          </div>
-          <div class="glass p-5"><div id="productsTable"></div></div>
-          <div id="productModal" class="modal-backdrop">
-            <div class="modal-card glass-strong p-6">
-              <div class="flex justify-between items-center mb-5">
-                <h3 class="text-2xl font-black" id="productModalTitle">
-                  Add Product
-                </h3>
-                <button class="btn btn-ghost btn-sm" data-close-modal>✕</button>
-              </div>
-              <form id="productForm" class="form-grid">
-                <input type="hidden" id="productId" />
 
-                <p class="required-note">
-                  Fields marked with
-                  <span class="required-mark" aria-hidden="true">*</span>
-                  are compulsory.
-                </p>
+          <!-- Top Product Stats KPI Grid -->
+          <div class="stats-grid mb-6" id="productStats"></div>
 
-                <div>
-                  <label class="label" for="productName">
-                    Product Name
-                    <span class="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <input class="input" id="productName" type="text" required />
-                </div>
-
-                <div>
-                  <label class="label" for="productCategory">
-                    Category
-                    <span class="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <select class="select" id="productCategory" required>
-                    <option value="">Select category</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Accessories">Accessories</option>
-                    <option value="Audio">Audio</option>
-                    <option value="Wearables">Wearables</option>
-                    <option value="Bags">Bags</option>
-                    <option value="Food">Food</option>
-                    <option value="Medicine">Medicine</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <!-- Only displayed for Food and Medicine -->
-                <div
-                  id="productDateFields"
-                  class="md:col-span-2 grid md:grid-cols-2 gap-4"
-                  hidden
-                >
-                  <div>
-                    <label class="label" for="productManufactureDate">
-                      Manufacture Date
-                      <span class="required-mark" aria-hidden="true">*</span>
-                    </label>
-
-                    <input
-                      class="input"
-                      id="productManufactureDate"
-                      type="date"
-                    />
-                  </div>
-
-                  <div>
-                    <label class="label" for="productExpiryDate">
-                      Expiry Date
-                      <span class="required-mark" aria-hidden="true">*</span>
-                    </label>
-
-                    <input class="input" id="productExpiryDate" type="date" />
-                  </div>
-                </div>
-
-                <div>
-                  <label class="label" for="productPrice">
-                    Selling Price
-                    <span class="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <input
-                    class="input"
-                    id="productPrice"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label class="label" for="productCost">
-                    Cost Price
-                    <span class="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <input
-                    class="input"
-                    id="productCost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label class="label" for="productStock">
-                    Stock Quantity
-                    <span class="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <input
-                    class="input"
-                    id="productStock"
-                    type="number"
-                    min="0"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label class="label" for="productMinStock">
-                    Minimum Stock Limit
-                    <span class="required-mark" aria-hidden="true">*</span>
-                  </label>
-
-                  <input
-                    class="input"
-                    id="productMinStock"
-                    type="number"
-                    min="0"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label class="label" for="productSupplier">
-                    Supplier Name
-                    <span class="optional-mark">(Optional)</span>
-                  </label>
-
-                  <input class="input" id="productSupplier" type="text" />
-                </div>
-
-                <div>
-                  <label class="label" for="productImage">
-                    Product Image URL
-                    <span class="optional-mark">(Optional)</span>
-                  </label>
-
-                  <input
-                    class="input"
-                    id="productImage"
-                    type="url"
-                    placeholder="https://..."
-                  />
-                </div>
-
-                <div class="md:col-span-2">
-                  <button class="btn btn-primary w-full" type="submit">
-                    Save Product
-                  </button>
-                </div>
-              </form>
+          <!-- Search, Category, Status, and Sort Filter Bar -->
+          <div
+            class="glass p-5 mb-5 grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-center"
+          >
+            <div class="lg:col-span-2">
+              <input
+                id="productSearch"
+                class="input w-full"
+                placeholder="Search by name or supplier..."
+              />
+            </div>
+            <div>
+              <select id="categoryFilter" class="select w-full">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+            <div>
+              <select id="statusFilter" class="select w-full">
+                <option value="">All Statuses</option>
+                <option value="Available">Available</option>
+                <option value="Low Stock">Low Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <select id="sortFilter" class="select flex-1">
+                <option value="name-asc">Name (A–Z)</option>
+                <option value="name-desc">Name (Z–A)</option>
+                <option value="stock-asc">Stock (Lowest First)</option>
+                <option value="stock-desc">Stock (Highest First)</option>
+                <option value="price-asc">Price (Low → High)</option>
+                <option value="price-desc">Price (High → Low)</option>
+              </select>
+              <button
+                id="refreshProducts"
+                class="btn btn-ghost px-3"
+                title="Refresh products"
+              >
+                ↻
+              </button>
             </div>
           </div>
+          <div class="glass p-5"><div id="productsTable"></div></div>
         </main>
+      </div>
+    </div>
+
+    <!-- Add/Edit Product Modal (Fixed to Viewport) -->
+    <div id="productModal" class="modal-backdrop">
+      <div class="modal-card glass-strong p-6">
+        <div class="flex justify-between items-center mb-5">
+          <h3 class="text-2xl font-black" id="productModalTitle">
+            Add Product
+          </h3>
+          <button class="btn btn-ghost btn-sm" data-close-modal>✕</button>
+        </div>
+        <form id="productForm" class="form-grid">
+          <input type="hidden" id="productId" />
+
+          <p class="required-note">
+            Fields marked with
+            <span class="required-mark" aria-hidden="true">*</span>
+            are compulsory.
+          </p>
+
+          <div>
+            <label class="label" for="productName">
+              Product Name
+              <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+
+            <input class="input" id="productName" type="text" required />
+          </div>
+
+          <div>
+            <label class="label" for="productCategory">
+              Category
+              <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+
+            <select class="select" id="productCategory" required>
+              <option value="">Select category</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Audio">Audio</option>
+              <option value="Wearables">Wearables</option>
+              <option value="Bags">Bags</option>
+              <option value="Food">Food</option>
+              <option value="Medicine">Medicine</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Only displayed for Food and Medicine -->
+          <div
+            id="productDateFields"
+            class="md:col-span-2 grid md:grid-cols-2 gap-4"
+            hidden
+          >
+            <div>
+              <label class="label" for="productManufactureDate">
+                Manufacture Date
+                <span class="required-mark" aria-hidden="true">*</span>
+              </label>
+
+              <input class="input" id="productManufactureDate" type="date" />
+            </div>
+
+            <div>
+              <label class="label" for="productExpiryDate">
+                Expiry Date
+                <span class="required-mark" aria-hidden="true">*</span>
+              </label>
+
+              <input class="input" id="productExpiryDate" type="date" />
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for="productPrice">
+              Selling Price
+              <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+
+            <input
+              class="input"
+              id="productPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="label" for="productCost">
+              Cost Price
+              <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+
+            <input
+              class="input"
+              id="productCost"
+              type="number"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="label" for="productStock">
+              Stock Quantity
+              <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+
+            <input
+              class="input"
+              id="productStock"
+              type="number"
+              min="0"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="label" for="productMinStock">
+              Minimum Stock Limit
+              <span class="required-mark" aria-hidden="true">*</span>
+            </label>
+
+            <input
+              class="input"
+              id="productMinStock"
+              type="number"
+              min="0"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="label" for="productBatches">
+              Batches
+              <span class="optional-mark">(Optional)</span>
+            </label>
+
+            <input
+              class="input"
+              id="productBatches"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="e.g. 0"
+            />
+          </div>
+
+          <div>
+            <label class="label" for="productSupplier">
+              Supplier Name
+              <span class="optional-mark">(Optional)</span>
+            </label>
+
+            <input class="input" id="productSupplier" type="text" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="label" for="productImage">
+              Product Image URL
+              <span class="optional-mark">(Optional)</span>
+            </label>
+
+            <input
+              class="input"
+              id="productImage"
+              type="url"
+              placeholder="https://..."
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <button class="btn btn-primary w-full" type="submit">
+              Save Product
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Smart Excel / CSV Import Modal with AI Column Mapping -->
+    <div id="importModal" class="modal-backdrop">
+      <div class="modal-card glass-strong p-6" style="width: min(860px, 95vw)">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-2xl font-black flex items-center gap-2">
+              <span>📥 Import Products</span>
+              <span id="importAiBadge" class="badge badge-info text-xs"
+                >✨ AI Smart Mapping</span
+              >
+            </h3>
+            <p class="text-slate-400 text-sm mt-0.5" id="importFileSubtitle">
+              Match your spreadsheet columns to SalesIQ fields. Extra columns
+              will be skipped.
+            </p>
+          </div>
+          <button class="btn btn-ghost btn-sm" data-close-import-modal>
+            ✕
+          </button>
+        </div>
+
+        <div id="importMappingBody" class="space-y-4">
+          <!-- Mapping Grid populated by JS -->
+          <div class="max-h-[44vh] overflow-y-auto pr-1">
+            <table class="w-full text-sm">
+              <thead>
+                <tr
+                  class="text-left text-slate-400 border-b border-slate-700/50"
+                >
+                  <th class="pb-2 font-bold w-1/3">SalesIQ Field</th>
+                  <th class="pb-2 font-bold w-1/3">Your Excel Column</th>
+                  <th class="pb-2 font-bold w-1/3">Sample Value Preview</th>
+                </tr>
+              </thead>
+              <tbody id="mappingRows" class="divide-y divide-slate-800"></tbody>
+            </table>
+          </div>
+
+          <!-- Preview of First 3 rows -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span
+                class="text-xs font-bold text-slate-400 uppercase tracking-wider"
+                >Live Preview (First 3 items)</span
+              >
+              <span
+                class="text-xs text-sky-400 font-semibold"
+                id="importTotalRowsBadge"
+                >0 rows found</span
+              >
+            </div>
+            <div
+              class="overflow-x-auto rounded-xl border border-slate-700/50 bg-slate-900/60 p-2 text-xs"
+              id="importPreviewTableWrap"
+            >
+              <table class="w-full text-left" id="importPreviewTable"></table>
+            </div>
+          </div>
+
+          <!-- Progress bar (hidden by default) -->
+          <div id="importProgressWrap" class="hidden space-y-2">
+            <div class="flex justify-between text-xs font-bold text-slate-300">
+              <span id="importProgressLabel"
+                >Saving products to Firestore...</span
+              >
+              <span id="importProgressPercent">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div
+                id="importProgressBar"
+                class="bg-gradient-to-r from-sky-500 to-indigo-500 h-2 transition-all duration-300 w-0"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div
+            class="flex items-center justify-between pt-3 border-t border-slate-700/50"
+          >
+            <div class="text-xs text-slate-400 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span id="importModelUsedText">Multi-Model Engine Active</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <button class="btn btn-ghost" data-close-import-modal>
+                Cancel
+              </button>
+              <button class="btn btn-primary" id="confirmImportBtn">
+                Confirm & Import
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <canvas
@@ -276,7 +450,3 @@
     <script type="module" src="js/products.js"></script>
   </body>
 </html>
-
-
-
-

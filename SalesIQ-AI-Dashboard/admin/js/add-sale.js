@@ -9,6 +9,8 @@ import {
   uid,
   statusFor,
   createNotification,
+  invalidateCache,
+  hideSkeletonLoader,
 } from "../../js/shared.js";
 
 import {
@@ -25,9 +27,7 @@ import {
 } from "../../js/firebase-config.js";
 
 const isStaff = document.body.dataset.role === "sales";
-const { profile } = await requireAuth(
-  isStaff ? ["Sales Staff"] : ["Admin"],
-);
+const { profile } = await requireAuth(isStaff ? ["Sales Staff"] : ["Admin"]);
 
 initAppShell(isStaff ? "sales" : "admin", "add-sale", profile);
 
@@ -45,10 +45,12 @@ function isPerishable(category) {
 }
 
 async function loadProducts() {
-  products = (await fetchAll("products")).filter((product) => {
-    const hasStock = Number(product.stock || 0) > 0;
-    return hasStock;
-  });
+  products = (await fetchAll("products", false, profile.id)).filter(
+    (product) => {
+      const hasStock = Number(product.stock || 0) > 0;
+      return hasStock;
+    },
+  );
 
   $("#saleProduct").innerHTML =
     '<option value="">Choose product</option>' +
@@ -61,7 +63,14 @@ async function loadProducts() {
       .join("");
 
   updatePreview();
+  hideSkeletonLoader();
 }
+
+window.addEventListener("salesiq:cache-updated", (e) => {
+  if (e.detail?.name === "products") {
+    loadProducts();
+  }
+});
 
 function updatePreview() {
   const qty = Number($("#saleQty").value || 1);
@@ -182,8 +191,7 @@ $("#billingForm").onsubmit = async (e) => {
       const product = productSnap.data();
       const stock = Number(product.stock || 0);
 
-      if (quantity > stock)
-        throw new Error(`Only ${stock} units available.`);
+      if (quantity > stock) throw new Error(`Only ${stock} units available.`);
 
       newStock = stock - quantity;
 
@@ -219,11 +227,14 @@ $("#billingForm").onsubmit = async (e) => {
       salespersonId: profile.id,
       salespersonName: profile.name || profile.email,
       source: isStaff ? "staff" : "admin",
+      adminId: isStaff ? profile.adminId || null : profile.id,
       isDemo: false,
       createdAt: serverTimestamp(),
     };
 
-    sale.batchMethod = "FEFO";
+    if (soldBatches.length > 0) {
+      sale.batchMethod = "FEFO";
+    }
 
     await addDoc(collection(db, "sales"), sale);
 
@@ -232,6 +243,7 @@ $("#billingForm").onsubmit = async (e) => {
         name: sale.customerName,
         totalSpent: sale.totalAmount,
         lastPurchaseDate: new Date().toISOString().slice(0, 10),
+        adminId: sale.adminId,
         createdAt: serverTimestamp(),
         source: sale.source,
       }).catch(() => {});
@@ -240,15 +252,20 @@ $("#billingForm").onsubmit = async (e) => {
     await createNotification(
       `New sale ${invoiceNumber}: ${selected.name} x ${quantity}. Stock left: ${newStock}.`,
       "sale",
+      sale.adminId,
     );
 
     if (statusFor(newStock, selected.minStock) !== "Available") {
       await createNotification(
         `${selected.name} is ${statusFor(newStock, selected.minStock)}. Current stock: ${newStock}.`,
         "stock",
+        sale.adminId,
       );
     }
 
+    invalidateCache("sales");
+    invalidateCache("products");
+    invalidateCache("customers");
     toast(`Invoice ${invoiceNumber} generated.`);
     $("#billingForm").reset();
     loadProducts();

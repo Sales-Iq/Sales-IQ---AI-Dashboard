@@ -30,18 +30,34 @@ let products = [],
   purchases = [],
   batches = [];
 async function load() {
-  products = await fetchAll("products");
-  purchases = await fetchAll("purchases");
-  batches = await fetchAll("productBatches").catch(() => []);
+  products = await fetchAll("products", false, profile.id);
+  purchases = await fetchAll("purchases", false, profile.id);
+  batches = await fetchAll("productBatches", false, profile.id).catch(() => []);
+  products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   $("#purchaseProduct").innerHTML =
     '<option value="">Choose product</option>' +
-    products
-      .map(
-        (p) =>
-          `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
-      )
-      .join("");
+    products.map(
+      (p) =>
+        `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
+    );
   render();
+
+  const params = new URLSearchParams(window.location.search);
+  const pId = params.get("productId");
+  const pQty = params.get("qty");
+  if (pId && $("#purchaseProduct")) {
+    $("#purchaseProduct").value = pId;
+    const prod = products.find((p) => p.id === pId);
+    if (prod && $("#purchaseSupplier")) {
+      $("#purchaseSupplier").value = prod.supplierName || "";
+    }
+    if (prod && $("#purchasePrice")) {
+      $("#purchasePrice").value = prod.costPrice || prod.price || "";
+    }
+    if (pQty && $("#purchaseQty")) {
+      $("#purchaseQty").value = pQty;
+    }
+  }
 }
 function render() {
   $("#purchasesTable").innerHTML = purchases.length
@@ -65,7 +81,9 @@ $("#purchaseForm").onsubmit = async (e) => {
     const expiryDate = $("#purchaseExpiry").value;
 
     const perishable = ["food", "medicine"].includes(
-      String(p.category || "").trim().toLowerCase(),
+      String(p.category || "")
+        .trim()
+        .toLowerCase(),
     );
 
     if (perishable) {
@@ -83,8 +101,9 @@ $("#purchaseForm").onsubmit = async (e) => {
       const duplicateBatch = batches.some(
         (x) =>
           x.productId === p.id &&
-          String(x.batchNo || "").trim().toLowerCase() ===
-            batchNo.trim().toLowerCase(),
+          String(x.batchNo || "")
+            .trim()
+            .toLowerCase() === batchNo.trim().toLowerCase(),
       );
       if (duplicateBatch) {
         throw new Error("Batch number already exists for this product.");
@@ -110,6 +129,7 @@ $("#purchaseForm").onsubmit = async (e) => {
       supplierName: $("#purchaseSupplier").value.trim(),
       purchasePrice: Number($("#purchasePrice").value || 0),
       purchaseDate: $("#purchaseDate").value,
+      adminId: profile.id,
       createdAt: serverTimestamp(),
       createdBy: profile.id,
     });
@@ -131,6 +151,8 @@ $("#purchaseForm").onsubmit = async (e) => {
         remainingQuantity: qty,
 
         purchasePrice: Number($("#purchasePrice").value || 0),
+
+        adminId: profile.id,
 
         createdAt: serverTimestamp(),
 

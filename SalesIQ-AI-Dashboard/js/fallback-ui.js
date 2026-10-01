@@ -37,7 +37,14 @@
     return `${localStorage.getItem("salesiq_currency") || "₹"}${Number(n || 0).toLocaleString("en-IN")}`;
   }
   function initials(name) {
-    return String(name || "User").split(" ").map((x) => x[0]).slice(0, 2).join("").toUpperCase() || "U";
+    return (
+      String(name || "User")
+        .split(" ")
+        .map((x) => x[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() || "U"
+    );
   }
   function avatarHTML(profile) {
     profile = profile || {};
@@ -224,7 +231,12 @@
     if (c.id === "clickSparkCanvas") return true;
     if (c._chart) return true;
     try {
-      if (window.Chart && typeof window.Chart.getChart === "function" && window.Chart.getChart(c)) return true;
+      if (
+        window.Chart &&
+        typeof window.Chart.getChart === "function" &&
+        window.Chart.getChart(c)
+      )
+        return true;
     } catch (_) {}
     const id = (c.id || "").toLowerCase();
     if (id.includes("chart")) return true;

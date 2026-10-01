@@ -1,0 +1,35 @@
+@startuml
+title SalesIQ System Activity Flow
+
+start
+
+:Open SalesIQ Website;
+
+if (Is Registered?) then (No)
+    :Registration;
+endif
+
+:Login to System;
+
+while (Not Authenticated?) is (Yes)
+    :Retry Login;
+    :Login to System;
+endwhile (No)
+
+:Check User Role;
+
+if (User is Admin?) then (Yes)
+    :Admin Dashboard;
+else (No - Staff)
+    :Staff Dashboard;
+endif
+
+:Realtime Dashboard Updated\n(Firebase Firestore);
+
+:Forecasting & AI Insights\n(Groq API);
+
+:Logout;
+
+stop
+
+@enduml

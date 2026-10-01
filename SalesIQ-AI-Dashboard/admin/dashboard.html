@@ -5,8 +5,11 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="SalesIQ — AI powered sales, inventory and forecasting dashboard." />
-<meta name="theme-color" content="#0f172a" />
+    <meta
+      name="description"
+      content="SalesIQ — AI powered sales, inventory and forecasting dashboard."
+    />
+    <meta name="theme-color" content="#0f172a" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -43,9 +46,9 @@
       };
     </script>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://firestore.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
       rel="stylesheet"
@@ -54,7 +57,10 @@
     <link rel="stylesheet" href="../css/liquid-glass.css" />
     <link rel="stylesheet" href="css/admin.css" />
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+      defer
+    ></script>
   </head>
   <body
     class="font-inter bg-slate-950 text-slate-100 app-body"
@@ -78,7 +84,111 @@
                 demo data.
               </p>
             </div>
-            <div class="flex flex-wrap gap-3"></div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                id="resetLayoutHeaderBtn"
+                type="button"
+                class="btn btn-ghost hidden"
+                title="Reset all tiles to default positions and sizes"
+              >
+                ↺ Default Layout
+              </button>
+              <button
+                id="toggleEditDashboard"
+                type="button"
+                class="btn btn-ghost"
+                title="Enter edit mode to customize and resize dashboard tiles"
+              >
+                <span id="editDashboardIcon">✏️</span>
+                <span id="editDashboardText">Edit Dashboard</span>
+              </button>
+              <button
+                id="openManualSaleModal"
+                type="button"
+                class="btn btn-primary"
+                title="Record a custom sale manually"
+              >
+                ➕ Record Sale
+              </button>
+            </div>
+          </div>
+
+          <!-- Resizable Dashboard Edit Mode Toolbar Banner -->
+          <div
+            id="dashboardEditBanner"
+            class="hidden mb-6 p-4 rounded-2xl bg-sky-950/80 border border-sky-500/60 shadow-lg shadow-sky-500/10 flex flex-col md:flex-row items-center justify-between gap-4"
+          >
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 text-lg flex-shrink-0"
+              >
+                📐
+              </div>
+              <div>
+                <h4
+                  class="font-bold text-sm text-sky-100 flex items-center gap-2"
+                >
+                  <span>Dashboard Layout Edit Mode</span>
+                  <span class="badge badge-ok text-[11px] py-0 px-2"
+                    >Active</span
+                  >
+                </h4>
+                <p class="text-xs text-sky-300/80 mt-0.5">
+                  Drag tiles using <b>⠿ Move</b> to rearrange anywhere. Drag
+                  vertical <b>⋮⋮</b> to adjust widths. Drag bottom handles to
+                  adjust tile heights independently!
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+              <span class="text-xs text-sky-200 font-semibold mr-1"
+                >Columns:</span
+              >
+              <button
+                type="button"
+                class="col-preset-btn tile-btn"
+                data-left="50"
+              >
+                50 / 50
+              </button>
+              <button
+                type="button"
+                class="col-preset-btn tile-btn active"
+                data-left="60"
+              >
+                60 / 40
+              </button>
+              <button
+                type="button"
+                class="col-preset-btn tile-btn"
+                data-left="67"
+              >
+                67 / 33
+              </button>
+              <button
+                type="button"
+                class="col-preset-btn tile-btn"
+                data-left="75"
+              >
+                75 / 25
+              </button>
+              <button
+                id="resetDashboardLayout"
+                type="button"
+                class="btn btn-ghost btn-sm text-xs border border-sky-400/40 hover:bg-sky-500/20 text-sky-200 ml-2 font-semibold"
+                title="Reset all tile positions, column widths, and heights back to default"
+              >
+                ↺ Default Layout
+              </button>
+              <button
+                id="saveDashboardLayout"
+                type="button"
+                class="btn btn-primary btn-sm text-xs"
+                title="Save changes and exit edit mode"
+              >
+                ✓ Done Editing
+              </button>
+            </div>
           </div>
 
           <div
@@ -105,11 +215,12 @@
               </button>
 
               <div
-                class="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-700/60"
+                id="generateSalesGroup"
+                class="generate-sales-group flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-700/60"
               >
                 <select
                   id="salesCount"
-                  class="bg-slate-950 text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
+                  class="sales-count-select bg-slate-950 text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
                 >
                   <option value="1">1 Sale</option>
                   <option value="10">10 Sales</option>
@@ -155,27 +266,490 @@
             </div>
           </div>
           <div class="stats-grid mb-6" id="adminStats"></div>
-          <div class="grid xl:grid-cols-2 gap-6 mb-6">
-            <div class="glass chart-box">
-              <h3 class="font-black mb-3">Sales Chart</h3>
-              <div class="chart-wrap"><canvas id="salesTrendChart"></canvas></div>
+          <!-- Optional Full-Width Top Slot -->
+          <div id="dashboardFullTop" class="dashboard-full-slot mb-6"></div>
+
+          <!-- 2-Column Resizable Dashboard Layout -->
+          <div class="dashboard-columns-layout mb-6" id="dashboardColumns">
+            <div
+              class="dashboard-col"
+              id="dashboardColLeft"
+              style="width: calc(60% - 8px)"
+            >
+              <!-- Sales Chart Tile -->
+              <div
+                id="salesChartTile"
+                class="dashboard-tile glass chart-box flex flex-col justify-between"
+              >
+                <div class="tile-edit-bar">
+                  <div class="tile-edit-bar-left">
+                    <div
+                      class="tile-drag-handle"
+                      draggable="true"
+                      data-tile="salesChartTile"
+                      title="Drag to move this tile anywhere"
+                    >
+                      <span>⠿</span> <span>Move</span>
+                    </div>
+                    <span class="tile-size-badge" id="salesChartTileBadge"
+                      >Left Col</span
+                    >
+                  </div>
+                  <div class="tile-btn-group">
+                    <button
+                      type="button"
+                      class="tile-action-btn switch-col-btn"
+                      data-tile="salesChartTile"
+                      title="Move to the other column"
+                    >
+                      ⇄ Switch Col
+                    </button>
+                    <button
+                      type="button"
+                      class="tile-action-btn move-up-btn"
+                      data-tile="salesChartTile"
+                      title="Move up in this column"
+                    >
+                      ↑ Up
+                    </button>
+                    <button
+                      type="button"
+                      class="tile-action-btn move-down-btn"
+                      data-tile="salesChartTile"
+                      title="Move down in this column"
+                    >
+                      ↓ Down
+                    </button>
+                    <button
+                      type="button"
+                      class="tile-action-btn toggle-full-btn"
+                      data-tile="salesChartTile"
+                      title="Toggle full width"
+                    >
+                      ⛶ Full Width
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="sales-chart-header flex items-center justify-between gap-3 mb-3"
+                  >
+                    <div class="sales-chart-title-area">
+                      <h3 class="font-black text-lg">Sales Chart</h3>
+                      <p
+                        id="salesChartRangeText"
+                        class="text-xs text-slate-400 mt-0.5"
+                      >
+                        Sales trend overview
+                      </p>
+                    </div>
+                    <div
+                      class="sales-chart-controls flex items-center gap-2 flex-nowrap ml-auto shrink-0"
+                    >
+                      <div
+                        class="chart-date-group flex items-center gap-1.5 text-xs text-slate-300 shrink-0"
+                      >
+                        <label
+                          for="chartStartDate"
+                          class="chart-date-label text-slate-400 text-xs font-semibold"
+                          >From</label
+                        >
+                        <input
+                          type="date"
+                          id="chartStartDate"
+                          class="chart-date-input"
+                          title="Start date"
+                        />
+                      </div>
+                      <div
+                        class="chart-date-group flex items-center gap-1.5 text-xs text-slate-300 shrink-0"
+                      >
+                        <label
+                          for="chartEndDate"
+                          class="chart-date-label text-slate-400 text-xs font-semibold"
+                          >To</label
+                        >
+                        <input
+                          type="date"
+                          id="chartEndDate"
+                          class="chart-date-input"
+                          title="End date"
+                        />
+                      </div>
+                      <button
+                        id="resetChartDate"
+                        type="button"
+                        class="btn btn-ghost btn-sm text-xs py-1 px-2.5 chart-reset-btn shrink-0 hidden"
+                        title="Reset to default dates"
+                      >
+                        Default
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="salesTrendChart"></canvas>
+                </div>
+                <div
+                  class="dashboard-row-resizer"
+                  title="Drag to adjust height"
+                ></div>
+                <div
+                  class="dashboard-corner-resizer"
+                  title="Drag corner to adjust"
+                ></div>
+              </div>
+
+              <!-- Recent Sales Tile -->
+              <div
+                id="recentSalesTile"
+                class="dashboard-tile glass p-5 flex flex-col justify-between"
+              >
+                <div>
+                  <div class="tile-edit-bar">
+                    <div class="tile-edit-bar-left">
+                      <div
+                        class="tile-drag-handle"
+                        draggable="true"
+                        data-tile="recentSalesTile"
+                        title="Drag to move this tile anywhere"
+                      >
+                        <span>⠿</span> <span>Move</span>
+                      </div>
+                      <span class="tile-size-badge" id="recentSalesTileBadge"
+                        >Left Col</span
+                      >
+                    </div>
+                    <div class="tile-btn-group">
+                      <button
+                        type="button"
+                        class="tile-action-btn switch-col-btn"
+                        data-tile="recentSalesTile"
+                        title="Move to the other column"
+                      >
+                        ⇄ Switch Col
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn move-up-btn"
+                        data-tile="recentSalesTile"
+                        title="Move up in this column"
+                      >
+                        ↑ Up
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn move-down-btn"
+                        data-tile="recentSalesTile"
+                        title="Move down in this column"
+                      >
+                        ↓ Down
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn toggle-full-btn"
+                        data-tile="recentSalesTile"
+                        title="Toggle full width"
+                      >
+                        ⛶ Full Width
+                      </button>
+                    </div>
+                  </div>
+                  <h3 class="font-black mb-4">Recent Sales</h3>
+                  <div id="recentSales"></div>
+                </div>
+                <div
+                  class="dashboard-row-resizer"
+                  title="Drag to adjust height"
+                ></div>
+                <div
+                  class="dashboard-corner-resizer"
+                  title="Drag corner to adjust"
+                ></div>
+              </div>
             </div>
-            <div class="glass chart-box">
-              <h3 class="font-black mb-3">Inventory Chart</h3>
-              <div class="chart-wrap"><canvas id="inventoryChart"></canvas></div>
+
+            <!-- Resizer Divider Between Columns -->
+            <div
+              class="dashboard-col-resizer"
+              id="dashboardColResizer"
+              title="Drag left/right to resize columns"
+            >
+              <div class="resizer-pill">⋮⋮</div>
+            </div>
+
+            <!-- Right Column -->
+            <div
+              class="dashboard-col"
+              id="dashboardColRight"
+              style="width: calc(40% - 8px)"
+            >
+              <!-- Inventory Chart Tile -->
+              <div
+                id="inventoryChartTile"
+                class="dashboard-tile glass chart-box flex flex-col justify-between"
+              >
+                <div class="tile-edit-bar">
+                  <div class="tile-edit-bar-left">
+                    <div
+                      class="tile-drag-handle"
+                      draggable="true"
+                      data-tile="inventoryChartTile"
+                      title="Drag to move this tile anywhere"
+                    >
+                      <span>⠿</span> <span>Move</span>
+                    </div>
+                    <span class="tile-size-badge" id="inventoryChartTileBadge"
+                      >Right Col</span
+                    >
+                  </div>
+                  <div class="tile-btn-group">
+                    <button
+                      type="button"
+                      class="tile-action-btn switch-col-btn"
+                      data-tile="inventoryChartTile"
+                      title="Move to the other column"
+                    >
+                      ⇄ Switch Col
+                    </button>
+                    <button
+                      type="button"
+                      class="tile-action-btn move-up-btn"
+                      data-tile="inventoryChartTile"
+                      title="Move up in this column"
+                    >
+                      ↑ Up
+                    </button>
+                    <button
+                      type="button"
+                      class="tile-action-btn move-down-btn"
+                      data-tile="inventoryChartTile"
+                      title="Move down in this column"
+                    >
+                      ↓ Down
+                    </button>
+                    <button
+                      type="button"
+                      class="tile-action-btn toggle-full-btn"
+                      data-tile="inventoryChartTile"
+                      title="Toggle full width"
+                    >
+                      ⛶ Full Width
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="font-black mb-3">Inventory Chart</h3>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="inventoryChart"></canvas>
+                </div>
+                <div
+                  class="dashboard-row-resizer"
+                  title="Drag to adjust height"
+                ></div>
+                <div
+                  class="dashboard-corner-resizer"
+                  title="Drag corner to adjust"
+                ></div>
+              </div>
+
+              <!-- AI Business Summary Tile (Directly below Inventory Chart!) -->
+              <div
+                id="aiSummaryTile"
+                class="dashboard-tile glass p-5 flex flex-col justify-between"
+              >
+                <div>
+                  <div class="tile-edit-bar">
+                    <div class="tile-edit-bar-left">
+                      <div
+                        class="tile-drag-handle"
+                        draggable="true"
+                        data-tile="aiSummaryTile"
+                        title="Drag to move this tile anywhere"
+                      >
+                        <span>⠿</span> <span>Move</span>
+                      </div>
+                      <span class="tile-size-badge" id="aiSummaryTileBadge"
+                        >Right Col</span
+                      >
+                    </div>
+                    <div class="tile-btn-group">
+                      <button
+                        type="button"
+                        class="tile-action-btn switch-col-btn"
+                        data-tile="aiSummaryTile"
+                        title="Move to the other column"
+                      >
+                        ⇄ Switch Col
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn move-up-btn"
+                        data-tile="aiSummaryTile"
+                        title="Move up in this column"
+                      >
+                        ↑ Up
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn move-down-btn"
+                        data-tile="aiSummaryTile"
+                        title="Move down in this column"
+                      >
+                        ↓ Down
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn toggle-full-btn"
+                        data-tile="aiSummaryTile"
+                        title="Toggle full width"
+                      >
+                        ⛶ Full Width
+                      </button>
+                    </div>
+                  </div>
+                  <h3 class="font-black mb-4">AI Business Summary</h3>
+                  <div
+                    id="aiSummary"
+                    class="ai-summary-content text-slate-300 leading-7"
+                  ></div>
+                </div>
+                <div
+                  class="dashboard-row-resizer"
+                  title="Drag to adjust height"
+                ></div>
+                <div
+                  class="dashboard-corner-resizer"
+                  title="Drag corner to adjust"
+                ></div>
+              </div>
             </div>
           </div>
-          <div class="grid xl:grid-cols-3 gap-6">
-            <div class="glass p-5 xl:col-span-2">
-              <h3 class="font-black mb-4">Recent Sales</h3>
-              <div id="recentSales"></div>
-            </div>
-            <div class="glass p-5">
-              <h3 class="font-black mb-4">AI Business Summary</h3>
-              <div id="aiSummary" class="text-slate-300 leading-7"></div>
-            </div>
-          </div>
+
+          <!-- Optional Full-Width Bottom Slot -->
+          <div id="dashboardFullBottom" class="dashboard-full-slot"></div>
         </main>
+      </div>
+    </div>
+
+    <!-- Manual Sale Modal -->
+    <div id="manualSaleModal" class="modal-backdrop">
+      <div class="modal-card max-w-lg w-full">
+        <div
+          class="flex items-center justify-between pb-3 mb-4 border-b border-slate-700/60"
+        >
+          <h3 class="font-bold text-lg text-slate-100">Record Sale Manually</h3>
+          <button
+            id="closeManualSaleModal"
+            type="button"
+            class="btn btn-ghost text-slate-400 hover:text-white p-1"
+          >
+            ✕
+          </button>
+        </div>
+        <form id="manualSaleForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1"
+              >Product *</label
+            >
+            <select id="manualSaleProduct" class="input w-full" required>
+              <option value="">Select product</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1"
+                >Quantity *</label
+              >
+              <input
+                type="number"
+                id="manualSaleQty"
+                class="input w-full"
+                min="1"
+                value="1"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1"
+                >Sale Date *</label
+              >
+              <input
+                type="date"
+                id="manualSaleDate"
+                class="input w-full"
+                required
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1"
+                >Unit Price (₹)</label
+              >
+              <input
+                type="number"
+                id="manualSalePrice"
+                class="input w-full bg-slate-900/60"
+                readonly
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1"
+                >Total Amount (₹)</label
+              >
+              <input
+                type="number"
+                id="manualSaleTotal"
+                class="input w-full bg-slate-900/60 font-bold text-emerald-400"
+                readonly
+              />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1"
+                >Customer Name</label
+              >
+              <input
+                type="text"
+                id="manualCustomerName"
+                class="input w-full"
+                placeholder="Walk-in Customer"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1"
+                >Payment Method</label
+              >
+              <select id="manualPaymentMethod" class="input w-full">
+                <option value="Cash">Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="Card">Card</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </div>
+          </div>
+          <div
+            class="flex items-center justify-end gap-3 pt-3 border-t border-slate-700/60"
+          >
+            <button
+              type="button"
+              id="cancelManualSaleModal"
+              class="btn btn-ghost"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              id="saveManualSaleBtn"
+              class="btn btn-primary"
+            >
+              Save Sale
+            </button>
+          </div>
+        </form>
       </div>
     </div>
     <canvas

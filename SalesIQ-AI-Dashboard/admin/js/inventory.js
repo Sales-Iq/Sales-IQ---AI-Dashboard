@@ -124,12 +124,12 @@ function renderTable() {
         <tr>
         <th>Product</th>
         <th>Category</th>
-        <th>Current</th>
-        <th>Minimum</th>
-        <th>Batches</th>
-        <th>Nearest Expiry</th>
+        <th class="text-center">Current</th>
+        <th class="text-center">Minimum</th>
+        <th class="text-center">Batches</th>
+        <th class="text-center">Nearest Expiry</th>
         <th>Status</th>
-        <th>Stock Update</th>
+        <th class="text-right">Action</th>
         </tr>
         </thead><tbody>${rows
           .map((p) => {
@@ -146,29 +146,28 @@ function renderTable() {
               ${p.category || "-"}
             </td>
 
-            <td>
+            <td class="text-center font-bold">
               ${p.stock || 0}
             </td>
 
-            <td>
+            <td class="text-center text-slate-400">
               ${p.minStock || 0}
             </td>
 
-            <td>
+            <td class="text-center">
               ${getProductBatches(p.id).length}
             </td>
 
-            <td>
+            <td class="text-center">
               ${nearestExpiry(p.id)}
-              <br>
-              ${batchStatus(p.id)}
+              ${batchStatus(p.id) ? `<br>${batchStatus(p.id)}` : ""}
             </td>
 
             <td>
               ${badgeForStatus(status)}
             </td>
 
-            <td>
+            <td class="text-right">
               <button
                 class="btn btn-ghost btn-sm"
                 onclick="openStock('${p.id}')"
@@ -248,9 +247,11 @@ $("#generateStockAlerts").onclick = async () => {
   toast(count ? `${count} alerts generated.` : "No low stock alerts.");
 };
 async function load() {
-  products = await fetchAll("products");
-  sales = await fetchAll("sales");
-  batches = await fetchAll("productBatches");
+  const adminId = profile.id;
+  products = await fetchAll("products", false, adminId);
+  sales = await fetchAll("sales", false, adminId);
+  batches = await fetchAll("productBatches", false, adminId).catch(() => []);
+  products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   $("#inventoryCategory").innerHTML =
     '<option value="">All categories</option>' +
     [...new Set(products.map((p) => p.category).filter(Boolean))]

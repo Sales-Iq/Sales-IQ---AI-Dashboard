@@ -20,7 +20,7 @@ body[data-role="admin"] .page-title {
 body[data-role="admin"] .btn-primary {
   background: linear-gradient(135deg, #0ea5e9, #6366f1, #8b5cf6);
 }
-/* Inventory table sizing fix */
+/* Inventory table sizing & layout fix */
 body[data-active="inventory"] #inventoryTable {
   min-width: 0;
   width: 100%;
@@ -33,42 +33,67 @@ body[data-active="inventory"] #inventoryTable .table-wrap {
 
 body[data-active="inventory"] #inventoryTable table {
   width: 100%;
-  min-width: 650px;
+  min-width: 820px;
   table-layout: fixed;
 }
 
 body[data-active="inventory"] #inventoryTable th,
 body[data-active="inventory"] #inventoryTable td {
-  padding: 0.9rem 0.7rem;
+  padding: 0.8rem 0.65rem;
+  vertical-align: middle;
 }
 
-/* Inventory table column widths */
-body[data-active="inventory"] #inventoryTable th:nth-child(1) {
-  width: 27%;
+body[data-active="inventory"] #inventoryTable th {
+  white-space: nowrap;
 }
 
-body[data-active="inventory"] #inventoryTable th:nth-child(2) {
-  width: 18%;
+/* Inventory table column widths (all 8 columns sum up to 100%) */
+body[data-active="inventory"] #inventoryTable th:nth-child(1),
+body[data-active="inventory"] #inventoryTable td:nth-child(1) {
+  width: 22%; /* Product */
 }
 
-body[data-active="inventory"] #inventoryTable th:nth-child(3) {
-  width: 12%;
+body[data-active="inventory"] #inventoryTable th:nth-child(2),
+body[data-active="inventory"] #inventoryTable td:nth-child(2) {
+  width: 13%; /* Category */
 }
 
-body[data-active="inventory"] #inventoryTable th:nth-child(4) {
-  width: 13%;
+body[data-active="inventory"] #inventoryTable th:nth-child(3),
+body[data-active="inventory"] #inventoryTable td:nth-child(3) {
+  width: 8%; /* Current */
+  text-align: center;
 }
 
-body[data-active="inventory"] #inventoryTable th:nth-child(5) {
-  width: 17%;
+body[data-active="inventory"] #inventoryTable th:nth-child(4),
+body[data-active="inventory"] #inventoryTable td:nth-child(4) {
+  width: 8%; /* Minimum */
+  text-align: center;
 }
 
-body[data-active="inventory"] #inventoryTable th:nth-child(6) {
-  width: 13%;
+body[data-active="inventory"] #inventoryTable th:nth-child(5),
+body[data-active="inventory"] #inventoryTable td:nth-child(5) {
+  width: 8%; /* Batches */
+  text-align: center;
+  white-space: nowrap;
 }
 
-body[data-active="inventory"] #inventoryTable td:nth-child(5),
+body[data-active="inventory"] #inventoryTable th:nth-child(6),
 body[data-active="inventory"] #inventoryTable td:nth-child(6) {
+  width: 15%; /* Nearest Expiry */
+  text-align: center;
+  white-space: nowrap;
+}
+
+body[data-active="inventory"] #inventoryTable th:nth-child(7),
+body[data-active="inventory"] #inventoryTable td:nth-child(7) {
+  width: 14%; /* Status */
+  white-space: nowrap;
+}
+
+body[data-active="inventory"] #inventoryTable th:nth-child(8),
+body[data-active="inventory"] #inventoryTable td:nth-child(8) {
+  width: 12%; /* Action / Stock Update */
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -162,4 +187,724 @@ body[data-active="products"] #productsTable table {
 body[data-active="products"] #productsTable th,
 body[data-active="products"] #productsTable td {
   white-space: nowrap;
+}
+
+/* Dashboard sales chart custom date controls */
+.sales-chart-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+  width: 100% !important;
+}
+
+.sales-chart-title-area {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.sales-chart-controls {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important; /* Pushes From, To, Default to the far right! */
+}
+
+.chart-date-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+.chart-date-label {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: #94a3b8 !important;
+  user-select: none !important;
+}
+
+.light .chart-date-label {
+  color: #475569 !important;
+}
+
+.chart-date-input {
+  background: rgba(15, 23, 42, 0.75);
+  color: #f1f5f9;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+  color-scheme: dark;
+  width: 125px;
+  max-width: 130px;
+}
+
+.chart-date-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+.chart-reset-btn {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  color: #38bdf8 !important;
+  background: rgba(14, 165, 233, 0.12) !important;
+  transition: all 0.2s ease !important;
+}
+
+.chart-reset-btn:hover {
+  background: rgba(14, 165, 233, 0.25) !important;
+  border-color: #38bdf8 !important;
+  color: #ffffff !important;
+}
+
+.light .chart-date-input {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  color-scheme: light !important;
+}
+
+.light .chart-reset-btn {
+  background: #f0f9ff !important;
+  border-color: #7dd3fc !important;
+  color: #0284c7 !important;
+}
+
+.light .chart-reset-btn:hover {
+  background: #e0f2fe !important;
+  border-color: #38bdf8 !important;
+  color: #0369a1 !important;
+}
+
+/* ============================================================
+   Resizable Dashboard Tiles & Edit Mode Styles
+   ============================================================ */
+
+/* 2-Column Resizable Dashboard Layout */
+.dashboard-columns-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  width: 100%;
+  position: relative;
+  transition: gap 0.2s ease;
+}
+
+/* Dashboard column containers (Left & Right) */
+.dashboard-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 280px;
+  box-sizing: border-box;
+  transition: width 0.25s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.dashboard-col.is-dragging {
+  transition: none !important;
+}
+
+/* Full width slots */
+.dashboard-full-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.dashboard-full-slot:empty {
+  display: none;
+}
+
+body.dashboard-edit-mode .dashboard-full-slot:empty {
+  display: flex;
+  min-height: 48px;
+  border: 2px dashed rgba(56, 189, 248, 0.3);
+  border-radius: 16px;
+  align-items: center;
+  justify-content: center;
+  color: rgba(56, 189, 248, 0.6);
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  background: rgba(14, 165, 233, 0.04);
+}
+
+body.dashboard-edit-mode .dashboard-full-slot:empty::before {
+  content: "＋ Drop tile here to display Full-Width";
+}
+
+body.dashboard-edit-mode .dashboard-full-slot.tile-drop-target,
+body.dashboard-edit-mode .dashboard-col.tile-drop-target {
+  border-color: #38bdf8 !important;
+  background: rgba(14, 165, 233, 0.15) !important;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.35) !important;
+}
+
+/* Individual tiles */
+.dashboard-tile {
+  position: relative;
+  width: 100% !important;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.dashboard-tile .chart-wrap {
+  min-height: 180px;
+  height: 100%;
+}
+
+.dashboard-tile.is-dragging {
+  transition: none !important;
+  user-select: none !important;
+}
+
+/* Column resizer divider between tiles */
+.dashboard-col-resizer {
+  width: 14px;
+  margin: 0 -7px;
+  display: flex;
+  align-self: stretch; /* Stretches to the full height of the row */
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  position: relative;
+  z-index: 20;
+  user-select: none;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    background 0.2s ease;
+}
+
+.dashboard-col-resizer::before {
+  content: "";
+  position: absolute;
+  top: 8%;
+  bottom: 8%;
+  width: 3px;
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 3px;
+  transition:
+    background 0.2s ease,
+    width 0.2s ease;
+}
+
+.dashboard-col-resizer:hover::before,
+.dashboard-col-resizer.is-active::before {
+  background: #38bdf8;
+  width: 5px;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+}
+
+.dashboard-col-resizer .resizer-pill {
+  width: 22px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 900;
+  pointer-events: none;
+  transform: scale(0.9);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.dashboard-col-resizer:hover .resizer-pill,
+.dashboard-col-resizer.is-active .resizer-pill {
+  transform: scale(1.1);
+  border-color: #38bdf8;
+}
+
+/* Bottom height resizer handle */
+.dashboard-row-resizer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.dashboard-row-resizer::after {
+  content: "";
+  width: 52px;
+  height: 3px;
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 3px;
+  transition:
+    background 0.2s ease,
+    width 0.2s ease;
+}
+
+.dashboard-row-resizer:hover::after,
+.dashboard-row-resizer.is-active::after {
+  background: #38bdf8;
+  width: 80px;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+/* Corner diagonal resizer */
+.dashboard-corner-resizer {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.dashboard-corner-resizer::before {
+  content: "◢";
+  font-size: 11px;
+  color: rgba(56, 189, 248, 0.5);
+  line-height: 1;
+}
+
+.dashboard-corner-resizer:hover::before {
+  color: #38bdf8;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+}
+
+/* Tile edit mode top bar / controls */
+.tile-edit-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px dashed rgba(56, 189, 248, 0.45);
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tile-edit-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tile-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 8px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  border-radius: 6px;
+  color: #38bdf8;
+  cursor: grab;
+  user-select: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: all 0.15s ease;
+}
+
+.tile-drag-handle:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.tile-drag-handle:active {
+  cursor: grabbing;
+}
+
+.tile-size-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.03em;
+}
+
+.tile-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tile-btn {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.tile-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+.tile-btn.active {
+  background: #0ea5e9;
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+/* Quick action buttons (Swap, Move Row) */
+.tile-action-btn {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(14, 165, 233, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.tile-action-btn:hover {
+  background: #0ea5e9;
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+}
+
+/* While dragging a tile */
+.dashboard-tile.tile-is-moving {
+  opacity: 0.45 !important;
+  transform: scale(0.97) !important;
+  border: 2px dashed #38bdf8 !important;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.4) !important;
+}
+
+/* When a tile is hovered over as a drop target */
+.dashboard-tile.tile-drop-target {
+  outline: 3px solid #38bdf8 !important;
+  outline-offset: 3px;
+  background: rgba(14, 165, 233, 0.2) !important;
+  box-shadow: 0 0 35px rgba(56, 189, 248, 0.6) !important;
+  transform: scale(1.01) !important;
+}
+
+/* ============================================================
+   When Edit Mode is Active (.dashboard-edit-mode)
+   ============================================================ */
+body.dashboard-edit-mode .dashboard-tile {
+  border: 2px dashed rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 0 25px rgba(14, 165, 233, 0.14) !important;
+  cursor: default;
+}
+
+body.dashboard-edit-mode .dashboard-col-resizer,
+body.dashboard-edit-mode .dashboard-row-resizer,
+body.dashboard-edit-mode .dashboard-corner-resizer {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.dashboard-edit-mode .tile-edit-bar {
+  display: flex !important;
+}
+
+/* Light mode adjustments */
+.light body.dashboard-edit-mode .dashboard-tile {
+  border-color: rgba(14, 165, 233, 0.7) !important;
+  box-shadow: 0 8px 30px rgba(14, 165, 233, 0.15) !important;
+}
+
+.light .dashboard-col-resizer .resizer-pill {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0284c7;
+  border-color: #0ea5e9;
+}
+
+.light .tile-edit-bar {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.35);
+}
+
+.light .tile-btn {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.light .tile-drag-handle {
+  background: #f1f5f9;
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+.light .tile-action-btn {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #38bdf8;
+}
+
+/* ============================================================
+   Light Theme Fixes for Notifications, Controls & Dashboard
+   ============================================================ */
+
+/* 1. Generate Sales Controls in Light Theme */
+.light .generate-sales-group,
+.light #generateSalesGroup {
+  background: rgba(241, 245, 249, 0.95) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.light #salesCount,
+.light .sales-count-select {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.light #salesCount option,
+.light .sales-count-select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* 2. Toast Notifications in Light Theme */
+.light .toast {
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  box-shadow:
+    0 16px 36px rgba(15, 23, 42, 0.12),
+    0 2px 6px rgba(15, 23, 42, 0.08) !important;
+  font-weight: 600 !important;
+}
+
+.light .toast.ok {
+  border-color: rgba(34, 197, 94, 0.7) !important;
+  background: #f0fdf4 !important;
+  color: #14532d !important;
+  box-shadow:
+    0 16px 36px rgba(22, 101, 52, 0.12),
+    0 2px 6px rgba(22, 101, 52, 0.06) !important;
+}
+
+.light .toast.err {
+  border-color: rgba(239, 68, 68, 0.7) !important;
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  box-shadow:
+    0 16px 36px rgba(153, 27, 27, 0.12),
+    0 2px 6px rgba(153, 27, 27, 0.06) !important;
+}
+
+/* 3. Dashboard Tiles in Light Theme */
+.light .dashboard-tile {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  box-shadow:
+    0 10px 30px rgba(15, 23, 42, 0.05),
+    0 1px 3px rgba(15, 23, 42, 0.03) !important;
+}
+
+.light .dashboard-tile h3 {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+/* 4. AI Business Summary Tile (Bottom Right) */
+.light #aiSummaryTile {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.light #aiSummaryTile h3 {
+  color: #0f172a !important;
+}
+
+.light #aiSummary,
+.light .ai-summary-content {
+  color: #1e293b !important;
+  font-weight: 500;
+}
+
+.light #aiSummary b,
+.light .ai-summary-content b {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+
+/* 5. Status Badges in Light Theme */
+.light .badge {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  font-weight: 800 !important;
+}
+
+.light .badge-ok {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #86efac !important;
+}
+
+.light .badge-warn {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border-color: #fcd34d !important;
+}
+
+.light .badge-danger {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
+}
+
+.light .badge-info {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #7dd3fc !important;
+}
+
+.light .badge-purple {
+  background: #f3e8ff !important;
+  color: #7e22ce !important;
+  border-color: #d8b4fe !important;
+}
+
+/* 6. Recent Sales Tile (Bottom Left) */
+.light #recentSalesTile {
+  background: rgba(255, 255, 255, 0.92) !important;
+}
+
+.light #recentSales table {
+  color: #0f172a;
+}
+
+.light #recentSales th {
+  background: rgba(241, 245, 249, 0.85);
+  color: #1e40af;
+  font-weight: 800;
+}
+
+.light #recentSales td {
+  color: #1e293b;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  font-weight: 500;
+}
+
+.light #recentSales .btn-ghost.text-rose-400 {
+  color: #e11d48 !important;
+  background: rgba(225, 29, 72, 0.08) !important;
+  border-color: rgba(225, 29, 72, 0.25) !important;
+  font-weight: 700;
+}
+
+.light #recentSales .btn-ghost.text-rose-400:hover {
+  background: #ffe4e6 !important;
+  color: #be123c !important;
+}
+
+/* 7. Sales & Inventory Charts */
+.light #salesChartTile,
+.light #inventoryChartTile {
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.light #salesChartRangeText {
+  color: #475569 !important;
+  font-weight: 600;
+}
+
+.light #salesChartRangeText b {
+  color: #0f172a !important;
+}
+
+.light .chart-date-input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #94a3b8 !important;
+}
+
+.light .tile-size-badge {
+  background: #f1f5f9;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+/* 8. Demo Live Controls text */
+.light #demoLiveStatus {
+  color: #334155 !important;
+  font-weight: 600;
+}
+
+.light #demoLiveStatus b {
+  color: #0f172a !important;
+}
+
+/* Mobile responsive override */
+@media (max-width: 1024px) {
+  .dashboard-columns-layout {
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+  .dashboard-col {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .dashboard-col-resizer {
+    display: none !important;
+  }
+}
+
+body.is-col-resizing,
+body.is-col-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.is-row-resizing,
+body.is-row-resizing * {
+  cursor: row-resize !important;
+  user-select: none !important;
 }

@@ -9,18 +9,21 @@ import {
   statusFor,
   makeChart,
   toast,
-  watchCollection
-} from '../../js/shared.js';
+  watchCollection,
+  hideSkeletonLoader,
+} from "../../js/shared.js";
 
-const { profile } = await requireAuth(['Sales Staff']);
-initAppShell('sales', 'dashboard', profile);
+const { profile } = await requireAuth(["Sales Staff"]);
+initAppShell("sales", "dashboard", profile);
 
 import {
   db,
   doc,
   updateDoc,
-  onSnapshot
-} from '../../js/firebase-config.js';
+  onSnapshot,
+  getDocs,
+  collection,
+} from "../../js/firebase-config.js";
 
 let sales = [];
 let products = [];
@@ -29,54 +32,69 @@ let currentAdminId = profile.adminId || null;
 function saleDate(sale) {
   if (!sale?.createdAt) return null;
 
-  const d = sale.createdAt?.toDate ? sale.createdAt.toDate() : new Date(sale.createdAt);
+  const d = sale.createdAt?.toDate
+    ? sale.createdAt.toDate()
+    : new Date(sale.createdAt);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function updateConnectionBadge() {
-  const badge = $('#connectionBadge');
+  const badge = $("#connectionBadge");
   if (!badge) return;
   if (currentAdminId) {
-    badge.textContent = `Connected: ${profile.adminName || 'Admin'}`;
-    badge.className = 'text-xs px-2 py-1 rounded-md bg-green-500/20 text-green-400';
+    badge.textContent = `Connected: ${profile.adminName || "Admin"}`;
+    badge.className =
+      "text-xs px-2 py-1 rounded-md bg-green-500/20 text-green-400";
   } else {
-    badge.textContent = 'Not Connected';
-    badge.className = 'text-xs px-2 py-1 rounded-md bg-slate-700 text-slate-300';
+    badge.textContent = "Not Connected";
+    badge.className =
+      "text-xs px-2 py-1 rounded-md bg-slate-700 text-slate-300";
   }
 }
 
 function renderStats(mine) {
-  const statsEl = $('#staffStats');
+  const statsEl = $("#staffStats");
   if (!statsEl) return;
   const today = new Date().toISOString().slice(0, 10);
-  const todaySales = mine.filter(sale => saleDate(sale)?.toISOString().slice(0, 10) === today);
+  const todaySales = mine.filter(
+    (sale) => saleDate(sale)?.toISOString().slice(0, 10) === today,
+  );
 
   statsEl.innerHTML = [
     [
-      'Today Sales',
-      money(todaySales.reduce((sum, sale) => sum + Number(sale.totalAmount || 0), 0)),
-      `${todaySales.length} orders`
+      "Today Sales",
+      money(
+        todaySales.reduce(
+          (sum, sale) => sum + Number(sale.totalAmount || 0),
+          0,
+        ),
+      ),
+      `${todaySales.length} orders`,
     ],
-    ['Orders Created', mine.length, 'All time'],
-    ['Assigned Products', products.length, 'View only'],
+    ["Orders Created", mine.length, "All time"],
+    ["Assigned Products", products.length, "View only"],
     [
-      'Performance',
+      "Performance",
       money(mine.reduce((sum, sale) => sum + Number(sale.totalAmount || 0), 0)),
-      'Total revenue'
-    ]
-  ].map(item => `
+      "Total revenue",
+    ],
+  ]
+    .map(
+      (item) => `
     <div class="glass stat-card glass-card-hover">
       <div class="stat-label">${item[0]}</div>
       <div class="stat-value">${item[1]}</div>
       <div class="stat-hint">${item[2]}</div>
     </div>
-  `).join('');
+  `,
+    )
+    .join("");
 }
 
 function renderChart(mine) {
   const byDay = {};
 
-  mine.forEach(sale => {
+  mine.forEach((sale) => {
     const d = saleDate(sale);
     if (!d) return;
     const key = d.toISOString().slice(0, 10);
@@ -93,22 +111,24 @@ function renderChart(mine) {
     }
   }
 
-  makeChart($('#staffChart'), 'line', {
+  makeChart($("#staffChart"), "line", {
     labels,
-    datasets: [{
-      label: 'My Sales',
-      data: labels.map(key => byDay[key] || 0),
-      fill: true,
-      tension: 0.4,
-      borderColor: '#22c55e',
-      backgroundColor: 'rgba(34,197,94,.22)',
-      pointBackgroundColor: '#22c55e'
-    }]
+    datasets: [
+      {
+        label: "My Sales",
+        data: labels.map((key) => byDay[key] || 0),
+        fill: true,
+        tension: 0.4,
+        borderColor: "#22c55e",
+        backgroundColor: "rgba(34,197,94,.22)",
+        pointBackgroundColor: "#22c55e",
+      },
+    ],
   });
 }
 
 function renderRecentSales(mine) {
-  const recentEl = $('#staffRecentSales');
+  const recentEl = $("#staffRecentSales");
   if (!recentEl) return;
   recentEl.innerHTML = mine.length
     ? `
@@ -123,26 +143,31 @@ function renderRecentSales(mine) {
             </tr>
           </thead>
           <tbody>
-            ${mine.slice(0, 6).map(sale => `
+            ${mine
+              .slice(0, 6)
+              .map(
+                (sale) => `
               <tr>
-                <td>${sale.invoiceNumber || '-'}</td>
-                <td>${sale.productName || '-'}</td>
+                <td>${sale.invoiceNumber || "-"}</td>
+                <td>${sale.productName || "-"}</td>
                 <td>${money(sale.totalAmount)}</td>
                 <td>${dateText(sale.createdAt)}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
     `
-    : emptyState('No sales yet', 'Create a sale from Add Sale.');
+    : emptyState("No sales yet", "Create a sale from Add Sale.");
 }
 
 function renderStock() {
-  const stockEl = $('#staffStock');
+  const stockEl = $("#staffStock");
   if (!stockEl) return;
-  
-  const connectedProducts = products.filter(p => !p.adminId || p.adminId === currentAdminId);
+
+  const connectedProducts = currentAdminId ? products : [];
 
   stockEl.innerHTML = connectedProducts.length
     ? `
@@ -157,85 +182,150 @@ function renderStock() {
             </tr>
           </thead>
           <tbody>
-            ${connectedProducts.slice(0, 8).map(product => `
+            ${connectedProducts
+              .slice(0, 8)
+              .map(
+                (product) => `
               <tr>
                 <td>${product.name}</td>
                 <td>${money(product.price)}</td>
                 <td>${product.stock || 0}</td>
                 <td>${badgeForStatus(statusFor(product.stock, product.minStock))}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </tbody>
         </table>
       </div>
     `
-    : emptyState('No products', currentAdminId ? 'Admin needs to add products.' : 'Accept an admin invitation to view products.');
+    : emptyState(
+        "No products",
+        currentAdminId
+          ? "Admin needs to add products."
+          : "Accept an admin invitation to view products.",
+      );
 }
 
 function renderDashboard() {
   updateConnectionBadge();
-  const mine = sales.filter(sale => sale.salespersonId === profile.id);
+  const mine = sales.filter((sale) => sale.salespersonId === profile.id);
   renderStats(mine);
   renderChart(mine);
   renderRecentSales(mine);
   renderStock();
+  hideSkeletonLoader();
 }
 
 const unsubs = [
-  watchCollection('sales', rows => {
+  watchCollection("sales", (rows) => {
     sales = rows;
     renderDashboard();
   }),
-  watchCollection('products', rows => {
+  watchCollection("products", (rows) => {
     products = rows;
     renderDashboard();
   }),
-  onSnapshot(doc(db, 'staff', profile.id), (docSnap) => {
+  onSnapshot(doc(db, "staff", profile.id), (docSnap) => {
     if (docSnap.exists()) {
       const data = docSnap.data();
       currentAdminId = data.adminId || null;
       profile.adminId = currentAdminId;
       profile.adminName = data.adminName || null;
-      
-      const pendingReq = data.pendingRequest;
-      const banner = $('#staffInvitationBanner');
-      
-      if (pendingReq && pendingReq.status === 'pending') {
-         $('#staffInvitationText').textContent = `${pendingReq.adminName || 'Admin'} (${pendingReq.adminEmail}) has invited you to join their staff team.`;
-         banner.classList.remove('hidden');
-         
-         $('#acceptInviteBtn').onclick = async () => {
-           try {
-             await updateDoc(doc(db, 'staff', profile.id), {
-               adminId: pendingReq.adminId,
-               adminName: pendingReq.adminName,
-               adminEmail: pendingReq.adminEmail,
-               adminStatus: "connected",
-               pendingRequest: null
-             });
-             banner.classList.add('hidden');
-             toast('Invitation accepted!');
-           } catch(e) { toast(e.message, 'err'); }
-         };
-         
-         $('#rejectInviteBtn').onclick = async () => {
-           try {
-             await updateDoc(doc(db, 'staff', profile.id), {
-               pendingRequest: null
-             });
-             banner.classList.add('hidden');
-             toast('Invitation rejected');
-           } catch(e) { toast(e.message, 'err'); }
-         };
-      } else {
-         banner.classList.add('hidden');
+
+      try {
+        const local = JSON.parse(localStorage.getItem("salesiq_user") || "{}");
+        if (local.adminId !== currentAdminId) {
+          local.adminId = currentAdminId;
+          local.adminName = profile.adminName;
+          localStorage.setItem("salesiq_user", JSON.stringify(local));
+        }
+      } catch (_) {}
+
+      if (!currentAdminId) {
+        getDocs(collection(db, "admins"))
+          .then((adminsSnap) => {
+            if (adminsSnap.size === 1) {
+              const singleAdmin = adminsSnap.docs[0];
+              currentAdminId = singleAdmin.id;
+              profile.adminId = singleAdmin.id;
+              profile.adminName =
+                singleAdmin.data().name || singleAdmin.data().email || "Admin";
+              updateDoc(doc(db, "staff", profile.id), {
+                adminId: singleAdmin.id,
+                adminName: profile.adminName,
+                adminEmail: singleAdmin.data().email || "",
+                adminStatus: "connected",
+              }).catch(() => {});
+              try {
+                const local = JSON.parse(
+                  localStorage.getItem("salesiq_user") || "{}",
+                );
+                local.adminId = currentAdminId;
+                local.adminName = profile.adminName;
+                localStorage.setItem("salesiq_user", JSON.stringify(local));
+              } catch (_) {}
+              renderDashboard();
+            }
+          })
+          .catch(() => {});
       }
-      
+
+      const pendingReq = data.pendingRequest;
+      const banner = $("#staffInvitationBanner");
+
+      if (pendingReq && pendingReq.status === "pending") {
+        $("#staffInvitationText").textContent =
+          `${pendingReq.adminName || "Admin"} (${pendingReq.adminEmail}) has invited you to join their staff team.`;
+        banner.classList.remove("hidden");
+
+        $("#acceptInviteBtn").onclick = async () => {
+          try {
+            await updateDoc(doc(db, "staff", profile.id), {
+              adminId: pendingReq.adminId,
+              adminName: pendingReq.adminName,
+              adminEmail: pendingReq.adminEmail,
+              adminStatus: "connected",
+              pendingRequest: null,
+            });
+            profile.adminId = pendingReq.adminId;
+            profile.adminName = pendingReq.adminName;
+            try {
+              const local = JSON.parse(
+                localStorage.getItem("salesiq_user") || "{}",
+              );
+              local.adminId = pendingReq.adminId;
+              local.adminName = pendingReq.adminName;
+              localStorage.setItem("salesiq_user", JSON.stringify(local));
+            } catch (_) {}
+            banner.classList.add("hidden");
+            toast("Invitation accepted!");
+            setTimeout(() => location.reload(), 400);
+          } catch (e) {
+            toast(e.message, "err");
+          }
+        };
+
+        $("#rejectInviteBtn").onclick = async () => {
+          try {
+            await updateDoc(doc(db, "staff", profile.id), {
+              pendingRequest: null,
+            });
+            banner.classList.add("hidden");
+            toast("Invitation rejected");
+          } catch (e) {
+            toast(e.message, "err");
+          }
+        };
+      } else {
+        banner.classList.add("hidden");
+      }
+
       renderDashboard();
     }
-  })
+  }),
 ];
 
-window.addEventListener('beforeunload', () => {
-  unsubs.forEach(unsub => unsub?.());
+window.addEventListener("beforeunload", () => {
+  unsubs.forEach((unsub) => unsub?.());
 });

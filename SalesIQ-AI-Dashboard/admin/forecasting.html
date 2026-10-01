@@ -1,52 +1,198 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <title>SalesIQ - Forecasting</title>
+  <head>
+    <title>SalesIQ - Forecasting</title>
 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="SalesIQ — AI powered sales, inventory and forecasting dashboard." />
-<meta name="theme-color" content="#0f172a" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { inter: ['Inter','system-ui','sans-serif'] }, animation: { floaty:'floaty 7s ease-in-out infinite', shimmer:'shimmer 2.6s linear infinite', pulseSoft:'pulseSoft 2.8s ease-in-out infinite', slideUp:'slideUp .65s cubic-bezier(.2,.9,.2,1) both' }, keyframes: { floaty:{'0%,100%':{transform:'translateY(0)'},'50%':{transform:'translateY(-18px)'}}, shimmer:{'0%':{backgroundPosition:'-200% 0'},'100%':{backgroundPosition:'200% 0'}}, pulseSoft:{'0%,100%':{opacity:'.65',transform:'scale(1)'},'50%':{opacity:'1',transform:'scale(1.04)'}}, slideUp:{'0%':{opacity:'0',transform:'translateY(22px)'},'100%':{opacity:'1',transform:'translateY(0)'}} } } } }
-</script>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://firestore.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/shared.css" />
-<link rel="stylesheet" href="../css/liquid-glass.css" />
-<link rel="stylesheet" href="css/admin.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="SalesIQ — AI powered sales, inventory and forecasting dashboard."
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: { inter: ["Inter", "system-ui", "sans-serif"] },
+            animation: {
+              floaty: "floaty 7s ease-in-out infinite",
+              shimmer: "shimmer 2.6s linear infinite",
+              pulseSoft: "pulseSoft 2.8s ease-in-out infinite",
+              slideUp: "slideUp .65s cubic-bezier(.2,.9,.2,1) both",
+            },
+            keyframes: {
+              floaty: {
+                "0%,100%": { transform: "translateY(0)" },
+                "50%": { transform: "translateY(-18px)" },
+              },
+              shimmer: {
+                "0%": { backgroundPosition: "-200% 0" },
+                "100%": { backgroundPosition: "200% 0" },
+              },
+              pulseSoft: {
+                "0%,100%": { opacity: ".65", transform: "scale(1)" },
+                "50%": { opacity: "1", transform: "scale(1.04)" },
+              },
+              slideUp: {
+                "0%": { opacity: "0", transform: "translateY(22px)" },
+                "100%": { opacity: "1", transform: "translateY(0)" },
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/liquid-glass.css" />
+    <link rel="stylesheet" href="css/admin.css" />
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-</head>
-<body class="font-inter bg-slate-950 text-slate-100 app-body" data-role="admin" data-active="forecasting">
-  <div id="animatedBg" class="animated-bg"></div>
-  <div id="splashScreen" class="splash-screen hidden"></div>
-  <div class="app-shell">
-    <aside id="appSidebar" class="app-sidebar"></aside>
-    <div class="app-main">
-      <header id="appHeader" class="app-header"></header>
-      <main class="page-container animate-slideUp">
-        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Inventory Forecasting</h2><p class="page-subtitle">Predict demand using average daily sales, stock finish days and reorder quantity.</p></div><div class="flex flex-wrap gap-3"></div></div>
-<div class="glass p-5 mb-6 grid md:grid-cols-3 gap-4"><select id="forecastProduct" class="select"><option value="">Select product</option></select><button id="runForecast" class="btn btn-primary">Run Forecast</button><button id="saveForecast" class="btn btn-success">Save Forecast</button></div>
-<div class="stats-grid mb-6" id="forecastStats"></div>
-<div class="grid xl:grid-cols-2 gap-6"><div class="glass chart-box"><h3 class="font-black mb-3">Past Sales + Future Demand</h3><div class="chart-wrap"><canvas id="forecastChart"></canvas></div></div><div class="glass p-6"><h3 class="font-black mb-4">Forecast Output</h3><div id="forecastOutput"></div></div></div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+      defer
+    ></script>
+  </head>
+  <body
+    class="font-inter bg-slate-950 text-slate-100 app-body"
+    data-role="admin"
+    data-active="forecasting"
+  >
+    <div id="animatedBg" class="animated-bg"></div>
+    <div id="splashScreen" class="splash-screen hidden"></div>
+    <div class="app-shell">
+      <aside id="appSidebar" class="app-sidebar"></aside>
+      <div class="app-main">
+        <header id="appHeader" class="app-header"></header>
+        <main class="page-container animate-slideUp">
+          <div
+            class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
+          >
+            <div>
+              <h2 class="page-title">Inventory Forecasting</h2>
+              <p class="page-subtitle">
+                Predict demand using dual-trend analysis, Gemini AI
+                intelligence, stockout deadlines, and reorder planning.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2.5 items-center">
+              <span id="forecastAiBadge" class="badge badge-info text-xs"
+                >✨ AI Intelligence Enabled</span
+              >
+            </div>
+          </div>
 
-      </main>
+          <!-- Controls Bar -->
+          <div
+            class="glass p-5 mb-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center"
+          >
+            <div>
+              <label class="label text-xs">Select Product</label>
+              <select id="forecastProduct" class="select">
+                <option value="">Select product</option>
+              </select>
+            </div>
+            <div>
+              <label class="label text-xs">Time Horizon</label>
+              <select id="forecastHorizon" class="select">
+                <option value="7">Next 7 Days</option>
+                <option value="14">Next 14 Days</option>
+                <option value="30" selected>Next 30 Days (Standard)</option>
+                <option value="90">Next 90 Days (Quarterly)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2 flex gap-3 items-end pt-5 sm:pt-0">
+              <button id="runForecast" class="btn btn-primary flex-1">
+                ✨ Run AI Forecast
+              </button>
+              <button id="saveForecast" class="btn btn-success">
+                💾 Save Forecast
+              </button>
+            </div>
+          </div>
+
+          <!-- Key Metrics Cards -->
+          <div class="stats-grid mb-6" id="forecastStats"></div>
+
+          <!-- Chart and Output Grid -->
+          <div class="grid xl:grid-cols-2 gap-6 mb-6">
+            <div class="glass chart-box">
+              <div class="flex justify-between items-center mb-3">
+                <h3 class="font-black">
+                  Past 14 Days Sales vs. Future Stock Depletion
+                </h3>
+                <span
+                  id="chartHorizonBadge"
+                  class="text-xs text-sky-400 font-bold"
+                  >Horizon: 30 Days</span
+                >
+              </div>
+              <div class="chart-wrap">
+                <canvas id="forecastChart"></canvas>
+              </div>
+            </div>
+            <div class="glass p-6 flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-4">
+                  <h3 class="font-black text-xl">
+                    Forecast & Reorder Strategy
+                  </h3>
+                  <span
+                    id="forecastProductBadge"
+                    class="badge badge-purple text-xs hidden"
+                    >Product</span
+                  >
+                </div>
+                <div id="forecastOutput"></div>
+              </div>
+              <div
+                id="reorderActionWrap"
+                class="pt-4 border-t border-slate-700/50 hidden mt-4"
+              >
+                <button id="reorderNowBtn" class="btn btn-primary w-full">
+                  🚚 Create Restock Order Now
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Saved Forecasts History Table -->
+          <div class="glass p-6">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h3 class="font-black text-xl">Saved Forecast History</h3>
+                <p class="text-xs text-slate-400">
+                  Review past predictions, estimated depletion dates, and
+                  planned reorders.
+                </p>
+              </div>
+              <button id="refreshForecastHistory" class="btn btn-ghost btn-sm">
+                Refresh History
+              </button>
+            </div>
+            <div id="savedForecastsTable"></div>
+          </div>
+        </main>
+      </div>
     </div>
-  </div>
-  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
-  <div id="toastRoot" class="toast-root"></div>
-  <script src="../js/fallback-ui.js" defer></script>
-  <script src="../js/liquid-glass.js" defer></script>
-<script type="module" src="../js/shared.js"></script>
-  <script type="module" src="js/forecasting.js"></script>
-</body>
+    <canvas
+      id="clickSparkCanvas"
+      class="click-spark-canvas"
+      aria-hidden="true"
+    ></canvas>
+    <div id="toastRoot" class="toast-root"></div>
+    <script src="../js/fallback-ui.js" defer></script>
+    <script src="../js/liquid-glass.js" defer></script>
+    <script type="module" src="../js/shared.js"></script>
+    <script type="module" src="js/forecasting.js"></script>
+  </body>
 </html>
-
-
-
-

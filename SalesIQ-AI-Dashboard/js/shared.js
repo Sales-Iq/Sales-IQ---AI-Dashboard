@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   signOut,
   query,
+  where,
   orderBy,
   onSnapshot,
 } from "./firebase-config.js";
@@ -88,10 +89,7 @@ export function getCurrency() {
   // Cached with short TTL: fast inside render loops (100s of money()
   // calls per render) but still picks up same-tab settings saves.
   const now = Date.now();
-  if (
-    getCurrency._cached == null ||
-    now - (getCurrency._ts || 0) > 1000
-  ) {
+  if (getCurrency._cached == null || now - (getCurrency._ts || 0) > 1000) {
     try {
       getCurrency._cached = localStorage.getItem("salesiq_currency") || "₹";
     } catch (_) {
@@ -127,15 +125,24 @@ export function showSkeletonLoader() {
   const splash = $("#splashScreen");
   if (!splash) return;
 
-  const isDashboardPage = location.pathname.includes("/admin/") || location.pathname.includes("/sales/");
-  const isLandingPage = location.pathname.endsWith("index.html") || location.pathname === "/" || location.pathname.endsWith("/");
+  const isDashboardPage =
+    location.pathname.includes("/admin/") ||
+    location.pathname.includes("/sales/") ||
+    location.pathname.includes("/superadmin/");
+  const isLandingPage =
+    location.pathname.endsWith("index.html") ||
+    location.pathname === "/" ||
+    location.pathname.endsWith("/");
 
   if (!isDashboardPage || isLandingPage) {
     splash.classList.add("hidden");
+    splash.style.display = "none";
     return;
   }
 
+  splash.classList.remove("fade-out", "hidden");
   splash.className = "skeleton-loader";
+  splash.style.display = "flex";
   splash.innerHTML = `
     <header class="skeleton-card skeleton-header"></header>
     <div style="display:flex; gap:24px; flex:1; flex-wrap:wrap;">
@@ -149,42 +156,131 @@ export function showSkeletonLoader() {
         </div>
         <div class="skeleton-card skeleton-chart"></div>
         <div class="skeleton-card skeleton-table"></div>
-        <div class="skeleton-card skeleton-table"></div>
       </main>
     </div>
   `;
-  setTimeout(hideSkeletonLoader, 2500);
 }
 
 export function hideSkeletonLoader() {
   const splash = $("#splashScreen");
-  if (!splash) return;
-  splash.classList.add("hidden");
-  splash.style.display = "none";
+  if (!splash || splash.classList.contains("hidden")) return;
+  splash.classList.add("fade-out");
   setTimeout(() => {
+    splash.classList.add("hidden");
+    splash.style.display = "none";
     splash.innerHTML = "";
     splash.className = "splash-screen hidden";
-    splash.style.display = "";
-  }, 400);
+  }, 320);
+}
+
+export function tableSkeleton(cols = 8, rows = 5) {
+  return `
+    <div class="table-wrap animate-pulse">
+      <table>
+        <thead>
+          <tr>
+            ${Array.from({ length: cols }, () => `<th><div class="h-3.5 bg-slate-700/60 rounded w-20"></div></th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${Array.from(
+            { length: rows },
+            () => `
+            <tr>
+              ${Array.from({ length: cols }, () => `<td><div class="h-4 bg-slate-800/80 rounded w-full max-w-[130px]"></div></td>`).join("")}
+            </tr>
+          `,
+          ).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 export function initClickSpark() {
   const canvas = $("#clickSparkCanvas");
-  if (!canvas) return;
+  if (!canvas || canvas._sparkInit) return;
+  canvas._sparkInit = true;
 
   const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
   const sparks = [];
+  let animId = null;
+
+  const clearCanvas = () => {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  };
 
   const resize = () => {
-    canvas.width = window.innerWidth * devicePixelRatio;
-    canvas.height = window.innerHeight * devicePixelRatio;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(window.innerWidth * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
     canvas.style.width = "100vw";
     canvas.style.height = "100vh";
-    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    canvas.style.pointerEvents = "none";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    clearCanvas();
   };
 
   resize();
   window.addEventListener("resize", resize);
+
+  function draw(t) {
+    animId = null;
+    clearCanvas();
+
+    if (sparks.length === 0) return;
+
+    const now = typeof t === "number" ? t : performance.now();
+
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i];
+      const elapsed = now - s.start;
+
+      // Hard safety timeout: sparks older than 450ms are purged immediately
+      if (elapsed >= 450 || elapsed < 0 || Number.isNaN(elapsed)) {
+        sparks.splice(i, 1);
+        continue;
+      }
+
+      const p = Math.max(0, Math.min(elapsed / 400, 1));
+      if (p >= 1) {
+        sparks.splice(i, 1);
+        continue;
+      }
+
+      const eased = p * (2 - p);
+      const dist = eased * 24;
+      const len = 12 * (1 - eased);
+      const x1 = s.x + dist * Math.cos(s.angle);
+      const y1 = s.y + dist * Math.sin(s.angle);
+      const x2 = s.x + (dist + len) * Math.cos(s.angle);
+      const y2 = s.y + (dist + len) * Math.sin(s.angle);
+
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, Math.min(1 - p, 1));
+      ctx.strokeStyle = document.body.classList.contains("light")
+        ? "#0ea5e9"
+        : "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (sparks.length > 0) {
+      animId = requestAnimationFrame(draw);
+    } else {
+      clearCanvas();
+    }
+  }
 
   // Passive: click sparks never call preventDefault.
   document.addEventListener(
@@ -201,46 +297,13 @@ export function initClickSpark() {
           start: now,
         });
       }
+
+      if (!animId) {
+        animId = requestAnimationFrame(draw);
+      }
     },
     { passive: true },
   );
-
-  function draw(t) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (let i = sparks.length - 1; i >= 0; i--) {
-      const s = sparks[i];
-      const p = Math.min((t - s.start) / 480, 1);
-
-      if (p >= 1) {
-        sparks.splice(i, 1);
-        continue;
-      }
-
-      const eased = p * (2 - p);
-      const dist = eased * 24;
-      const len = 12 * (1 - eased);
-      const x1 = s.x + dist * Math.cos(s.angle);
-      const y1 = s.y + dist * Math.sin(s.angle);
-      const x2 = s.x + (dist + len) * Math.cos(s.angle);
-      const y2 = s.y + (dist + len) * Math.sin(s.angle);
-
-      ctx.globalAlpha = 1 - p;
-      ctx.strokeStyle = document.body.classList.contains("light")
-        ? "#0ea5e9"
-        : "#ffffff";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    requestAnimationFrame(draw);
-  }
-
-  requestAnimationFrame(draw);
 }
 
 const adminLinks = [
@@ -268,9 +331,7 @@ const staffLinks = [
   ["stock-view", "Stock View", "stock-view.html", "📦"],
 ];
 
-const superAdminLinks = [
-  ["dashboard", "Overview", "dashboard.html", "👑"],
-];
+const superAdminLinks = [["dashboard", "Overview", "dashboard.html", "👑"]];
 
 function initials(name = "User") {
   return (
@@ -390,29 +451,109 @@ export function initAppShell(
   });
 
   $("#logoutBtn")?.addEventListener("click", async () => {
+    try {
+      sessionStorage.clear();
+      localStorage.removeItem("salesiq_user");
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("salesiq_cache_")) localStorage.removeItem(k);
+      }
+    } catch (_) {}
     await signOut(auth);
     location.href = "../login.html";
   });
 
-  hideSkeletonLoader();
+  // Proactively warm client-side cache for instant subsequent page navigations
+  if (profile && profile.id) {
+    setTimeout(() => {
+      const preloadList =
+        role === "sales"
+          ? [["products", false]]
+          : [
+              ["products", false],
+              ["sales", false],
+              ["customers", false],
+            ];
+      for (const [col, srt] of preloadList) {
+        fetchAll(col, srt, profile.id).catch(() => {});
+      }
+    }, 150);
+  }
+
+  // Failsafe safety net: ensure skeleton loader never stays stuck on unforeseen errors
+  setTimeout(hideSkeletonLoader, 4000);
 }
 
-export async function requireAuth(
-  allowed = ["Admin", "Sales Staff"],
-) {
+export async function requireAuth(allowed = ["Admin", "Sales Staff"]) {
   const failSafeRole = () => {
     if (location.pathname.includes("/superadmin/")) return "Super Admin";
     if (location.pathname.includes("/sales/")) return "Sales Staff";
     return "Admin";
   };
 
+  // FAST OPTIMISTIC PATH:
+  // If the user already has a valid cached session in localStorage, resolve instantly (0ms)!
+  // This completely eliminates the 500-1000ms delay on every internal page navigation.
+  let cachedProfile = null;
+  try {
+    const raw = localStorage.getItem("salesiq_user");
+    if (raw) cachedProfile = JSON.parse(raw);
+  } catch (_) {}
+
+  if (
+    cachedProfile &&
+    cachedProfile.id &&
+    cachedProfile.status === "active" &&
+    allowed.includes(cachedProfile.role)
+  ) {
+    // Silently verify auth state and status in the background
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        localStorage.removeItem("salesiq_user");
+        location.href =
+          location.pathname.includes("/admin/") ||
+          location.pathname.includes("/sales/") ||
+          location.pathname.includes("/superadmin/")
+            ? "../login.html"
+            : "login.html";
+        return;
+      }
+      try {
+        const liveProfile = await getAccountProfile(user);
+        if (liveProfile) {
+          if (liveProfile.status === "inactive") {
+            await signOut(auth);
+            location.href =
+              location.pathname.includes("/admin/") ||
+              location.pathname.includes("/sales/") ||
+              location.pathname.includes("/superadmin/")
+                ? "../login.html?inactive=1"
+                : "login.html?inactive=1";
+            return;
+          }
+          const merged = { ...cachedProfile, ...liveProfile, id: user.uid };
+          localStorage.setItem("salesiq_user", JSON.stringify(merged));
+        }
+      } catch (_) {}
+    });
+
+    return Promise.resolve({
+      user: auth.currentUser || {
+        uid: cachedProfile.id,
+        email: cachedProfile.email,
+        displayName: cachedProfile.name,
+      },
+      profile: cachedProfile,
+    });
+  }
+
+  // COLD BOOT PATH: (No cached profile in localStorage)
   return new Promise((resolve) => {
     let settled = false;
 
     const cleanup = () => {
       if (!settled) {
         settled = true;
-        hideSkeletonLoader();
       }
     };
 
@@ -420,7 +561,7 @@ export async function requireAuth(
       auth,
       async (user) => {
         if (settled) return;
-        
+
         if (!user) {
           cleanup();
           location.href =
@@ -460,12 +601,6 @@ export async function requireAuth(
             "Could not read account profile. Check Firestore rules.",
             err,
           );
-          setTimeout(() => {
-            toast(
-              "Firestore permission/config issue. Publish firestore-rules.txt in Firebase if data does not load.",
-              "err",
-            );
-          }, 800);
         }
 
         if (profile.status === "inactive") {
@@ -534,60 +669,305 @@ export async function requireAuth(
   });
 }
 
-export async function fetchAll(name, sorted = true) {
-  try {
-    const ref = sorted
-      ? query(collection(db, name), orderBy("createdAt", "desc"))
-      : collection(db, name);
-    const snap = await getDocs(ref);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  } catch (e) {
-    console.warn(`Primary fetch failed for ${name}:`, e);
+export const TENANT_COLLECTIONS = new Set([
+  "products",
+  "productBatches",
+  "sales",
+  "customers",
+  "suppliers",
+  "purchases",
+  "forecasting",
+  "notifications",
+  "ai-insights",
+  "insights",
+]);
 
+let _cachedFirstAdminId = null;
+try {
+  _cachedFirstAdminId = localStorage.getItem("salesiq_first_admin_id") || null;
+} catch (_) {}
+
+export async function getFirstAdminId() {
+  if (_cachedFirstAdminId) return _cachedFirstAdminId;
+  try {
+    const snap = await getDocs(collection(db, "admins"));
+    if (!snap.empty) {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => {
+        const ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+        const tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        return ta - tb;
+      });
+      _cachedFirstAdminId = list[0].id;
+      try {
+        localStorage.setItem("salesiq_first_admin_id", _cachedFirstAdminId);
+      } catch (_) {}
+      return _cachedFirstAdminId;
+    }
+  } catch (_) {}
+  return null;
+}
+
+export function getActiveTenantId(profile = null) {
+  if (profile) {
+    if (profile.role === "Admin") return profile.id;
+    if (profile.role === "Sales Staff") return profile.adminId || null;
+    if (profile.role === "Super Admin") return "__ALL__";
+  }
+  try {
+    const raw = localStorage.getItem("salesiq_user");
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p.role === "Admin") return p.id;
+      if (p.role === "Sales Staff") return p.adminId || null;
+      if (p.role === "Super Admin") return "__ALL__";
+    }
+  } catch (_) {}
+  return auth?.currentUser?.uid || null;
+}
+
+// -----------------------------------------------------------------
+// High-Speed Multi-Tier Client Storage Cache (Stale-While-Revalidate)
+// -----------------------------------------------------------------
+const _inMemCache = new Map();
+const CACHE_TTL_MS = 60000; // 60 seconds fresh window
+
+export function getCachedCollection(cacheKey) {
+  // 1. In-memory Map (0ms)
+  const mem = _inMemCache.get(cacheKey);
+  if (mem && Array.isArray(mem.data)) return mem;
+
+  // 2. Persistent client-side localStorage (1-2ms)
+  try {
+    const raw =
+      localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.data)) {
+        _inMemCache.set(cacheKey, parsed);
+        return parsed;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+export function setCachedCollection(cacheKey, data) {
+  const entry = { data, timestamp: Date.now(), stale: false };
+  _inMemCache.set(cacheKey, entry);
+  const serialized = JSON.stringify(entry);
+
+  try {
+    localStorage.setItem(cacheKey, serialized);
+  } catch (_) {
+    // If quota exceeded, prune older cache items and retry
     try {
-      const snap = await getDocs(collection(db, name));
-      return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    } catch (err) {
-      console.warn(
-        `Firestore read failed for ${name}. Returning empty list.`,
-        err,
-      );
-      setTimeout(
-        () => toast(`Could not read ${name}. Check Firestore rules.`, "err"),
-        700,
-      );
-      return [];
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith("salesiq_cache_")) localStorage.removeItem(k);
+      }
+      localStorage.setItem(cacheKey, serialized);
+    } catch (_) {
+      try {
+        sessionStorage.setItem(cacheKey, serialized);
+      } catch (_) {}
     }
   }
 }
 
-export function watchCollection(name, callback, sorted = true) {
-  const makeRef = () =>
-    sorted
-      ? query(collection(db, name), orderBy("createdAt", "desc"))
-      : collection(db, name);
-  const mapDocs = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+export function invalidateCache(collectionName = null) {
+  // Smart invalidation: mark entries as stale so callers can STILL
+  // render immediately from client-side cache while triggering background revalidation!
+  for (const [key, entry] of _inMemCache.entries()) {
+    if (!collectionName || key.includes(`_${collectionName}_`)) {
+      entry.stale = true;
+      entry.timestamp = 0;
+    }
+  }
+
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("salesiq_cache_")) {
+        if (!collectionName || k.includes(`_${collectionName}_`)) {
+          try {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              parsed.stale = true;
+              parsed.timestamp = 0;
+              localStorage.setItem(k, JSON.stringify(parsed));
+            }
+          } catch (_) {
+            localStorage.removeItem(k);
+          }
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+async function fetchFromFirestore(name, sorted, customAdminId) {
+  const tenantId =
+    customAdminId !== undefined ? customAdminId : getActiveTenantId();
+
+  let docs = [];
+
+  // Scoped collection: query only records belonging to this tenant to reduce network payload
+  if (TENANT_COLLECTIONS.has(name) && tenantId && tenantId !== "__ALL__") {
+    try {
+      const q = query(collection(db, name), where("adminId", "==", tenantId));
+      const snap = await getDocs(q);
+      docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, docId: d.id }));
+    } catch (err) {
+      console.warn(
+        `Targeted where query on ${name} fell back to collection scan:`,
+        err,
+      );
+      const snap = await getDocs(collection(db, name));
+      docs = snap.docs
+        .map((d) => ({ ...d.data(), id: d.id, docId: d.id }))
+        .filter((d) => d.adminId === tenantId);
+    }
+  } else {
+    const snap = await getDocs(collection(db, name));
+    docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, docId: d.id }));
+    if (TENANT_COLLECTIONS.has(name) && tenantId && tenantId !== "__ALL__") {
+      docs = docs.filter((d) => d.adminId === tenantId);
+    }
+  }
+
+  // Sort in memory to avoid Firestore composite index errors
+  if (sorted) {
+    docs.sort((a, b) => {
+      const ta = toDate(a.createdAt)?.getTime() || 0;
+      const tb = toDate(b.createdAt)?.getTime() || 0;
+      return tb - ta;
+    });
+  }
+
+  return docs;
+}
+
+export async function fetchAll(
+  name,
+  sorted = true,
+  customAdminId = undefined,
+  bypassCache = false,
+) {
+  const tenantId =
+    customAdminId !== undefined ? customAdminId : getActiveTenantId();
+  const cacheKey = `salesiq_cache_${name}_${tenantId || "all"}_${Boolean(sorted)}`;
+
+  // 1. FAST PATH: Check client-side storage (0ms instant response)
+  if (!bypassCache) {
+    const cached = getCachedCollection(cacheKey);
+    if (cached && Array.isArray(cached.data)) {
+      const age = Date.now() - (cached.timestamp || 0);
+
+      // Revalidate in background if older than 5s or marked stale
+      if (age > 5000 || cached.stale) {
+        queueMicrotask(() => {
+          fetchFromFirestore(name, sorted, customAdminId)
+            .then((fresh) => {
+              setCachedCollection(cacheKey, fresh);
+              window.dispatchEvent(
+                new CustomEvent("salesiq:cache-updated", {
+                  detail: { name, cacheKey, data: fresh },
+                }),
+              );
+            })
+            .catch(() => {});
+        });
+      }
+
+      // Return immediately in 0ms!
+      return cached.data;
+    }
+  }
+
+  // 2. COLD BOOT: Fetch from Firestore, store in client cache, and return
+  try {
+    const docs = await fetchFromFirestore(name, sorted, customAdminId);
+    setCachedCollection(cacheKey, docs);
+    return docs;
+  } catch (e) {
+    console.warn(`Primary fetch failed for ${name}:`, e);
+    const fallback = getCachedCollection(cacheKey);
+    if (fallback) return fallback.data;
+    return [];
+  }
+}
+
+export function watchCollection(
+  name,
+  callback,
+  sorted = true,
+  customAdminId = undefined,
+) {
+  const tenantId =
+    customAdminId !== undefined ? customAdminId : getActiveTenantId();
+  const cacheKey = `salesiq_cache_${name}_${tenantId || "all"}_${Boolean(sorted)}`;
+
+  // INSTANT RENDER: Emit cached client-side data immediately (0ms)!
+  const cached = getCachedCollection(cacheKey);
+  if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
+    try {
+      callback(cached.data);
+    } catch (err) {
+      console.warn(`Error in cached callback for ${name}:`, err);
+    }
+  }
+
+  const makeRef = () => {
+    if (TENANT_COLLECTIONS.has(name) && tenantId && tenantId !== "__ALL__") {
+      try {
+        return query(collection(db, name), where("adminId", "==", tenantId));
+      } catch (_) {}
+    }
+    return collection(db, name);
+  };
+
+  const filterDocs = (docs) => {
+    if (TENANT_COLLECTIONS.has(name)) {
+      const tid =
+        customAdminId !== undefined ? customAdminId : getActiveTenantId();
+      if (tid !== "__ALL__") {
+        if (!tid) return [];
+        return docs.filter((d) => d.adminId === tid);
+      }
+    }
+    return docs;
+  };
 
   try {
     return onSnapshot(
       makeRef(),
-      (snap) => callback(mapDocs(snap)),
+      (snap) => {
+        let rawDocs = snap.docs.map((d) => ({
+          ...d.data(),
+          id: d.id,
+          docId: d.id,
+        }));
+        let scopedDocs = filterDocs(rawDocs);
+        if (sorted) {
+          scopedDocs.sort((a, b) => {
+            const ta = toDate(a.createdAt)?.getTime() || 0;
+            const tb = toDate(b.createdAt)?.getTime() || 0;
+            return tb - ta;
+          });
+        }
+        setCachedCollection(cacheKey, scopedDocs);
+        callback(scopedDocs);
+      },
       (err) => {
         console.warn(`Realtime listener failed for ${name}:`, err);
-        fetchAll(name, sorted).then(callback);
-        setTimeout(
-          () =>
-            toast(
-              `Live update failed for ${name}. Showing latest loaded data.`,
-              "err",
-            ),
-          700,
-        );
+        fetchAll(name, sorted, customAdminId).then(callback);
       },
     );
   } catch (err) {
     console.warn(`Could not start realtime listener for ${name}:`, err);
-    fetchAll(name, sorted).then(callback);
+    fetchAll(name, sorted, customAdminId).then(callback);
     return () => {};
   }
 }
@@ -655,9 +1035,12 @@ export function downloadJSON(obj, filename = "salesiq-data.json") {
 }
 
 function mergeChartOptions(type, options = {}) {
-  const textColor = getTheme() === "light" ? "#0f172a" : "#e2e8f0";
-  const tickColor = getTheme() === "light" ? "#334155" : "#cbd5e1";
-  const gridColor = "rgba(148,163,184,.12)";
+  const isLight = getTheme() === "light";
+  const textColor = isLight ? "#0f172a" : "#e2e8f0";
+  const tickColor = isLight ? "#1e293b" : "#cbd5e1";
+  const gridColor = isLight
+    ? "rgba(15, 23, 42, 0.08)"
+    : "rgba(148,163,184,.12)";
   const isRoundChart = type === "pie" || type === "doughnut";
 
   const base = {
@@ -675,16 +1058,19 @@ function mergeChartOptions(type, options = {}) {
       legend: {
         labels: {
           color: textColor,
+          font: { weight: "600" },
           usePointStyle: true,
           boxWidth: 8,
           boxHeight: 8,
         },
       },
       tooltip: {
-        backgroundColor: "rgba(15,23,42,.94)",
-        titleColor: "#ffffff",
-        bodyColor: "#e2e8f0",
-        borderColor: "rgba(148,163,184,.22)",
+        backgroundColor: isLight
+          ? "rgba(255,255,255,.96)"
+          : "rgba(15,23,42,.94)",
+        titleColor: isLight ? "#0f172a" : "#ffffff",
+        bodyColor: isLight ? "#1e293b" : "#e2e8f0",
+        borderColor: isLight ? "rgba(15,23,42,.15)" : "rgba(148,163,184,.22)",
         borderWidth: 1,
         padding: 12,
       },
@@ -693,16 +1079,18 @@ function mergeChartOptions(type, options = {}) {
       ? {}
       : {
           x: {
-            ticks: { color: tickColor },
+            ticks: { color: tickColor, font: { weight: "600" } },
             grid: { color: gridColor },
           },
           y: {
             beginAtZero: true,
-            ticks: { color: tickColor },
+            ticks: { color: tickColor, font: { weight: "600" } },
             grid: { color: gridColor },
           },
         },
   };
+
+  const optScales = options.scales || {};
 
   return {
     ...base,
@@ -710,12 +1098,42 @@ function mergeChartOptions(type, options = {}) {
     plugins: {
       ...base.plugins,
       ...(options.plugins || {}),
+      legend: {
+        ...base.plugins.legend,
+        ...(options.plugins?.legend || {}),
+        labels: {
+          ...base.plugins.legend.labels,
+          ...(options.plugins?.legend?.labels || {}),
+        },
+      },
     },
     scales: isRoundChart
       ? {}
       : {
-          ...base.scales,
-          ...(options.scales || {}),
+          x: {
+            ...base.scales.x,
+            ...optScales.x,
+            ticks: {
+              ...base.scales.x.ticks,
+              ...(optScales.x?.ticks || {}),
+            },
+            grid: {
+              ...base.scales.x.grid,
+              ...(optScales.x?.grid || {}),
+            },
+          },
+          y: {
+            ...base.scales.y,
+            ...optScales.y,
+            ticks: {
+              ...base.scales.y.ticks,
+              ...(optScales.y?.ticks || {}),
+            },
+            grid: {
+              ...base.scales.y.grid,
+              ...(optScales.y?.grid || {}),
+            },
+          },
         },
   };
 }
@@ -770,14 +1188,29 @@ export function makeChart(canvas, type, data, options = {}) {
       "rgba(96,165,250,.75)",
       "rgba(251,113,133,.75)",
     ];
-    const sliceBorder = ["#38bdf8", "#a78bfa", "#22c55e", "#f59e0b", "#f472b6", "#2dd4bf", "#60a5fa", "#fb7185"];
+    const sliceBorder = [
+      "#38bdf8",
+      "#a78bfa",
+      "#22c55e",
+      "#f59e0b",
+      "#f472b6",
+      "#2dd4bf",
+      "#60a5fa",
+      "#fb7185",
+    ];
     nextData.datasets = nextData.datasets.map((ds) => {
       const n = ds.data?.length || 0;
       if (n > 1 && !Array.isArray(ds.backgroundColor)) {
         return {
           ...ds,
-          backgroundColor: Array.from({ length: n }, (_, k) => sliceBg[k % sliceBg.length]),
-          borderColor: Array.from({ length: n }, (_, k) => sliceBorder[k % sliceBorder.length]),
+          backgroundColor: Array.from(
+            { length: n },
+            (_, k) => sliceBg[k % sliceBg.length],
+          ),
+          borderColor: Array.from(
+            { length: n },
+            (_, k) => sliceBorder[k % sliceBorder.length],
+          ),
         };
       }
       return ds;
@@ -804,19 +1237,30 @@ export function makeChart(canvas, type, data, options = {}) {
   return canvas._chart;
 }
 
-export async function createNotification(message, type = "info") {
+export async function createNotification(
+  message,
+  type = "info",
+  adminId = null,
+) {
+  const targetAdminId = adminId || getActiveTenantId();
   await addDoc(collection(db, "notifications"), {
     message,
     type,
     read: false,
+    adminId: targetAdminId !== "__ALL__" ? targetAdminId : null,
     createdAt: serverTimestamp(),
   }).catch(() => {});
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", () => {
+    initSplash();
+    initClickSpark();
+  });
+} else {
   initSplash();
   initClickSpark();
-});
+}
 
 window.addEventListener("error", () => {
   hideSkeletonLoader();
@@ -826,13 +1270,11 @@ window.addEventListener("unhandledrejection", () => {
   hideSkeletonLoader();
 });
 
-// One-shot safety net: hide a stuck skeleton shortly after load.
-// (Replaces the old perpetual 1s polling interval — no timer leak,
-// no wakeups on idle tabs. Shell init already hides it explicitly.)
+// One-shot safety net: hide a stuck skeleton shortly after load
 setTimeout(() => {
   const splash = $("#splashScreen");
   const shell = $("#appSidebar") || $("#appHeader");
   if (splash && shell && !splash.classList.contains("hidden")) {
     hideSkeletonLoader();
   }
-}, 3500);
+}, 4000);
