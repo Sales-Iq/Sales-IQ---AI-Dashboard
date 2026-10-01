@@ -1,10 +1,12 @@
 {
   "name": "salesiq-ai-dashboard",
   "version": "1.0.0",
-  "description": "This is a normal **HTML + CSS + Tailwind CDN + Vanilla JavaScript** project. It uses Firebase Authentication, Firebase Firestore, Chart.js, jsPDF, SheetJS, and Gemini API.",
+  "description": "HTML + CSS + Vanilla JavaScript project. Uses Firebase Authentication, Firebase Firestore, Chart.js, jsPDF, SheetJS, and the Gemini API. Tailwind CSS is compiled to a static stylesheet at build time (see npm run build:css) instead of using the Play CDN.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./css/tailwind-src.css -o ./css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./css/tailwind-src.css -o ./css/tailwind.css --watch"
   },
   "keywords": [],
   "author": "",
@@ -12,5 +14,8 @@
   "type": "commonjs",
   "dependencies": {
     "pptxgenjs": "^4.0.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
   }
 }
