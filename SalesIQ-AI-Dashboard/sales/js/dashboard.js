@@ -4,6 +4,7 @@ import {
   $,
   money,
   dateText,
+  toDate,
   emptyState,
   badgeForStatus,
   statusFor,
@@ -30,12 +31,8 @@ let products = [];
 let currentAdminId = profile.adminId || null;
 
 function saleDate(sale) {
-  if (!sale?.createdAt) return null;
-
-  const d = sale.createdAt?.toDate
-    ? sale.createdAt.toDate()
-    : new Date(sale.createdAt);
-  return Number.isNaN(d.getTime()) ? null : d;
+  if (!sale) return null;
+  return toDate(sale.createdAt || sale.date || sale.timestamp);
 }
 
 function updateConnectionBadge() {

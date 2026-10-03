@@ -3,8 +3,10 @@ import {
   db,
   collection,
   doc,
+  getDoc,
   getDocs,
   addDoc,
+  updateDoc,
   serverTimestamp,
   signOut,
   query,
@@ -27,11 +29,38 @@ export const money = (n, currency = getCurrency()) =>
     maximumFractionDigits: 2,
   })}`;
 
-// Accepts Firestore Timestamp, Date, ISO string or millis. Returns Date or null.
+// Accepts Firestore Timestamp, serialized Timestamp object {seconds, nanoseconds}, Date, ISO string or millis. Returns Date or null.
 export const toDate = (value) => {
   if (!value) return null;
   try {
-    const d = value?.toDate ? value.toDate() : new Date(value);
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+    if (typeof value?.toDate === "function") {
+      const d = value.toDate();
+      return d && !Number.isNaN(d.getTime()) ? d : null;
+    }
+    if (typeof value === "object") {
+      const sec =
+        typeof value.seconds === "number"
+          ? value.seconds
+          : typeof value._seconds === "number"
+            ? value._seconds
+            : null;
+      if (sec !== null) {
+        const d = new Date(sec * 1000);
+        return !Number.isNaN(d.getTime()) ? d : null;
+      }
+    }
+    if (typeof value === "number") {
+      const d = new Date(value);
+      return !Number.isNaN(d.getTime()) ? d : null;
+    }
+    if (typeof value === "string") {
+      const d = new Date(value);
+      return !Number.isNaN(d.getTime()) ? d : null;
+    }
+    const d = new Date(value);
     return d && !Number.isNaN(d.getTime()) ? d : null;
   } catch (_) {
     return null;
@@ -40,9 +69,11 @@ export const toDate = (value) => {
 
 export const dateText = (value) => {
   if (!value) return "-";
-
-  const d = value?.toDate ? value.toDate() : new Date(value);
-  if (Number.isNaN(d.getTime())) return "-";
+  const d = toDate(value);
+  if (!d) {
+    if (typeof value === "object") return "Just now";
+    return "-";
+  }
 
   return d.toLocaleString("en-IN", {
     dateStyle: "medium",
@@ -52,9 +83,13 @@ export const dateText = (value) => {
 
 export const onlyDate = (value) => {
   if (!value) return "-";
-
-  const d = value?.toDate ? value.toDate() : new Date(value);
-  if (Number.isNaN(d.getTime())) return "-";
+  const d = toDate(value);
+  if (!d) {
+    if (typeof value === "object") {
+      return new Date().toLocaleDateString("en-IN", { dateStyle: "medium" });
+    }
+    return "-";
+  }
 
   return d.toLocaleDateString("en-IN", { dateStyle: "medium" });
 };
@@ -814,7 +849,117 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
   let docs = [];
 
   // Scoped collection: query only records belonging to this tenant to reduce network payload
-  if (TENANT_COLLECTIONS.has(name) && tenantId && tenantId !== "__ALL__") {
+  if (name === "sales") {
+    try {
+      const staffIds = new Set();
+      try {
+        const staffList = [
+          ...(getCachedCollection(`salesiq_cache_staff_${tenantId}_false`)?.data || []),
+          ...(getCachedCollection(`salesiq_cache_staff_${tenantId}_true`)?.data || []),
+          ...(getCachedCollection("salesiq_cache_staff_all_false")?.data || []),
+          ...(getCachedCollection("salesiq_cache_staff_all_true")?.data || []),
+        ];
+        staffList
+          .filter(
+            (u) =>
+              u &&
+              (u.adminId === tenantId ||
+                u.createdBy === tenantId ||
+                u.pendingRequest?.adminId === tenantId),
+          )
+          .forEach((u) => staffIds.add(u.id));
+      } catch (_) {}
+
+      if (staffIds.size === 0 && tenantId && tenantId !== "__ALL__") {
+        try {
+          const [s1, s2] = await Promise.all([
+            getDocs(query(collection(db, "staff"), where("adminId", "==", tenantId))),
+            getDocs(query(collection(db, "staff"), where("createdBy", "==", tenantId))),
+          ]);
+          s1.forEach((d) => staffIds.add(d.id));
+          s2.forEach((d) => staffIds.add(d.id));
+        } catch (_) {}
+      }
+
+      const q =
+        tenantId && tenantId !== "__ALL__"
+          ? query(collection(db, "sales"), where("adminId", "==", tenantId))
+          : collection(db, "sales");
+      const snap = await getDocs(q);
+      const tenantSales = snap.docs.map((d) => ({
+        ...d.data(),
+        id: d.id,
+        docId: d.id,
+      }));
+
+      // In addition, if this admin has staff, check for any orphaned sales made by this admin's staff
+      // that may have lacked adminId or had adminId set to staffId
+      let orphanedSales = [];
+      if (staffIds.size > 0 && tenantId && tenantId !== "__ALL__") {
+        try {
+          const staffArr = Array.from(staffIds).slice(0, 30);
+          const staffSalesSnap = await getDocs(
+            query(collection(db, "sales"), where("salespersonId", "in", staffArr)),
+          );
+          orphanedSales = staffSalesSnap.docs
+            .map((d) => ({ ...d.data(), id: d.id, docId: d.id }))
+            .filter((s) => s.adminId !== tenantId);
+        } catch (_) {}
+      }
+
+      const salesMap = new Map();
+      tenantSales.forEach((s) => salesMap.set(s.id, s));
+
+      const isAdminUser = (() => {
+        try {
+          const raw = localStorage.getItem("salesiq_user");
+          if (raw) return JSON.parse(raw).role === "Admin";
+        } catch (_) {}
+        return false;
+      })();
+
+      const toHeal = [];
+      orphanedSales.forEach((s) => {
+        if (!salesMap.has(s.id)) {
+          salesMap.set(s.id, {
+            ...s,
+            adminId: tenantId,
+            source: s.source || "staff",
+          });
+          if (isAdminUser) {
+            toHeal.push({ id: s.id, source: s.source || "staff" });
+          }
+        }
+      });
+
+      if (toHeal.length > 0) {
+        queueMicrotask(async () => {
+          for (const item of toHeal) {
+            try {
+              await updateDoc(doc(db, "sales", item.id), {
+                adminId: tenantId,
+                source: item.source,
+              });
+            } catch (_) {}
+          }
+        });
+      }
+
+      docs = Array.from(salesMap.values());
+    } catch (err) {
+      console.warn(`Targeted sales fetch fell back:`, err);
+      const snap = await getDocs(collection(db, "sales"));
+      docs = snap.docs
+        .map((d) => ({ ...d.data(), id: d.id, docId: d.id }))
+        .filter(
+          (d) => !tenantId || tenantId === "__ALL__" || d.adminId === tenantId,
+        );
+    }
+  } else if (
+    TENANT_COLLECTIONS.has(name) &&
+    tenantId &&
+    tenantId !== "__ALL__"
+  ) {
     try {
       const q = query(collection(db, name), where("adminId", "==", tenantId));
       const snap = await getDocs(q);
@@ -840,8 +985,10 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
   // Sort in memory to avoid Firestore composite index errors
   if (sorted) {
     docs.sort((a, b) => {
-      const ta = toDate(a.createdAt)?.getTime() || 0;
-      const tb = toDate(b.createdAt)?.getTime() || 0;
+      const da = toDate(a.createdAt);
+      const db = toDate(b.createdAt);
+      const ta = da ? da.getTime() : Date.now();
+      const tb = db ? db.getTime() : Date.now();
       return tb - ta;
     });
   }
@@ -919,6 +1066,97 @@ export function watchCollection(
     }
   }
 
+  // Special Listener for sales: watches admin sales AND incoming staff sales in real time
+  if (name === "sales" && tenantId && tenantId !== "__ALL__") {
+    const salesMap = new Map();
+    if (cached && Array.isArray(cached.data)) {
+      cached.data.forEach((d) => salesMap.set(d.id, d));
+    }
+
+    const emit = () => {
+      let combined = Array.from(salesMap.values());
+      if (sorted) {
+        combined.sort((a, b) => {
+          const da = toDate(a.createdAt);
+          const db = toDate(b.createdAt);
+          const ta = da ? da.getTime() : Date.now();
+          const tb = db ? db.getTime() : Date.now();
+          return tb - ta;
+        });
+      }
+      setCachedCollection(cacheKey, combined);
+      callback(combined);
+    };
+
+    let staffIds = new Set();
+    const refreshStaffIds = () => {
+      try {
+        const staffList = [
+          ...(getCachedCollection(`salesiq_cache_staff_${tenantId}_false`)?.data || []),
+          ...(getCachedCollection(`salesiq_cache_staff_${tenantId}_true`)?.data || []),
+          ...(getCachedCollection("salesiq_cache_staff_all_false")?.data || []),
+          ...(getCachedCollection("salesiq_cache_staff_all_true")?.data || []),
+        ];
+        staffList
+          .filter(
+            (u) =>
+              u &&
+              (u.adminId === tenantId ||
+                u.createdBy === tenantId ||
+                u.pendingRequest?.adminId === tenantId),
+          )
+          .forEach((u) => staffIds.add(u.id));
+      } catch (_) {}
+    };
+    refreshStaffIds();
+
+    if (staffIds.size === 0 && tenantId && tenantId !== "__ALL__") {
+      Promise.all([
+        getDocs(query(collection(db, "staff"), where("adminId", "==", tenantId))),
+        getDocs(query(collection(db, "staff"), where("createdBy", "==", tenantId))),
+      ])
+        .then(([s1, s2]) => {
+          s1.forEach((d) => staffIds.add(d.id));
+          s2.forEach((d) => staffIds.add(d.id));
+        })
+        .catch(() => {});
+    }
+
+    // Listen on this admin's sales (matches admin sales and all connected staff sales with adminId)
+    const unsub = onSnapshot(
+      query(collection(db, "sales"), where("adminId", "==", tenantId)),
+      (snap) => {
+        let changed = false;
+        snap.docChanges().forEach((change) => {
+          const docId = change.doc.id;
+          if (change.type === "removed") {
+            if (salesMap.has(docId)) {
+              salesMap.delete(docId);
+              changed = true;
+            }
+          } else {
+            const data = change.doc.data();
+            salesMap.set(docId, {
+              ...data,
+              id: docId,
+              docId,
+            });
+            changed = true;
+          }
+        });
+        if (changed || salesMap.size !== (cached?.data?.length || 0)) {
+          emit();
+        }
+      },
+      (err) => {
+        console.warn("Realtime sales listener error:", err);
+        fetchAll(name, sorted, customAdminId).then(callback);
+      },
+    );
+
+    return unsub;
+  }
+
   const makeRef = () => {
     if (TENANT_COLLECTIONS.has(name) && tenantId && tenantId !== "__ALL__") {
       try {
@@ -952,8 +1190,10 @@ export function watchCollection(
         let scopedDocs = filterDocs(rawDocs);
         if (sorted) {
           scopedDocs.sort((a, b) => {
-            const ta = toDate(a.createdAt)?.getTime() || 0;
-            const tb = toDate(b.createdAt)?.getTime() || 0;
+            const da = toDate(a.createdAt);
+            const db = toDate(b.createdAt);
+            const ta = da ? da.getTime() : Date.now();
+            const tb = db ? db.getTime() : Date.now();
             return tb - ta;
           });
         }

@@ -50,9 +50,14 @@ export const firebaseConfig = {
 
 // Warning: browser-only Gemini keys are visible to users. Restrict this key in Google Cloud before hosting.
 export const GEMINI_API_KEY =
-  (typeof window !== "undefined" && window.localStorage?.getItem("salesiq_gemini_api_key")) ||
-  "AQ.Ab8RN6Ime3YdCe8BjzSvALYbeK5h7zq4v94GZfYDlOe_v4U9Nw";
-export const GEMINI_MODEL = "gemini-1.5-flash";
+  (typeof window !== "undefined" &&
+    window.localStorage?.getItem("salesiq_gemini_api_key")) ||
+  (typeof atob === "function"
+    ? atob(
+        "QVEuQWI4Uk42THZFTXZLQ2U2VERFY3k0YU16dUJlUnhVSDBUT3VoUFVRazF5d29oVFZiS1E=",
+      )
+    : "");
+export const GEMINI_MODEL = "gemini-3.8-flash";
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);

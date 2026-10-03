@@ -2,6 +2,8 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   $$,
   money,
@@ -56,33 +58,70 @@ function getNearestExpiry(productId) {
 }
 
 async function load() {
-  products = await fetchAll("products");
-  sales = await fetchAll("sales");
-  batches = await fetchAll("productBatches").catch(() => []);
+  const adminId = profile.id;
 
-  const sel = $("#forecastProduct");
-  if (sel) {
-    sel.innerHTML =
-      '<option value="">Select product to forecast</option>' +
-      products
-        .map(
-          (p) =>
-            `<option value="${p.id}">${p.name} — Current Stock: ${p.stock || 0}</option>`,
-        )
-        .join("");
-  }
-
-  // Check URL param if redirected from another page (e.g. products or inventory)
-  const urlParams = new URLSearchParams(window.location.search);
-  const targetId = urlParams.get("productId");
-  if (targetId && sel) {
-    sel.value = targetId;
-    runForecast();
-  } else {
+  // 1. Instant 0ms cached render for dropdown
+  const cachedProds = getCachedCollection(
+    `salesiq_cache_products_${adminId}_false`,
+  );
+  if (cachedProds?.data && cachedProds.data.length > 0) {
+    products = cachedProds.data;
+    const sel = $("#forecastProduct");
+    if (sel) {
+      sel.innerHTML =
+        '<option value="">Select product to forecast</option>' +
+        products
+          .map(
+            (p) =>
+              `<option value="${p.id}">${p.name} — Current Stock: ${p.stock || 0}</option>`,
+          )
+          .join("");
+    }
     renderEmpty();
+    hideSkeletonLoader();
   }
 
-  loadSavedForecasts();
+  // 2. Parallel background fetch
+  try {
+    const [freshProds, freshSales, freshBatches] = await Promise.all([
+      fetchAll("products", false, adminId),
+      fetchAll("sales", false, adminId),
+      fetchAll("productBatches", false, adminId).catch(() => []),
+    ]);
+    products = freshProds;
+    sales = freshSales;
+    batches = freshBatches;
+
+    const sel = $("#forecastProduct");
+    if (sel) {
+      const cur = sel.value;
+      sel.innerHTML =
+        '<option value="">Select product to forecast</option>' +
+        products
+          .map(
+            (p) =>
+              `<option value="${p.id}">${p.name} — Current Stock: ${p.stock || 0}</option>`,
+          )
+          .join("");
+      if (cur) sel.value = cur;
+    }
+
+    // Check URL param if redirected from another page (e.g. products or inventory)
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetId = urlParams.get("productId");
+    if (targetId && sel) {
+      sel.value = targetId;
+      runForecast();
+    } else if (!sel?.value) {
+      renderEmpty();
+    }
+
+    loadSavedForecasts();
+  } catch (err) {
+    console.warn("Forecasting load warning:", err);
+  } finally {
+    hideSkeletonLoader();
+  }
 }
 
 function renderEmpty() {
@@ -422,15 +461,33 @@ Provide a concise, high-value executive forecast structured with:
   } catch (err) {
     console.warn("Cloud Gemini forecasting failover to local engine:", err);
 
-    const isQuotaExhausted =
+    const isAuthError =
+      err.isAuthError ||
       String(err.message || "")
         .toLowerCase()
-        .includes("exhausted") ||
+        .includes("authentication") ||
       String(err.message || "")
         .toLowerCase()
-        .includes("429");
+        .includes("401") ||
+      String(err.message || "")
+        .toLowerCase()
+        .includes("403");
 
-    if (isQuotaExhausted) {
+    const isQuotaExhausted =
+      err.isQuotaExhausted ||
+      (String(err.message || "")
+        .toLowerCase()
+        .includes("quota") &&
+        String(err.message || "")
+          .toLowerCase()
+          .includes("429"));
+
+    if (isAuthError) {
+      toast(
+        "Invalid Gemini API key. Switched to local forecasting engine. Check Settings to update.",
+        "warn",
+      );
+    } else if (isQuotaExhausted) {
       toast(
         "All Gemini AI model daily quotas (RPD) are currently exhausted. Switched to local offline engine.",
         "err",

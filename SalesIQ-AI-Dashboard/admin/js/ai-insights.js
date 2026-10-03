@@ -112,6 +112,7 @@ function renderPromptLibrary() {
         input.focus();
       }
       askCopilot(q, btn);
+      no;
     };
   });
 }

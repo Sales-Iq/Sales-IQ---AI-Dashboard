@@ -421,7 +421,18 @@
                       </button>
                     </div>
                   </div>
-                  <h3 class="font-black mb-4">Recent Sales</h3>
+                  <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                    <div class="flex items-center gap-2">
+                      <h3 class="font-black text-lg">Recent Sales</h3>
+                      <span id="recentSalesCountBadge" class="badge badge-ok font-semibold text-xs"></span>
+                    </div>
+                    <div class="flex items-center gap-1.5" id="recentSalesFilterGroup">
+                      <button type="button" class="btn btn-xs px-2.5 py-1 text-xs rounded-lg recent-sales-tab btn-primary font-medium" data-filter="all">All</button>
+                      <button type="button" class="btn btn-xs px-2.5 py-1 text-xs rounded-lg recent-sales-tab btn-ghost text-slate-300 hover:text-white" data-filter="staff">Staff Sales</button>
+                      <button type="button" class="btn btn-xs px-2.5 py-1 text-xs rounded-lg recent-sales-tab btn-ghost text-slate-300 hover:text-white" data-filter="admin">Admin</button>
+                      <button type="button" class="btn btn-xs px-2.5 py-1 text-xs rounded-lg recent-sales-tab btn-ghost text-slate-300 hover:text-white" data-filter="dummy">Dummy</button>
+                    </div>
+                  </div>
                   <div id="recentSales"></div>
                 </div>
                 <div

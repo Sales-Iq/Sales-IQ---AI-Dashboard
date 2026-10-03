@@ -1,46 +1,195 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <title>SalesIQ - Settings</title>
+  <head>
+    <title>SalesIQ - Settings</title>
 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="SalesIQ — AI powered sales, inventory and forecasting dashboard." />
-<meta name="theme-color" content="#0f172a" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="SalesIQ — AI powered sales, inventory and forecasting dashboard."
+    />
+    <meta name="theme-color" content="#0f172a" />
     <link rel="stylesheet" href="../css/tailwind.css" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://firestore.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/shared.css" />
-<link rel="stylesheet" href="../css/liquid-glass.css" />
-<link rel="stylesheet" href="css/admin.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/liquid-glass.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+  </head>
+  <body
+    class="font-inter bg-slate-950 text-slate-100 app-body"
+    data-role="admin"
+    data-active="settings"
+  >
+    <div id="animatedBg" class="animated-bg"></div>
+    <div id="splashScreen" class="splash-screen hidden"></div>
+    <div class="app-shell">
+      <aside id="appSidebar" class="app-sidebar"></aside>
+      <div class="app-main">
+        <header id="appHeader" class="app-header"></header>
+        <main class="page-container animate-slideUp">
+          <div
+            class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
+          >
+            <div>
+              <h2 class="page-title">Settings</h2>
+              <p class="page-subtitle">
+                Business name, logo, currency, tax, invoice prefix, theme and
+                profile settings.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-3"></div>
+          </div>
+          <div class="grid xl:grid-cols-2 gap-6">
+            <form id="businessSettingsForm" class="glass p-6 space-y-4">
+              <h3 class="font-black text-xl">Business Settings</h3>
+              <div>
+                <label class="label">Business Name</label
+                ><input
+                  id="businessName"
+                  class="input"
+                  placeholder="SalesIQ Store"
+                />
+              </div>
+              <div>
+                <label class="label">Logo URL</label
+                ><input
+                  id="businessLogo"
+                  class="input"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label class="label">Currency</label
+                ><select id="currency" class="select">
+                  <option value="₹">₹ INR</option>
+                  <option value="$">$ USD</option>
+                  <option value="€">€ EUR</option>
+                  <option value="£">£ GBP</option>
+                </select>
+              </div>
+              <div>
+                <label class="label">Tax Percentage</label
+                ><input
+                  id="taxPercent"
+                  class="input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <label class="label">Invoice Prefix</label
+                ><input id="invoicePrefix" class="input" placeholder="SIQ" />
+              </div>
+              <div>
+                <label class="label">Theme</label
+                ><select id="themeMode" class="select">
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </div>
+              <button class="btn btn-primary w-full">Save Settings</button>
+            </form>
 
+            <div class="space-y-6">
+              <form id="aiSettingsForm" class="glass p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-black text-xl flex items-center gap-2">
+                    <span>✨</span> Gemini AI Configuration
+                  </h3>
+                  <span class="badge badge-primary text-xs"
+                    >Live Multi-Model</span
+                  >
+                </div>
+                <p class="text-xs text-slate-400">
+                  Configure your Google AI Studio API Key for live executive
+                  briefings, predictive forecasting, and automated column
+                  mapping.
+                </p>
+                <div>
+                  <label class="label">Gemini API Key</label>
+                  <div class="flex gap-2">
+                    <input
+                      id="geminiApiKey"
+                      class="input flex-1 font-mono text-xs"
+                      type="password"
+                      placeholder="AQ.Ab8RN6... or AIzaSy..."
+                    />
+                    <button
+                      type="button"
+                      id="toggleGeminiKeyVis"
+                      class="btn btn-ghost px-3 text-sm"
+                      title="Show / Hide"
+                    >
+                      👁️
+                    </button>
+                  </div>
+                </div>
+                <div
+                  class="flex items-center justify-between text-xs text-slate-400"
+                >
+                  <span id="geminiKeyStatus">Status: Loaded</span>
+                  <button
+                    type="button"
+                    id="testGeminiKeyBtn"
+                    class="text-sky-400 hover:text-sky-300 font-bold transition"
+                  >
+                    ⚡ Test Connection
+                  </button>
+                </div>
+                <div class="flex gap-3 pt-1">
+                  <button type="submit" class="btn btn-primary flex-1">
+                    Save AI Key
+                  </button>
+                  <button
+                    type="button"
+                    id="clearAiCooldownBtn"
+                    class="btn btn-ghost text-xs"
+                    title="Reset temporary rate-limit cooldown markers"
+                  >
+                    Reset Quota Cache
+                  </button>
+                </div>
+              </form>
 
-</head>
-<body class="font-inter bg-slate-950 text-slate-100 app-body" data-role="admin" data-active="settings">
-  <div id="animatedBg" class="animated-bg"></div>
-  <div id="splashScreen" class="splash-screen hidden"></div>
-  <div class="app-shell">
-    <aside id="appSidebar" class="app-sidebar"></aside>
-    <div class="app-main">
-      <header id="appHeader" class="app-header"></header>
-      <main class="page-container animate-slideUp">
-        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Settings</h2><p class="page-subtitle">Business name, logo, currency, tax, invoice prefix, theme and profile settings.</p></div><div class="flex flex-wrap gap-3"></div></div>
-<div class="grid xl:grid-cols-2 gap-6"><form id="businessSettingsForm" class="glass p-6 space-y-4"><h3 class="font-black text-xl">Business Settings</h3><div><label class="label">Business Name</label><input id="businessName" class="input" placeholder="SalesIQ Store"></div><div><label class="label">Logo URL</label><input id="businessLogo" class="input" placeholder="https://..."></div><div><label class="label">Currency</label><select id="currency" class="select"><option value="₹">₹ INR</option><option value="$">$ USD</option><option value="€">€ EUR</option><option value="£">£ GBP</option></select></div><div><label class="label">Tax Percentage</label><input id="taxPercent" class="input" type="number" min="0" step="0.01"></div><div><label class="label">Invoice Prefix</label><input id="invoicePrefix" class="input" placeholder="SIQ"></div><div><label class="label">Theme</label><select id="themeMode" class="select"><option value="dark">Dark</option><option value="light">Light</option></select></div><button class="btn btn-primary w-full">Save Settings</button></form><form id="passwordForm" class="glass p-6 space-y-4"><h3 class="font-black text-xl">Change Password</h3><p class="text-slate-400">Requires recent login. If it fails, use Forgot Password from login page.</p><div><label class="label">New Password</label><input id="newPassword" class="input" type="password" minlength="6"></div><button class="btn btn-warn w-full">Change Password</button></form></div>
-
-      </main>
+              <form id="passwordForm" class="glass p-6 space-y-4">
+                <h3 class="font-black text-xl">Change Password</h3>
+                <p class="text-slate-400">
+                  Requires recent login. If it fails, use Forgot Password from
+                  login page.
+                </p>
+                <div>
+                  <label class="label">New Password</label
+                  ><input
+                    id="newPassword"
+                    class="input"
+                    type="password"
+                    minlength="6"
+                  />
+                </div>
+                <button class="btn btn-warn w-full">Change Password</button>
+              </form>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
-  </div>
-  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
-  <div id="toastRoot" class="toast-root"></div>
-  <script src="../js/fallback-ui.js" defer></script>
-  <script src="../js/liquid-glass.js" defer></script>
-<script type="module" src="../js/shared.js"></script>
-  <script type="module" src="js/settings.js"></script>
-</body>
+    <canvas
+      id="clickSparkCanvas"
+      class="click-spark-canvas"
+      aria-hidden="true"
+    ></canvas>
+    <div id="toastRoot" class="toast-root"></div>
+    <script src="../js/fallback-ui.js" defer></script>
+    <script src="../js/liquid-glass.js" defer></script>
+    <script type="module" src="../js/shared.js"></script>
+    <script type="module" src="js/settings.js"></script>
+  </body>
 </html>
-
-
-
-

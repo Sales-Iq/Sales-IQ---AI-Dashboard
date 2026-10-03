@@ -14,13 +14,45 @@ import { GEMINI_API_KEY } from "./firebase-config.js";
  */
 
 export const GEMINI_MODEL_REGISTRY = [
+  // Primary Flagship 3.8 Intelligence Tier - Highest Reasoning & Strategy
+  {
+    id: "gemini-3.8-flash",
+    displayName: "Gemini 3.8 Flash",
+    rpd: 50,
+    tier: "primary",
+    roles: ["insights", "forecasting", "general"],
+  },
+
+  // Deep Reasoning & Analytics Fallback Tier
+  {
+    id: "gemini-3.5-flash",
+    displayName: "Gemini 3.5 Flash",
+    rpd: 50,
+    tier: "smart",
+    roles: ["insights", "forecasting", "general"],
+  },
+  {
+    id: "gemini-3-flash-preview",
+    displayName: "Gemini 3 Flash Preview",
+    rpd: 50,
+    tier: "smart",
+    roles: ["insights", "forecasting", "general"],
+  },
+  {
+    id: "gemini-3.6-flash",
+    displayName: "Gemini 3.6 Flash",
+    rpd: 50,
+    tier: "smart",
+    roles: ["insights", "forecasting", "general"],
+  },
+
   // Fast & High-Quota Tier (500+ RPD) - Ideal for rapid JSON mapping, categorization, data parsing
   {
-    id: "gemini-2.5-flash-lite",
-    displayName: "Gemini 2.5 Flash Lite",
+    id: "gemini-3.5-flash-lite",
+    displayName: "Gemini 3.5 Flash Lite",
     rpd: 500,
     tier: "fast",
-    roles: ["mapping", "parsing", "general"],
+    roles: ["mapping", "parsing", "general", "insights"],
   },
   {
     id: "gemini-3.1-flash-lite",
@@ -30,63 +62,36 @@ export const GEMINI_MODEL_REGISTRY = [
     roles: ["mapping", "parsing", "general"],
   },
   {
-    id: "gemini-3.5-flash-lite",
-    displayName: "Gemini 3.5 Flash Lite",
+    id: "gemini-flash-lite-latest",
+    displayName: "Gemini Flash Lite Latest",
     rpd: 500,
     tier: "fast",
     roles: ["mapping", "parsing", "general"],
   },
 
-  // Deep Reasoning & Analytics Tier (20-50 RPD) - Ideal for complex insights & forecasting
+  // Specialized Voice / Audio Tier
   {
-    id: "gemini-3.5-flash",
-    displayName: "Gemini 3.5 Flash",
-    rpd: 50,
-    tier: "smart",
-    roles: ["insights", "forecasting", "general"],
-  },
-  {
-    id: "gemini-3-flash",
-    displayName: "Gemini 3 Flash",
-    rpd: 50,
-    tier: "smart",
-    roles: ["insights", "forecasting", "general"],
-  },
-  {
-    id: "gemini-2.5-flash",
-    displayName: "Gemini 2.5 Flash",
-    rpd: 50,
-    tier: "smart",
-    roles: ["insights", "forecasting", "general"],
-  },
-
-  // Specialized Voice / TTS Tier
-  {
-    id: "gemini-2.5-flash-tts",
-    displayName: "Gemini 2.5 Flash TTS",
+    id: "gemini-3.8-flash-tts",
+    displayName: "Gemini 3.8 Flash TTS",
     rpd: 20,
     tier: "special",
     roles: ["tts", "voice"],
   },
-
-  // Reliable Backstop Fallbacks
-  {
-    id: "gemini-2.0-flash",
-    displayName: "Gemini 2.0 Flash",
-    rpd: 500,
-    tier: "fallback",
-    roles: ["general", "insights", "mapping"],
-  },
-  {
-    id: "gemini-1.5-flash",
-    displayName: "Gemini 1.5 Flash",
-    rpd: 1500,
-    tier: "fallback",
-    roles: ["general", "insights", "mapping"],
-  },
 ];
 
 const QUOTA_STORAGE_PREFIX = "salesiq_gemini_quota_";
+
+// Clear any local quota cooldown markers
+export function clearGeminiQuotaCooldowns() {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(QUOTA_STORAGE_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (_) {}
+}
 
 // Check if a model has exceeded its quota (cooldown active)
 function isModelQuotaExceeded(modelId) {
@@ -211,6 +216,15 @@ export async function callGemini({
         const status = response.status;
         const errMsg = errorData.error?.message || `HTTP ${status}`;
 
+        if (status === 401 || status === 403) {
+          const authErr = new Error(
+            `Gemini Authentication failed (HTTP ${status}): ${errMsg}. Please verify your Gemini API key in Settings.`,
+          );
+          authErr.isAuthError = true;
+          authErr.status = status;
+          throw authErr;
+        }
+
         if (status === 429) {
           // Mark model as quota exhausted
           markModelQuotaExceeded(model.id);
@@ -223,7 +237,9 @@ export async function callGemini({
           );
         }
 
-        attemptedErrors.push(`${model.displayName}: ${errMsg}`);
+        attemptedErrors.push(
+          `${model.displayName} [HTTP ${status}]: ${errMsg}`,
+        );
 
         const nextModel = candidateModels[i + 1];
         if (nextModel && typeof onModelSwitch === "function") {
@@ -262,6 +278,9 @@ export async function callGemini({
         modelId: model.id,
       };
     } catch (err) {
+      if (err.isAuthError) {
+        throw err;
+      }
       attemptedErrors.push(`${model.displayName}: ${err.message}`);
       const nextModel = candidateModels[i + 1];
       if (nextModel && typeof onModelSwitch === "function") {
@@ -270,9 +289,20 @@ export async function callGemini({
     }
   }
 
-  throw new Error(
-    `All available Gemini models were exhausted or unavailable:\n${attemptedErrors.join("\n")}`,
+  const all429 =
+    attemptedErrors.length > 0 &&
+    attemptedErrors.every(
+      (e) => e.includes("429") || e.toLowerCase().includes("quota"),
+    );
+
+  const error = new Error(
+    all429
+      ? "Gemini daily request quota exceeded across all available models."
+      : `Gemini service unavailable across model pool:\n${attemptedErrors.join("\n")}`,
   );
+  error.isQuotaExhausted = all429;
+  error.attemptedErrors = attemptedErrors;
+  throw error;
 }
 
 /**

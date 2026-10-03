@@ -2,6 +2,8 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   toast,
   setBusy,
@@ -30,17 +32,56 @@ let products = [],
   purchases = [],
   batches = [];
 async function load() {
-  products = await fetchAll("products", false, profile.id);
-  purchases = await fetchAll("purchases", false, profile.id);
-  batches = await fetchAll("productBatches", false, profile.id).catch(() => []);
-  products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  $("#purchaseProduct").innerHTML =
-    '<option value="">Choose product</option>' +
-    products.map(
-      (p) =>
-        `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
-    );
-  render();
+  const adminId = profile.id;
+
+  // 1. Instant 0ms cached render
+  const cachedProds = getCachedCollection(
+    `salesiq_cache_products_${adminId}_false`,
+  );
+  const cachedPurchases = getCachedCollection(
+    `salesiq_cache_purchases_${adminId}_false`,
+  );
+  const cachedBatches = getCachedCollection(
+    `salesiq_cache_productBatches_${adminId}_false`,
+  );
+  if (cachedProds?.data || cachedPurchases?.data) {
+    if (cachedProds?.data) products = [...cachedProds.data];
+    if (cachedPurchases?.data) purchases = [...cachedPurchases.data];
+    if (cachedBatches?.data) batches = [...cachedBatches.data];
+    products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    $("#purchaseProduct").innerHTML =
+      '<option value="">Choose product</option>' +
+      products.map(
+        (p) =>
+          `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
+      );
+    render();
+    hideSkeletonLoader();
+  }
+
+  // 2. Fresh parallel fetch
+  try {
+    const [freshProds, freshPurchases, freshBatches] = await Promise.all([
+      fetchAll("products", false, adminId),
+      fetchAll("purchases", false, adminId),
+      fetchAll("productBatches", false, adminId).catch(() => []),
+    ]);
+    products = freshProds;
+    purchases = freshPurchases;
+    batches = freshBatches;
+    products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    $("#purchaseProduct").innerHTML =
+      '<option value="">Choose product</option>' +
+      products.map(
+        (p) =>
+          `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
+      );
+    render();
+  } catch (err) {
+    console.warn("Purchases load warning:", err);
+  } finally {
+    hideSkeletonLoader();
+  }
 
   const params = new URLSearchParams(window.location.search);
   const pId = params.get("productId");

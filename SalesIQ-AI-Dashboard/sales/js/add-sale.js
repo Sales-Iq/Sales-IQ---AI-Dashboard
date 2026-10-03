@@ -11,6 +11,7 @@ import {
   createNotification,
   invalidateCache,
   hideSkeletonLoader,
+  getFirstAdminId,
 } from "../../js/shared.js";
 
 import {
@@ -192,6 +193,26 @@ $("#saleProduct").onchange = updatePreview;
 $("#billingForm").onsubmit = async (e) => {
   e.preventDefault();
 
+  let targetAdminId = profile.adminId || selected?.adminId;
+  if (!targetAdminId) {
+    try {
+      const sSnap = await getDoc(doc(db, "staff", profile.id));
+      if (sSnap.exists()) {
+        const sData = sSnap.data();
+        targetAdminId = sData.adminId || sData.pendingRequest?.adminId;
+      }
+    } catch (_) {}
+  }
+  if (!targetAdminId) {
+    targetAdminId = await getFirstAdminId();
+  }
+  if (targetAdminId) {
+    profile.adminId = targetAdminId;
+    try {
+      localStorage.setItem("salesiq_user", JSON.stringify(profile));
+    } catch (_) {}
+  }
+
   if (!profile.adminId) {
     return toast(
       "You must be connected to an admin inventory to make sales.",
@@ -312,10 +333,17 @@ $("#billingForm").onsubmit = async (e) => {
       salespersonName: profile.name || profile.email,
       salespersonEmail: profile.email || "",
       source: "staff",
-      adminId: profile.adminId,
+      adminId: profile.adminId || targetAdminId || selected.adminId || null,
       isDemo: false,
       createdAt: serverTimestamp(),
     };
+
+    if (!profile.adminId && (selected.adminId || targetAdminId)) {
+      profile.adminId = selected.adminId || targetAdminId;
+      try {
+        localStorage.setItem("salesiq_user", JSON.stringify(profile));
+      } catch (_) {}
+    }
 
     if (soldBatches.length > 0) {
       sale.batchMethod = "FEFO";

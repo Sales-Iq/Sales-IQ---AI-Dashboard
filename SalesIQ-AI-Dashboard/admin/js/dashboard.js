@@ -5,6 +5,8 @@ import {
   $,
   money,
   dateText,
+  toDate,
+  getCachedCollection,
   emptyState,
   makeChart,
   statusFor,
@@ -43,9 +45,30 @@ initAppShell("admin", "dashboard", profile);
 let products = [];
 let sales = [];
 let customers = [];
-let staffUsers = (await fetchAll("staff", false).catch(() => [])).filter(
-  (u) => u.adminId === profile.id,
-);
+let staffUsers = [];
+let recentSalesFilter = "all";
+
+try {
+  const [pRows, sRows, cRows, stRows] = await Promise.all([
+    fetchAll("products", false, profile.id).catch(() => []),
+    fetchAll("sales", true, profile.id).catch(() => []),
+    fetchAll("customers", false, profile.id).catch(() => []),
+    fetchAll("staff", false).catch(() => []),
+  ]);
+  products = pRows || [];
+  sales = sRows || [];
+  customers = cRows || [];
+  staffUsers = (stRows || []).filter(
+    (u) =>
+      u.adminId === profile.id ||
+      u.createdBy === profile.id ||
+      u.pendingRequest?.adminId === profile.id,
+  );
+  renderDashboard();
+} catch (err) {
+  console.warn("Initial dashboard fetch fallback:", err);
+}
+
 let stopDemoRunner = null;
 let chartStartDate = localStorage.getItem("salesiq_chart_start") || "";
 let chartEndDate = localStorage.getItem("salesiq_chart_end") || "";
@@ -59,20 +82,52 @@ function isDummySale(sale) {
   );
 }
 
-function saleDate(sale) {
-  if (!sale?.createdAt) return null;
-
-  const d = sale.createdAt?.toDate
-    ? sale.createdAt.toDate()
-    : new Date(sale.createdAt);
-  return Number.isNaN(d.getTime()) ? null : d;
+function isStaffSale(sale) {
+  if (!sale || isDummySale(sale)) return false;
+  if (sale.source === "staff") return true;
+  if (sale.salespersonRole === "Sales Staff" || sale.role === "Sales Staff") return true;
+  if (sale.salespersonId && staffUsers.some((u) => u.id === sale.salespersonId)) return true;
+  if (sale.salespersonId && sale.salespersonId !== profile.id && sale.source !== "admin") return true;
+  return false;
 }
 
-function sourceBadge(source) {
-  if (source === "dummy" || source === "demo")
-    return '<span class="badge badge-warn">Dummy</span>';
-  if (source === "admin") return '<span class="badge badge-ok">Admin</span>';
-  return '<span class="badge badge-ok">Staff</span>';
+function isAdminSale(sale) {
+  if (!sale || isDummySale(sale)) return false;
+  if (sale.source === "admin") return true;
+  if (sale.salespersonId === profile.id || (!sale.source && !isStaffSale(sale))) return true;
+  return false;
+}
+
+function getSalespersonDisplay(s) {
+  if (!s) return "-";
+  if (s.salespersonName) return s.salespersonName;
+  if (s.salespersonEmail) return s.salespersonEmail;
+  if (s.salespersonId) {
+    const matched = staffUsers.find((u) => u.id === s.salespersonId);
+    if (matched?.name) return matched.name;
+    if (matched?.email) return matched.email;
+  }
+  if (isDummySale(s)) return "System Demo";
+  if (isStaffSale(s)) return "Sales Staff";
+  return profile.name || profile.email || "Admin";
+}
+
+function saleDate(sale) {
+  if (!sale?.createdAt) return null;
+  const d = toDate(sale.createdAt);
+  if (d) return d;
+  if (typeof sale.createdAt === "object") return new Date();
+  return null;
+}
+
+function sourceBadge(source, sale) {
+  if (isDummySale(sale) || source === "dummy" || source === "demo") {
+    return '<span class="badge badge-warn font-semibold">Dummy</span>';
+  }
+  if (isStaffSale(sale) || source === "staff") {
+    return '<span class="badge badge-ok font-semibold">Staff</span>';
+  }
+  return '<span class="badge badge-purple font-semibold">Admin</span>';
 }
 
 function renderDemoControls() {
@@ -455,7 +510,33 @@ function renderCharts() {
 function renderRecentSales() {
   const recentEl = $("#recentSales");
   if (!recentEl) return;
-  recentEl.innerHTML = sales.length
+
+  // Always sort sales by creation date descending so recent staff & admin sales appear at the top!
+  const sortedSales = [...sales].sort((a, b) => {
+    const da = toDate(a.createdAt);
+    const db = toDate(b.createdAt);
+    const ta = da ? da.getTime() : Date.now();
+    const tb = db ? db.getTime() : Date.now();
+    return tb - ta;
+  });
+
+  const staffCount = sortedSales.filter(isStaffSale).length;
+
+  const countBadge = $("#recentSalesCountBadge");
+  if (countBadge) {
+    countBadge.textContent = `${sortedSales.length} total • ${staffCount} staff`;
+  }
+
+  const filteredSales = sortedSales.filter((s) => {
+    if (recentSalesFilter === "staff") return isStaffSale(s);
+    if (recentSalesFilter === "admin") return isAdminSale(s);
+    if (recentSalesFilter === "dummy") return isDummySale(s);
+    return true;
+  });
+
+  const displayList = filteredSales.slice(0, 8);
+
+  recentEl.innerHTML = displayList.length
     ? `
       <div class="table-wrap">
         <table>
@@ -465,22 +546,41 @@ function renderRecentSales() {
               <th>Product</th>
               <th>Qty</th>
               <th>Total</th>
+              <th>Salesperson</th>
               <th>Source</th>
               <th>Date</th>
               <th class="text-right">Action</th>
             </tr>
           </thead>
           <tbody>
-            ${sales
-              .slice(0, 8)
-              .map(
-                (sale) => `
-              <tr>
-                <td>${sale.invoiceNumber || sale.invoice || "-"}</td>
+            ${displayList
+              .map((sale) => {
+                const spTitle = getSalespersonDisplay(sale);
+                let spEmail = sale.salespersonEmail || "";
+                if (!spEmail && sale.salespersonId) {
+                  const matched = staffUsers.find((u) => u.id === sale.salespersonId);
+                  if (matched?.email) spEmail = matched.email;
+                }
+                const hasSeparateEmail = spEmail && spEmail !== spTitle;
+                const staff = isStaffSale(sale);
+
+                return `
+              <tr class="${staff ? "is-staff-sale" : ""}">
+                <td class="font-medium">${sale.invoiceNumber || sale.invoice || "-"}</td>
                 <td>${sale.productName || "-"}</td>
                 <td>${sale.quantity || 0}</td>
-                <td>${money(sale.totalAmount)}</td>
-                <td>${sourceBadge(sale.source)}</td>
+                <td class="font-mono font-bold text-emerald-400">${money(sale.totalAmount)}</td>
+                <td>
+                  <div class="font-medium ${staff ? "text-emerald-400 font-semibold" : "text-slate-200"}">
+                    ${spTitle}
+                  </div>
+                  ${
+                    hasSeparateEmail
+                      ? `<div class="text-xs text-slate-400">${spEmail}</div>`
+                      : ""
+                  }
+                </td>
+                <td>${sourceBadge(sale.source, sale)}</td>
                 <td>${dateText(sale.createdAt)}</td>
                 <td class="text-right">
                   <button
@@ -492,16 +592,24 @@ function renderRecentSales() {
                   </button>
                 </td>
               </tr>
-            `,
-              )
+            `;
+              })
               .join("")}
           </tbody>
         </table>
       </div>
     `
     : emptyState(
-        "No recent sales",
-        "Start dummy live data or create a sale from Billing.",
+        recentSalesFilter === "staff"
+          ? "No staff sales yet"
+          : recentSalesFilter === "admin"
+            ? "No admin sales yet"
+            : recentSalesFilter === "dummy"
+              ? "No dummy sales"
+              : "No recent sales",
+        recentSalesFilter === "staff"
+          ? "Sales recorded by staff members will appear here."
+          : "Start dummy live data, record a sale from Billing, or have staff create sales.",
       );
 }
 
@@ -540,17 +648,9 @@ function renderAiSummary({ low, out }) {
   ].sort((a, b) => b[1] - a[1])[0];
 
   const dummyCount = sales.filter(isDummySale).length;
-  const staffSales = sales.filter((s) => s.source === "staff").length;
-  const adminSales = sales.filter((s) => s.source === "admin").length;
-  const untaggedReal = sales.filter(
-    (s) => !isDummySale(s) && s.source !== "staff" && s.source !== "admin",
-  ).length;
-
-  // Real staff sales: explicitly tagged staff sales, or all non-dummy sales
-  const staffCount =
-    staffSales > 0
-      ? staffSales + untaggedReal
-      : Math.max(0, sales.length - dummyCount);
+  const staffSales = sales.filter(isStaffSale).length;
+  const adminSales = sales.filter(isAdminSale).length;
+  const staffCount = staffSales;
 
   const myStaff = staffUsers.filter((u) => u.adminId === profile.id);
   const myStaffCount = myStaff.length;
@@ -701,7 +801,7 @@ const unsubs = [
       sales = rows;
       renderDashboard();
     },
-    false,
+    true,
     profile.id,
   ),
   watchCollection(
@@ -716,12 +816,24 @@ const unsubs = [
   watchCollection(
     "staff",
     (rows) => {
-      staffUsers = rows.filter((u) => u.adminId === profile.id);
+      staffUsers = rows.filter(
+        (u) =>
+          u.adminId === profile.id ||
+          u.createdBy === profile.id ||
+          u.pendingRequest?.adminId === profile.id,
+      );
       renderDashboard();
     },
     false,
   ),
 ];
+
+window.addEventListener("salesiq:cache-updated", (e) => {
+  if (e.detail?.name === "sales" && Array.isArray(e.detail.data)) {
+    sales = e.detail.data;
+    renderDashboard();
+  }
+});
 
 function initChartDateControls() {
   const startEl = $("#chartStartDate");
@@ -1644,7 +1756,31 @@ function setupHeightResizers(tileId) {
   });
 }
 
+function initRecentSalesFilters() {
+  const container = $("#recentSalesFilterGroup");
+  if (!container) return;
+
+  container.addEventListener("click", (e) => {
+    const btn = e.target.closest(".recent-sales-tab");
+    if (!btn) return;
+    recentSalesFilter = btn.dataset.filter || "all";
+
+    container.querySelectorAll(".recent-sales-tab").forEach((b) => {
+      if (b === btn) {
+        b.className =
+          "btn btn-xs px-2.5 py-1 text-xs rounded-lg recent-sales-tab btn-primary font-medium";
+      } else {
+        b.className =
+          "btn btn-xs px-2.5 py-1 text-xs rounded-lg recent-sales-tab btn-ghost text-slate-300 hover:text-white";
+      }
+    });
+
+    renderRecentSales();
+  });
+}
+
 initChartDateControls();
+initRecentSalesFilters();
 initManualSaleModal();
 initDashboardEditMode();
 renderDemoControls();

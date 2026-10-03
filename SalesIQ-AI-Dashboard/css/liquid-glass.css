@@ -44,7 +44,6 @@ body.light::before {
 .glass-strong,
 .stat-card,
 .chart-box,
-.table-wrap,
 .modal-card,
 .auth-card,
 .liquid-panel {
@@ -53,11 +52,23 @@ body.light::before {
   transform-style: preserve-3d;
 }
 
+.table-wrap {
+  position: relative;
+  overflow: auto;
+  border-radius: 22px;
+  background: transparent !important;
+}
+
+.table-wrap::before,
+.table-wrap::after {
+  display: none !important;
+  content: none !important;
+}
+
 .glass::before,
 .glass-strong::before,
 .stat-card::before,
 .chart-box::before,
-.table-wrap::before,
 .modal-card::before,
 .app-sidebar::before,
 .auth-card::before,
@@ -94,7 +105,6 @@ body.light::before {
 .glass-strong > *,
 .stat-card > *,
 .chart-box > *,
-.table-wrap > *,
 .modal-card > *,
 .app-sidebar > *,
 .auth-card > *,

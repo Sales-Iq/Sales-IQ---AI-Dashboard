@@ -2,6 +2,8 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   $$,
   toast,
@@ -248,21 +250,67 @@ $("#generateStockAlerts").onclick = async () => {
 };
 async function load() {
   const adminId = profile.id;
-  products = await fetchAll("products", false, adminId);
-  sales = await fetchAll("sales", false, adminId);
-  batches = await fetchAll("productBatches", false, adminId).catch(() => []);
-  products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  $("#inventoryCategory").innerHTML =
-    '<option value="">All categories</option>' +
-    [...new Set(products.map((p) => p.category).filter(Boolean))]
-      .map((c) => `<option>${c}</option>`)
-      .join("");
-  renderStats();
-  renderTable();
-  renderMovement();
+
+  // 1. Instant 0ms cached render
+  const cachedProds = getCachedCollection(
+    `salesiq_cache_products_${adminId}_false`,
+  );
+  const cachedSales = getCachedCollection(
+    `salesiq_cache_sales_${adminId}_false`,
+  );
+  const cachedBatches = getCachedCollection(
+    `salesiq_cache_productBatches_${adminId}_false`,
+  );
+  if (cachedProds?.data && cachedProds.data.length > 0) {
+    products = [...cachedProds.data];
+    if (cachedSales?.data) sales = [...cachedSales.data];
+    if (cachedBatches?.data) batches = [...cachedBatches.data];
+    products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    $("#inventoryCategory").innerHTML =
+      '<option value="">All categories</option>' +
+      [...new Set(products.map((p) => p.category).filter(Boolean))]
+        .map((c) => `<option>${c}</option>`)
+        .join("");
+    renderStats();
+    renderTable();
+    renderMovement();
+    hideSkeletonLoader();
+  }
+
+  // 2. Fetch fresh products, sales, and batches in parallel
+  try {
+    const [freshProds, freshSales, freshBatches] = await Promise.all([
+      fetchAll("products", false, adminId),
+      fetchAll("sales", false, adminId),
+      fetchAll("productBatches", false, adminId).catch(() => []),
+    ]);
+    products = freshProds;
+    sales = freshSales;
+    batches = freshBatches;
+    products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    $("#inventoryCategory").innerHTML =
+      '<option value="">All categories</option>' +
+      [...new Set(products.map((p) => p.category).filter(Boolean))]
+        .map((c) => `<option>${c}</option>`)
+        .join("");
+    renderStats();
+    renderTable();
+    renderMovement();
+  } catch (err) {
+    console.warn("Inventory fetch warning:", err);
+  } finally {
+    hideSkeletonLoader();
+  }
 }
 ["inventorySearch", "inventoryCategory", "inventoryStatus"].forEach((id) =>
   $("#" + id).addEventListener("input", renderTable),
 );
 $("#refreshInventory").onclick = load;
+
+window.addEventListener("salesiq:cache-updated", (e) => {
+  if (e.detail?.name === "products" || e.detail?.name === "sales") {
+    load();
+  }
+});
+
 load();

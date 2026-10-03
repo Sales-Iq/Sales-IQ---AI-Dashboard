@@ -9,11 +9,7 @@ import {
   emptyState,
 } from "../../js/shared.js";
 
-import {
-  db,
-  doc,
-  deleteDoc,
-} from "../../js/firebase-config.js";
+import { db, doc, deleteDoc } from "../../js/firebase-config.js";
 
 // ── Auth gate: only Super Admin may enter ──────────────────────────────────
 const { profile } = await requireAuth(["Super Admin"]);
@@ -21,19 +17,19 @@ initAppShell("superadmin", "dashboard", profile);
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allAdmins = [];
-let allStaff  = [];
+let allStaff = [];
 
 // ── Confirm-delete modal helpers ───────────────────────────────────────────
-let pendingDeleteId         = null;
+let pendingDeleteId = null;
 let pendingDeleteCollection = null;
 
-const backdrop    = $("#confirmModalBackdrop");
-const cancelBtn   = $("#confirmCancelBtn");
-const deleteBtn   = $("#confirmDeleteBtn");
+const backdrop = $("#confirmModalBackdrop");
+const cancelBtn = $("#confirmCancelBtn");
+const deleteBtn = $("#confirmDeleteBtn");
 const confirmText = $("#confirmModalText");
 
 function openConfirm(id, col, name) {
-  pendingDeleteId         = id;
+  pendingDeleteId = id;
   pendingDeleteCollection = col;
   confirmText.textContent =
     `Remove "${name}" from the ${col === "admins" ? "Admin" : "Sales Staff"} list? ` +
@@ -43,16 +39,16 @@ function openConfirm(id, col, name) {
 
 cancelBtn.onclick = () => {
   backdrop.classList.remove("show");
-  pendingDeleteId         = null;
+  pendingDeleteId = null;
   pendingDeleteCollection = null;
 };
 
 deleteBtn.onclick = async () => {
   if (!pendingDeleteId || !pendingDeleteCollection) return;
-  const id  = pendingDeleteId;
+  const id = pendingDeleteId;
   const col = pendingDeleteCollection;
   backdrop.classList.remove("show");
-  pendingDeleteId         = null;
+  pendingDeleteId = null;
   pendingDeleteCollection = null;
 
   try {
@@ -69,13 +65,15 @@ window.saRemoveAccount = (id, col, name) => openConfirm(id, col, name);
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function safeArg(v) {
-  return String(v || "").replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+  return String(v || "")
+    .replaceAll("\\", "\\\\")
+    .replaceAll("'", "\\'");
 }
 
 function adminNameFor(adminId) {
   if (!adminId) return null;
   const adm = allAdmins.find((a) => a.id === adminId);
-  return adm ? (adm.name || adm.email || "Admin") : null;
+  return adm ? adm.name || adm.email || "Admin" : null;
 }
 
 // ── Render admins table ────────────────────────────────────────────────────
@@ -87,7 +85,10 @@ function renderAdmins() {
   $("#totalAdmins").textContent = allAdmins.length;
 
   if (!allAdmins.length) {
-    container.innerHTML = emptyState("No admins yet", "No admin accounts have been created.");
+    container.innerHTML = emptyState(
+      "No admins yet",
+      "No admin accounts have been created.",
+    );
     return;
   }
 
@@ -110,7 +111,9 @@ function renderAdmins() {
           </tr>
         </thead>
         <tbody>
-          ${allAdmins.map((u) => `
+          ${allAdmins
+            .map(
+              (u) => `
             <tr>
               <td class="font-black">${u.name || "—"}</td>
               <td>${u.email || "—"}</td>
@@ -129,7 +132,9 @@ function renderAdmins() {
                 </button>
               </td>
             </tr>
-          `).join("")}
+          `,
+            )
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -141,16 +146,19 @@ function renderStaff() {
   const container = $("#staffTable");
   if (!container) return;
 
-  const connected   = allStaff.filter((s) => s.adminId);
+  const connected = allStaff.filter((s) => s.adminId);
   const unconnected = allStaff.filter((s) => !s.adminId);
 
-  $("#staffBadge").textContent        = allStaff.length;
-  $("#totalStaff").textContent        = allStaff.length;
-  $("#connectedStaff").textContent    = connected.length;
-  $("#unconnectedStaff").textContent  = unconnected.length;
+  $("#staffBadge").textContent = allStaff.length;
+  $("#totalStaff").textContent = allStaff.length;
+  $("#connectedStaff").textContent = connected.length;
+  $("#unconnectedStaff").textContent = unconnected.length;
 
   if (!allStaff.length) {
-    container.innerHTML = emptyState("No staff yet", "No sales staff accounts have been created.");
+    container.innerHTML = emptyState(
+      "No staff yet",
+      "No sales staff accounts have been created.",
+    );
     return;
   }
 
@@ -178,12 +186,13 @@ function renderStaff() {
           </tr>
         </thead>
         <tbody>
-          ${sorted.map((u) => {
-            const adminName = adminNameFor(u.adminId);
-            const connBadge = adminName
-              ? `<span class="admin-pill">🔗 ${adminName}</span>`
-              : `<span class="unconnected-pill">⚠️ Unconnected</span>`;
-            return `
+          ${sorted
+            .map((u) => {
+              const adminName = adminNameFor(u.adminId);
+              const connBadge = adminName
+                ? `<span class="admin-pill">🔗 ${adminName}</span>`
+                : `<span class="unconnected-pill">⚠️ Unconnected</span>`;
+              return `
               <tr>
                 <td class="font-black">${u.name || "—"}</td>
                 <td>${u.email || "—"}</td>
@@ -201,7 +210,8 @@ function renderStaff() {
                 </td>
               </tr>
             `;
-          }).join("")}
+            })
+            .join("")}
         </tbody>
       </table>
     </div>
@@ -217,7 +227,7 @@ async function load() {
     ]);
 
     allAdmins = admins;
-    allStaff  = staff;
+    allStaff = staff;
 
     renderAdmins();
     renderStaff();
@@ -228,4 +238,3 @@ async function load() {
 }
 
 load();
-

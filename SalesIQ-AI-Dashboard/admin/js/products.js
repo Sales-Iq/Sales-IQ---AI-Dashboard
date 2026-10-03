@@ -2,6 +2,8 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   $$,
   toast,
@@ -467,23 +469,38 @@ window.removeProductsWithoutAdminId = purgeProductsWithoutAdminId;
 async function load() {
   const adminId = profile.id;
 
-  // 1. Purge any legacy product documents without an adminId
-  const purgedCount = await purgeProductsWithoutAdminId();
-  if (purgedCount > 0) {
-    toast(`Cleaned up ${purgedCount} product(s) without admin ID.`, "info");
+  // 1. Instant 0ms render from client-side cache
+  const cachedProds = getCachedCollection(
+    `salesiq_cache_products_${adminId}_false`,
+  );
+  const cachedBatches = getCachedCollection(
+    `salesiq_cache_productBatches_${adminId}_false`,
+  );
+  if (cachedProds?.data && cachedProds.data.length > 0) {
+    products = [...cachedProds.data];
+    if (cachedBatches?.data) batches = [...cachedBatches.data];
+    products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    updateCategoryDropdown();
+    render();
+    hideSkeletonLoader();
   }
 
-  // 2. Fetch ONLY products belonging strictly to this admin!
-  products = await fetchAll("products", false, adminId);
-  batches = await fetchAll("productBatches", false, adminId).catch(() => []);
-
-  // 3. Sort alphabetically so rendering is clean and predictable
-  products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-
-  // 4. Update dynamic category options
-  updateCategoryDropdown();
-
-  render();
+  // 2. Parallel background fetch for products and batches
+  try {
+    const [freshProducts, freshBatches] = await Promise.all([
+      fetchAll("products", false, adminId),
+      fetchAll("productBatches", false, adminId).catch(() => []),
+    ]);
+    products = freshProducts;
+    batches = freshBatches;
+    products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    updateCategoryDropdown();
+    render();
+  } catch (err) {
+    console.warn("Products load warning:", err);
+  } finally {
+    hideSkeletonLoader();
+  }
 }
 
 const removeNoAdminIdBtn = $("#removeNoAdminIdBtn");
@@ -1135,5 +1152,15 @@ $("#confirmImportBtn").onclick = async () => {
     btn.disabled = false;
   }
 };
+
+window.addEventListener("salesiq:cache-updated", (e) => {
+  if (e.detail?.name === "products") {
+    products = e.detail.data;
+    products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    updateCategoryDropdown();
+    render();
+    hideSkeletonLoader();
+  }
+});
 
 load();
