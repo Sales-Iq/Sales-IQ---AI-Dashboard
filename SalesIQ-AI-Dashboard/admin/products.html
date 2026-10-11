@@ -338,41 +338,6 @@
       </div>
     </div>
 
-    <!-- Quick Stock Update Modal (Fixed to Viewport) -->
-    <div id="stockModal" class="modal-backdrop">
-      <div class="modal-card glass-strong p-6" style="max-width: 440px">
-        <div class="flex justify-between items-center mb-5">
-          <h3 class="text-2xl font-black">Quick Stock Update</h3>
-          <button class="btn btn-ghost btn-sm" data-close-stock-modal>✕</button>
-        </div>
-        <form id="stockForm" class="space-y-4">
-          <input type="hidden" id="stockProductId" />
-          <div>
-            <label class="label">Product</label>
-            <input id="stockProductName" class="input bg-slate-900/60" disabled />
-          </div>
-          <div>
-            <label class="label">Current Stock</label>
-            <input id="stockCurrentQty" class="input bg-slate-900/60" disabled />
-          </div>
-          <div>
-            <label class="label" for="stockNewQty">
-              New Stock Quantity <span class="required-mark">*</span>
-            </label>
-            <input
-              id="stockNewQty"
-              class="input"
-              type="number"
-              min="0"
-              required
-            />
-          </div>
-          <button class="btn btn-primary w-full" type="submit" id="saveStockBtn">
-            Update Stock
-          </button>
-        </form>
-      </div>
-    </div>
 
     <!-- Smart Excel / CSV Import Modal with AI Column Mapping -->
     <div id="importModal" class="modal-backdrop">

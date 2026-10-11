@@ -53,8 +53,6 @@ let parsedImportData = {
 const modal = $("#productModal");
 const form = $("#productForm");
 const importModal = $("#importModal");
-const stockModal = $("#stockModal");
-const stockForm = $("#stockForm");
 
 function getProductBatches(productId) {
   return batches.filter(
@@ -473,15 +471,7 @@ function render() {
                     </td>
 
                     <td>
-                      <div class="flex flex-wrap gap-1.5 items-center">
-                        <button
-                          class="btn btn-ghost btn-sm text-sky-400 hover:text-sky-300"
-                          onclick="openStock('${product.id}')"
-                          title="Quick stock update"
-                        >
-                          ⚡ Stock
-                        </button>
-
+                      <div class="flex gap-2">
                         <button
                           class="btn btn-ghost btn-sm"
                           onclick="editProduct('${product.id}')"
@@ -709,77 +699,6 @@ function renderMovement() {
   `;
 }
 
-window.openStock = (id) => {
-  const p = products.find((x) => x.id === id);
-  if (!p) return;
-  $("#stockProductId").value = id;
-  $("#stockProductName").value = p.name || "";
-  $("#stockCurrentQty").value = p.stock ?? 0;
-  $("#stockNewQty").value = p.stock ?? 0;
-  if (stockModal && stockModal.parentElement !== document.body) {
-    document.body.appendChild(stockModal);
-  }
-  document.body.style.overflow = "hidden";
-  stockModal.classList.add("show");
-  $("#stockNewQty")?.focus();
-};
-
-function closeStockModal() {
-  if (stockModal) {
-    stockModal.classList.remove("show");
-    document.body.style.overflow = "";
-    stockForm?.reset();
-  }
-}
-
-$$("[data-close-stock-modal]").forEach((b) => {
-  b.onclick = closeStockModal;
-});
-
-if (stockModal) {
-  stockModal.addEventListener("click", (e) => {
-    if (e.target === stockModal) closeStockModal();
-  });
-}
-
-if (stockForm) {
-  stockForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const saveBtn = $("#saveStockBtn");
-    const id = $("#stockProductId").value;
-    const qty = Number($("#stockNewQty").value);
-    const p = products.find((x) => x.id === id);
-    if (!p) return;
-
-    setBusy(saveBtn, true, "Updating...");
-    try {
-      const newStatus = statusFor(qty, p.minStock);
-      await updateDoc(doc(db, "products", id), {
-        stock: qty,
-        status: newStatus,
-        updatedAt: serverTimestamp(),
-      });
-
-      if (newStatus !== "Available") {
-        await createNotification(
-          `${p.name} stock level updated to ${qty} (${newStatus}).`,
-          "stock",
-        );
-      }
-
-      toast("Stock updated successfully.", "ok");
-      invalidateCache("products");
-      closeStockModal();
-      await load();
-    } catch (err) {
-      console.error("Error updating stock:", err);
-      toast(`Failed to update stock: ${err.message}`, "err");
-    } finally {
-      setBusy(saveBtn, false);
-    }
-  };
-}
-
 const generateAlertsBtn = $("#generateStockAlerts");
 if (generateAlertsBtn) {
   generateAlertsBtn.onclick = async () => {
@@ -824,7 +743,6 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (modal.classList.contains("show")) closeModal();
     if (importModal.classList.contains("show")) closeImportModal();
-    if (stockModal && stockModal.classList.contains("show")) closeStockModal();
   }
 });
 
