@@ -2,10 +2,13 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   $$,
   toast,
   emptyState,
+  invalidateCache,
 } from "../../js/shared.js";
 import {
   db,
@@ -19,6 +22,16 @@ import {
 const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "suppliers", profile);
 let rows = [];
+
+// 1. Instant 0ms cached render
+const cachedSup = getCachedCollection(
+  `salesiq_cache_suppliers_${profile.id}_false`,
+);
+if (cachedSup?.data?.length) {
+  rows = [...cachedSup.data];
+  render();
+  hideSkeletonLoader();
+}
 const modal = $("#supplierModal");
 function open(s = {}) {
   $("#supplierId").value = s.id || "";
@@ -35,6 +48,7 @@ window.editSupplier = (id) => open(rows.find((x) => x.id === id));
 window.deleteSupplier = async (id) => {
   if (confirm("Delete supplier?")) {
     await deleteDoc(doc(db, "suppliers", id));
+    invalidateCache("suppliers");
     toast("Supplier deleted");
     load();
   }
@@ -74,6 +88,7 @@ $("#supplierForm").onsubmit = async (e) => {
       ...data,
       createdAt: serverTimestamp(),
     });
+  invalidateCache("suppliers");
   toast("Supplier saved");
   modal.classList.remove("show");
   load();
@@ -82,5 +97,6 @@ $("#supplierSearch").oninput = render;
 async function load() {
   rows = await fetchAll("suppliers", false, profile.id);
   render();
+  hideSkeletonLoader();
 }
 load();

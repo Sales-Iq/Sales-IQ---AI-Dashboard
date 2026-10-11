@@ -33,8 +33,40 @@
   function empty(title, text) {
     return `<div class="empty-state"><strong>${title}</strong><span>${text}</span></div>`;
   }
+  const FALLBACK_CONFIG = {
+    INR: { symbol: "₹", locale: "en-IN", rate: 1 },
+    "₹": { symbol: "₹", locale: "en-IN", rate: 1 },
+    USD: { symbol: "$", locale: "en-US", rate: 0.01032 },
+    "$": { symbol: "$", locale: "en-US", rate: 0.01032 },
+    EUR: { symbol: "€", locale: "en-IE", rate: 0.00922 },
+    "€": { symbol: "€", locale: "en-IE", rate: 0.00922 },
+    GBP: { symbol: "£", locale: "en-GB", rate: 0.00781 },
+    "£": { symbol: "£", locale: "en-GB", rate: 0.00781 },
+    AED: { symbol: "AED ", locale: "en-AE", rate: 0.0379 },
+    CAD: { symbol: "CA$ ", locale: "en-CA", rate: 0.0147 },
+    AUD: { symbol: "A$ ", locale: "en-AU", rate: 0.0148 },
+    SGD: { symbol: "SG$ ", locale: "en-SG", rate: 0.0132 },
+  };
+
   function money(n) {
-    return `${localStorage.getItem("salesiq_currency") || "₹"}${Number(n || 0).toLocaleString("en-IN")}`;
+    const rawCurr = localStorage.getItem("salesiq_currency") || "₹";
+    const clean = String(rawCurr).trim();
+    const cfg = FALLBACK_CONFIG[clean] || { symbol: clean, locale: "en-IN", rate: 1 };
+
+    let rate = cfg.rate;
+    try {
+      const stored = JSON.parse(localStorage.getItem("salesiq_inr_exchange_rates") || "null");
+      const code = clean === "$" ? "USD" : clean === "€" ? "EUR" : clean === "£" ? "GBP" : clean;
+      if (stored?.rates?.[code]) rate = stored.rates[code];
+    } catch (_) {}
+
+    const val = Number(n || 0) * rate;
+    const formatted = Math.abs(val).toLocaleString(cfg.locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const sign = val < 0 ? "-" : "";
+    return `${sign}${cfg.symbol}${formatted}`;
   }
   function initials(name) {
     return (

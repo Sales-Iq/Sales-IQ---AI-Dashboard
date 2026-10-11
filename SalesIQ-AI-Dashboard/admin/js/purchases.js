@@ -12,6 +12,7 @@ import {
   emptyState,
   statusFor,
   createNotification,
+  invalidateCache,
 } from "../../js/shared.js";
 import {
   db,
@@ -204,6 +205,9 @@ $("#purchaseForm").onsubmit = async (e) => {
       `Restock added: ${p.name} +${qty}. New stock: ${newStock}.`,
       "purchase",
     );
+    invalidateCache("purchases");
+    invalidateCache("products");
+    invalidateCache("productBatches");
     toast("Stock increased successfully.");
     e.target.reset();
     $("#purchaseDate").value = new Date().toISOString().slice(0, 10);

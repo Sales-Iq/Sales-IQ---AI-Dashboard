@@ -170,11 +170,11 @@
                   />
                 </div>
                 <div>
-                  <label class="label">Role</label
-                  ><select id="staffRole" class="select">
-                    <option>Sales Staff</option>
-                    <option>Admin</option>
+                  <label class="label">Role</label>
+                  <select id="staffRole" class="select" disabled>
+                    <option value="Sales Staff" selected>Sales Staff</option>
                   </select>
+                  <span class="text-xs text-slate-400 mt-1 block">Only Super Admin can assign Admin roles</span>
                 </div>
                 <div class="md:col-span-2">
                   <button class="btn btn-primary w-full">Create User</button>

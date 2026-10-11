@@ -12,6 +12,7 @@ import {
   invalidateCache,
   hideSkeletonLoader,
   getFirstAdminId,
+  convertFromINR,
 } from "../../js/shared.js";
 
 import {
@@ -156,15 +157,19 @@ function updatePreview() {
   const qty = Number($("#saleQty").value || 1);
   selected = products.find((product) => product.id === $("#saleProduct").value);
 
-  $("#salePrice").value = selected?.price || 0;
+  $("#salePrice").value = selected ? convertFromINR(selected.price || 0).toFixed(2) : 0;
   $("#saleStock").value = selected?.stock || 0;
 
   const total = Number(selected?.price || 0) * qty;
-  $("#saleTotal").value = total;
+  $("#saleTotal").value = selected ? convertFromINR(total).toFixed(2) : 0;
+
+  const invoicePrefix = (
+    localStorage.getItem("salesiq_invoice_prefix") || "SIQ"
+  ).toUpperCase();
 
   $("#invoicePreview").innerHTML = selected
     ? `
-      <div><b>Invoice:</b> SIQ-${uid()}</div>
+      <div><b>Invoice:</b> ${invoicePrefix}-${uid()}</div>
       <div><b>Product:</b> ${selected.name}</div>
       <div><b>Category:</b> ${selected.category || "-"}</div>
       ${
@@ -229,10 +234,15 @@ $("#billingForm").onsubmit = async (e) => {
     );
     if (!selected) throw new Error("Select product.");
 
-    const quantity = Number($("#saleQty").value);
-    if (quantity <= 0) throw new Error("Quantity must be greater than 0.");
+    const quantity = Math.floor(Number($("#saleQty")?.value || 0));
+    if (!quantity || quantity <= 0) {
+      throw new Error("Please enter a valid quantity of at least 1.");
+    }
 
-    const invoiceNumber = `SIQ-${Date.now().toString().slice(-8)}`;
+    const prefix = (
+      localStorage.getItem("salesiq_invoice_prefix") || "SIQ"
+    ).toUpperCase();
+    const invoiceNumber = `${prefix}-${Date.now().toString().slice(-8)}`;
     let newStock = 0;
 
     const soldBatches = [];
@@ -315,6 +325,22 @@ $("#billingForm").onsubmit = async (e) => {
       }
     }
 
+    const activeProfile = (() => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+        return {
+          ...(profile || {}),
+          ...(stored || {}),
+          name: stored?.name || profile?.name || "",
+          email: stored?.email || profile?.email || "",
+          id: stored?.id || profile?.id || "",
+          role: stored?.role || profile?.role || "Sales Staff",
+        };
+      } catch (_) {
+        return profile || {};
+      }
+    })();
+
     const sale = {
       category: selected.category || "",
       invoiceNumber,
@@ -329,11 +355,12 @@ $("#billingForm").onsubmit = async (e) => {
         (Number(selected.price) - Number(selected.costPrice || 0)) * quantity,
       customerName: $("#customerName").value.trim(),
       paymentMethod: $("#paymentMethod").value,
-      salespersonId: profile.id,
-      salespersonName: profile.name || profile.email,
-      salespersonEmail: profile.email || "",
+      salespersonId: activeProfile.id || profile.id,
+      salespersonName: activeProfile.name || activeProfile.email || "Sales Staff",
+      salespersonEmail: activeProfile.email || profile.email || "",
+      salespersonRole: activeProfile.role || profile.role || "Sales Staff",
       source: "staff",
-      adminId: profile.adminId || targetAdminId || selected.adminId || null,
+      adminId: activeProfile.adminId || profile.adminId || targetAdminId || selected.adminId || null,
       isDemo: false,
       createdAt: serverTimestamp(),
     };
@@ -391,14 +418,37 @@ $("#billingForm").onsubmit = async (e) => {
 
 $("#printInvoice").onclick = () => {
   const html = $("#invoicePreview").innerHTML;
+  const bizName = localStorage.getItem("salesiq_business_name") || "SalesIQ";
+  const logoUrl = localStorage.getItem("salesiq_business_logo") || "";
   const w = window.open("", "_blank");
 
   w.document.write(`
-    <title>Invoice</title>
-    <body style="font-family:Arial;padding:30px">
-      <h1>SalesIQ Invoice</h1>
-      ${html}
-    </body>
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${bizName} - Invoice</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 32px; max-width: 600px; margin: 0 auto; color: #0f172a; }
+          .header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; }
+          .header img { height: 48px; max-width: 140px; object-fit: contain; }
+          .header-title h1 { margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; }
+          .header-title p { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+          .invoice-body { font-size: 14px; line-height: 1.8; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : '<span style="font-size:32px">🏪</span>'}
+          <div class="header-title">
+            <h1>${bizName}</h1>
+            <p>Official Retail Invoice</p>
+          </div>
+        </div>
+        <div class="invoice-body">
+          ${html}
+        </div>
+      </body>
+    </html>
   `);
 
   w.print();

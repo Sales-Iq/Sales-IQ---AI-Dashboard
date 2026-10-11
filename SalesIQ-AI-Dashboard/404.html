@@ -26,7 +26,34 @@
   <div id="toastRoot" class="toast-root"></div>
   <script src="js/liquid-glass.js" defer></script>
 <script type="module" src="js/shared.js"></script>
-  <script type="module">import { auth } from "./js/firebase-config.js";import { getAccountProfile } from "./js/account.js";import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";document.getElementById("backDashboard").onclick=()=>onAuthStateChanged(auth,async u=>{if(!u)return location.href="login.html";const p=await getAccountProfile(u).catch(()=>null);const r=p?.role||"Sales Staff";location.href=r==="Sales Staff"?"sales/dashboard.html":"admin/dashboard.html";});</script>
+  <script type="module">
+    import { auth } from "./js/firebase-config.js";
+    import { getAccountProfile } from "./js/account.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+    document.getElementById("backDashboard").onclick = () => {
+      // 1. Check cached user first for 0ms redirect
+      try {
+        const cached = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+        if (cached?.role) {
+          if (cached.role === "Super Admin") return location.href = "superadmin/dashboard.html";
+          if (cached.role === "Sales Staff") return location.href = "sales/dashboard.html";
+          return location.href = "admin/dashboard.html";
+        }
+      } catch (_) {}
+
+      // 2. Fallback to auth observer
+      const unsub = onAuthStateChanged(auth, async (u) => {
+        unsub();
+        if (!u) return (location.href = "login.html");
+        const p = await getAccountProfile(u).catch(() => null);
+        const r = p?.role || "Sales Staff";
+        if (r === "Super Admin") location.href = "superadmin/dashboard.html";
+        else if (r === "Sales Staff") location.href = "sales/dashboard.html";
+        else location.href = "admin/dashboard.html";
+      });
+    };
+  </script>
 </body>
 </html>
 

@@ -14,6 +14,7 @@ import {
   emptyState,
   createNotification,
   toCSV,
+  invalidateCache,
 } from "../../js/shared.js";
 
 import {
@@ -203,6 +204,8 @@ window.deleteProduct = async (id) => {
     } catch (_) {}
 
     toast("Product deleted from database.", "ok");
+    invalidateCache("products");
+    invalidateCache("productBatches");
 
     // 3. Remove locally and re-render
     products = products.filter((p) => p.id !== id);
@@ -701,6 +704,8 @@ form.onsubmit = async (event) => {
       );
     }
 
+    invalidateCache("products");
+    invalidateCache("productBatches");
     toast("Product saved.");
     closeModal();
     await load();

@@ -2,11 +2,14 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   $$,
   toast,
   money,
   emptyState,
+  invalidateCache,
 } from "../../js/shared.js";
 import {
   db,
@@ -20,6 +23,16 @@ import {
 const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "customers", profile);
 let rows = [];
+
+// 1. Instant 0ms cached render
+const cachedCust = getCachedCollection(
+  `salesiq_cache_customers_${profile.id}_false`,
+);
+if (cachedCust?.data?.length) {
+  rows = [...cachedCust.data];
+  render();
+  hideSkeletonLoader();
+}
 const modal = $("#customerModal");
 function open(c = {}) {
   $("#customerId").value = c.id || "";
@@ -34,6 +47,7 @@ window.editCustomer = (id) => open(rows.find((x) => x.id === id));
 window.deleteCustomer = async (id) => {
   if (confirm("Delete customer?")) {
     await deleteDoc(doc(db, "customers", id));
+    invalidateCache("customers");
     toast("Customer deleted");
     load();
   }
@@ -77,6 +91,7 @@ $("#customerForm").onsubmit = async (e) => {
       ...data,
       createdAt: serverTimestamp(),
     });
+  invalidateCache("customers");
   toast("Customer saved");
   modal.classList.remove("show");
   load();
@@ -85,5 +100,6 @@ $("#customerSearch").oninput = render;
 async function load() {
   rows = await fetchAll("customers", false, profile.id);
   render();
+  hideSkeletonLoader();
 }
 load();

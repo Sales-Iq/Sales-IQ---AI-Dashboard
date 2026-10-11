@@ -17,6 +17,13 @@ import {
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 import { getAccountProfile, createAccountProfile } from "./account.js";
+import {
+  idbGet,
+  idbSet,
+  idbMarkStale,
+  idbDelete,
+  idbClear,
+} from "./idb-cache.js";
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -24,10 +31,202 @@ export const num = (n) => Number(n || 0);
 export const uid = () => Math.random().toString(36).slice(2, 10).toUpperCase();
 export const todayKey = (d = new Date()) => d.toISOString().slice(0, 10);
 
-export const money = (n, currency = getCurrency()) =>
-  `${currency}${Number(n || 0).toLocaleString("en-IN", {
+// ─────────────────────────────────────────────────────────────────────────────
+// Multi-Currency & Real-Time Exchange Rate Engine (Base Currency: INR ₹)
+// ─────────────────────────────────────────────────────────────────────────────
+export const CURRENCY_CONFIG = {
+  INR: { code: "INR", symbol: "₹", locale: "en-IN", defaultRate: 1 },
+  "₹": { code: "INR", symbol: "₹", locale: "en-IN", defaultRate: 1 },
+
+  USD: { code: "USD", symbol: "$", locale: "en-US", defaultRate: 0.01032 },
+  "$": { code: "USD", symbol: "$", locale: "en-US", defaultRate: 0.01032 },
+
+  EUR: { code: "EUR", symbol: "€", locale: "en-IE", defaultRate: 0.00922 },
+  "€": { code: "EUR", symbol: "€", locale: "en-IE", defaultRate: 0.00922 },
+
+  GBP: { code: "GBP", symbol: "£", locale: "en-GB", defaultRate: 0.00781 },
+  "£": { code: "GBP", symbol: "£", locale: "en-GB", defaultRate: 0.00781 },
+
+  AED: { code: "AED", symbol: "AED ", locale: "en-AE", defaultRate: 0.0379 },
+
+  CAD: { code: "CAD", symbol: "CA$ ", locale: "en-CA", defaultRate: 0.0147 },
+
+  AUD: { code: "AUD", symbol: "A$ ", locale: "en-AU", defaultRate: 0.0148 },
+
+  SGD: { code: "SGD", symbol: "SG$ ", locale: "en-SG", defaultRate: 0.0132 },
+};
+
+export const FALLBACK_INR_RATES = {
+  INR: 1,
+  "₹": 1,
+  USD: 0.01032,
+  "$": 0.01032,
+  EUR: 0.00922,
+  "€": 0.00922,
+  GBP: 0.00781,
+  "£": 0.00781,
+  AED: 0.0379,
+  CAD: 0.0147,
+  AUD: 0.0148,
+  SGD: 0.0132,
+};
+
+let _liveExchangeRates = null;
+try {
+  const cached = localStorage.getItem("salesiq_inr_exchange_rates");
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    if (parsed && parsed.rates) {
+      _liveExchangeRates = parsed.rates;
+    }
+  }
+} catch (_) {}
+
+export async function syncLiveExchangeRates() {
+  try {
+    const raw = localStorage.getItem("salesiq_inr_exchange_rates");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Re-fetch every 6 hours (21,600,000 ms)
+      if (parsed?.ts && Date.now() - parsed.ts < 21600000 && parsed?.rates) {
+        _liveExchangeRates = parsed.rates;
+        return _liveExchangeRates;
+      }
+    }
+
+    const res = await fetch("https://open.er-api.com/v6/latest/INR");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.rates) {
+        _liveExchangeRates = data.rates;
+        try {
+          localStorage.setItem(
+            "salesiq_inr_exchange_rates",
+            JSON.stringify({ ts: Date.now(), rates: data.rates }),
+          );
+        } catch (_) {}
+        return _liveExchangeRates;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not sync live exchange rates, using fallback:", err);
+  }
+  return _liveExchangeRates;
+}
+
+export function getCurrency() {
+  const now = Date.now();
+  if (getCurrency._cached == null || now - (getCurrency._ts || 0) > 1000) {
+    try {
+      getCurrency._cached = localStorage.getItem("salesiq_currency") || "₹";
+    } catch (_) {
+      getCurrency._cached = "₹";
+    }
+    getCurrency._ts = now;
+  }
+  return getCurrency._cached;
+}
+
+try {
+  window.addEventListener("storage", (e) => {
+    if (e.key === "salesiq_currency") {
+      getCurrency._cached = e.newValue || "₹";
+      getCurrency._ts = Date.now();
+    }
+  });
+  window.addEventListener("salesiq:currency-changed", (e) => {
+    if (e.detail?.currency) {
+      getCurrency._cached = e.detail.currency;
+      getCurrency._ts = Date.now();
+    }
+  });
+} catch (_) {}
+
+export function getExchangeRate(targetCurrency = getCurrency()) {
+  const clean = String(targetCurrency || "₹").trim();
+  if (clean === "₹" || clean === "INR") return 1;
+
+  const cfg = CURRENCY_CONFIG[clean];
+  const code = cfg?.code || clean.toUpperCase();
+
+  if (_liveExchangeRates && typeof _liveExchangeRates[code] === "number") {
+    return _liveExchangeRates[code];
+  }
+
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem("salesiq_inr_exchange_rates") || "null",
+    );
+    if (stored?.rates?.[code]) {
+      if (!_liveExchangeRates) _liveExchangeRates = stored.rates;
+      return stored.rates[code];
+    }
+  } catch (_) {}
+
+  if (cfg?.defaultRate) return cfg.defaultRate;
+  if (FALLBACK_INR_RATES[clean]) return FALLBACK_INR_RATES[clean];
+  if (FALLBACK_INR_RATES[code]) return FALLBACK_INR_RATES[code];
+
+  return 1;
+}
+
+export function convertFromINR(amountInRupees, targetCurrency = getCurrency()) {
+  const clean = String(targetCurrency || "₹").trim();
+  if (clean === "₹" || clean === "INR") return Number(amountInRupees || 0);
+  const rate = getExchangeRate(clean);
+  return Number(amountInRupees || 0) * rate;
+}
+
+export function money(n, currency = getCurrency(), convert = true) {
+  const clean = String(currency || "₹").trim();
+  const cfg = CURRENCY_CONFIG[clean] || {
+    symbol: clean,
+    locale: "en-IN",
+    defaultRate: 1,
+  };
+
+  const val = convert ? convertFromINR(n, clean) : Number(n || 0);
+
+  const formatted = Math.abs(val).toLocaleString(cfg.locale, {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  });
+
+  const sign = val < 0 ? "-" : "";
+  return `${sign}${cfg.symbol}${formatted}`;
+}
+
+export async function syncTenantCurrency(tenantId = null) {
+  try {
+    const tid = tenantId || getActiveTenantId();
+    if (!tid || tid === "__ALL__") return;
+
+    let sSnap = await getDoc(doc(db, "businessSettings", tid));
+    if (!sSnap.exists()) {
+      sSnap = await getDoc(doc(db, "businessSettings", "main"));
+    }
+
+    if (sSnap.exists()) {
+      const data = sSnap.data() || {};
+      const currency = data.currency;
+      if (currency) {
+        localStorage.setItem("salesiq_currency", currency);
+        getCurrency._cached = currency;
+        getCurrency._ts = Date.now();
+      }
+      if (data.businessName) localStorage.setItem("salesiq_business_name", data.businessName);
+      if (data.logoUrl) localStorage.setItem("salesiq_business_logo", data.logoUrl);
+      if (data.taxPercent !== undefined) localStorage.setItem("salesiq_tax_percent", data.taxPercent);
+      if (data.invoicePrefix) localStorage.setItem("salesiq_invoice_prefix", data.invoicePrefix);
+      localStorage.setItem(`salesiq_business_settings_${tid}`, JSON.stringify(data));
+    }
+  } catch (err) {
+    console.warn("Could not sync tenant currency:", err);
+  } finally {
+    syncLiveExchangeRates().catch(() => {});
+  }
+}
+
 
 // Accepts Firestore Timestamp, serialized Timestamp object {seconds, nanoseconds}, Date, ISO string or millis. Returns Date or null.
 export const toDate = (value) => {
@@ -120,26 +319,6 @@ export function setBusy(btn, busy = true, text = "Saving...") {
   btn.innerHTML = btn.dataset.oldText || btn.innerHTML;
 }
 
-export function getCurrency() {
-  // Cached with short TTL: fast inside render loops (100s of money()
-  // calls per render) but still picks up same-tab settings saves.
-  const now = Date.now();
-  if (getCurrency._cached == null || now - (getCurrency._ts || 0) > 1000) {
-    try {
-      getCurrency._cached = localStorage.getItem("salesiq_currency") || "₹";
-    } catch (_) {
-      getCurrency._cached = "₹";
-    }
-    getCurrency._ts = now;
-  }
-  return getCurrency._cached;
-}
-// Keep cache in sync when settings change currency in another tab/page.
-try {
-  window.addEventListener("storage", (e) => {
-    if (e.key === "salesiq_currency") getCurrency._cached = e.newValue || "₹";
-  });
-} catch (_) {}
 
 export function getTheme() {
   return localStorage.getItem("salesiq_theme") || "dark";
@@ -493,30 +672,92 @@ export function initAppShell(
         const k = localStorage.key(i);
         if (k && k.startsWith("salesiq_cache_")) localStorage.removeItem(k);
       }
+      idbClear().catch(() => {});
     } catch (_) {}
     await signOut(auth);
     location.href = "../login.html";
   });
 
-  // Proactively warm client-side cache for instant subsequent page navigations
+  // 1. Ultra-Fast Link & Script Prefetching on Hover / Touch
+  const _prefetchedHrefs = new Set();
+  function prefetchTarget(href) {
+    if (
+      !href ||
+      _prefetchedHrefs.has(href) ||
+      href.startsWith("#") ||
+      href.startsWith("http") ||
+      href.startsWith("mailto:")
+    )
+      return;
+    _prefetchedHrefs.add(href);
+
+    try {
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.href = href;
+      document.head.appendChild(link);
+    } catch (_) {}
+
+    // Match module script path (e.g. "products.html" -> "js/products.js")
+    const clean = href.split("?")[0].split("#")[0];
+    if (clean.endsWith(".html")) {
+      const scriptName = clean.replace(".html", ".js");
+      const isSubdir =
+        location.pathname.includes("/admin/") ||
+        location.pathname.includes("/sales/") ||
+        location.pathname.includes("/superadmin/");
+      const scriptHref = isSubdir ? `js/${scriptName}` : scriptName;
+      try {
+        const jsLink = document.createElement("link");
+        jsLink.rel = "modulepreload";
+        jsLink.href = scriptHref;
+        document.head.appendChild(jsLink);
+      } catch (_) {}
+    }
+  }
+
+  document.querySelectorAll("a[href]").forEach((el) => {
+    const h = el.getAttribute("href");
+    if (!h || h.startsWith("#") || h.startsWith("http") || h.startsWith("mailto:")) return;
+    el.addEventListener("pointerenter", () => prefetchTarget(h), { passive: true, once: true });
+    el.addEventListener("touchstart", () => prefetchTarget(h), { passive: true, once: true });
+  });
+
+  // 2. High-Capacity Background Cache Warming during browser idle
   if (profile && profile.id) {
-    setTimeout(() => {
+    const runWarmup = () => {
       const preloadList =
         role === "sales"
-          ? [["products", false]]
+          ? [
+              ["products", false],
+              ["productBatches", false],
+              ["sales", false],
+            ]
           : [
               ["products", false],
+              ["productBatches", false],
               ["sales", false],
               ["customers", false],
+              ["suppliers", false],
+              ["staff", false],
             ];
       for (const [col, srt] of preloadList) {
         fetchAll(col, srt, profile.id).catch(() => {});
       }
-    }, 150);
+    };
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(runWarmup, { timeout: 1500 });
+    } else {
+      setTimeout(runWarmup, 200);
+    }
   }
 
-  // Failsafe safety net: ensure skeleton loader never stays stuck on unforeseen errors
-  setTimeout(hideSkeletonLoader, 4000);
+  // Automatically dismiss the full-screen skeleton loader once the page shell is mounted!
+  requestAnimationFrame(() => {
+    hideSkeletonLoader();
+  });
+  setTimeout(hideSkeletonLoader, 400);
 }
 
 export async function requireAuth(allowed = ["Admin", "Sales Staff"]) {
@@ -541,6 +782,12 @@ export async function requireAuth(allowed = ["Admin", "Sales Staff"]) {
     cachedProfile.status === "active" &&
     allowed.includes(cachedProfile.role)
   ) {
+    const tenantId =
+      cachedProfile.role === "Sales Staff"
+        ? cachedProfile.adminId || cachedProfile.createdBy || cachedProfile.id
+        : cachedProfile.id;
+    if (tenantId) syncTenantCurrency(tenantId).catch(() => {});
+
     // Silently verify auth state and status in the background
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -662,6 +909,11 @@ export async function requireAuth(allowed = ["Admin", "Sales Staff"]) {
         }
 
         localStorage.setItem("salesiq_user", JSON.stringify(profile));
+        const tenantId =
+          profile.role === "Sales Staff"
+            ? profile.adminId || profile.createdBy || profile.id
+            : profile.id;
+        if (tenantId) await syncTenantCurrency(tenantId).catch(() => {});
         cleanup();
         resolve({ user, profile });
       },
@@ -762,20 +1014,53 @@ export function getActiveTenantId(profile = null) {
 }
 
 // -----------------------------------------------------------------
-// High-Speed Multi-Tier Client Storage Cache (Stale-While-Revalidate)
+// High-Speed Multi-Tier Client Storage Cache (IndexedDB + RAM Map)
 // -----------------------------------------------------------------
 const _inMemCache = new Map();
 const CACHE_TTL_MS = 60000; // 60 seconds fresh window
 
+// Cross-tab synchronization channel
+let _syncChannel = null;
+try {
+  if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+    _syncChannel = new BroadcastChannel("salesiq_cache_sync");
+    _syncChannel.onmessage = (e) => {
+      const { type, cacheKey, data, collectionName } = e.data || {};
+      if (type === "set" && cacheKey && data) {
+        _inMemCache.set(cacheKey, {
+          data,
+          timestamp: Date.now(),
+          stale: false,
+        });
+        window.dispatchEvent(
+          new CustomEvent("salesiq:cache-updated", {
+            detail: { cacheKey, data },
+          }),
+        );
+      } else if (type === "invalidate") {
+        for (const [k, v] of _inMemCache.entries()) {
+          if (!collectionName || k.includes(`_${collectionName}_`)) {
+            v.stale = true;
+            v.timestamp = 0;
+          }
+        }
+      }
+    };
+  }
+} catch (_) {}
+
+/**
+ * Fast synchronous check: RAM first, localStorage fallback. (0ms)
+ */
 export function getCachedCollection(cacheKey) {
   // 1. In-memory Map (0ms)
   const mem = _inMemCache.get(cacheKey);
   if (mem && Array.isArray(mem.data)) return mem;
 
-  // 2. Persistent client-side localStorage (1-2ms)
+  // 2. Persistent client-side sessionStorage / localStorage (1-2ms)
   try {
     const raw =
-      localStorage.getItem(cacheKey) || sessionStorage.getItem(cacheKey);
+      sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.data)) {
@@ -787,26 +1072,49 @@ export function getCachedCollection(cacheKey) {
   return null;
 }
 
+/**
+ * Multi-tier asynchronous lookup: RAM (0ms) -> IndexedDB (1-3ms) -> null.
+ */
+export async function getCachedCollectionAsync(cacheKey) {
+  // 1. RAM Map
+  const mem = _inMemCache.get(cacheKey);
+  if (mem && Array.isArray(mem.data)) return mem;
+
+  // 2. High-Capacity IndexedDB
+  try {
+    const idbEntry = await idbGet(cacheKey);
+    if (idbEntry && Array.isArray(idbEntry.data)) {
+      _inMemCache.set(cacheKey, idbEntry);
+      return idbEntry;
+    }
+  } catch (_) {}
+
+  // 3. Fallback localStorage / sessionStorage
+  return getCachedCollection(cacheKey);
+}
+
+/**
+ * Write to RAM, IndexedDB, and broadcast across tabs.
+ */
 export function setCachedCollection(cacheKey, data) {
   const entry = { data, timestamp: Date.now(), stale: false };
   _inMemCache.set(cacheKey, entry);
-  const serialized = JSON.stringify(entry);
 
+  // Write to high-capacity IndexedDB asynchronously without blocking UI
+  idbSet(cacheKey, data).catch(() => {});
+
+  // For small entries (< 150 items), also mirror in sessionStorage for instant sync bootstrap
   try {
-    localStorage.setItem(cacheKey, serialized);
-  } catch (_) {
-    // If quota exceeded, prune older cache items and retry
-    try {
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("salesiq_cache_")) localStorage.removeItem(k);
-      }
-      localStorage.setItem(cacheKey, serialized);
-    } catch (_) {
-      try {
-        sessionStorage.setItem(cacheKey, serialized);
-      } catch (_) {}
+    if (Array.isArray(data) && data.length < 150) {
+      sessionStorage.setItem(cacheKey, JSON.stringify(entry));
     }
+  } catch (_) {}
+
+  // Broadcast to other open tabs
+  if (_syncChannel) {
+    try {
+      _syncChannel.postMessage({ type: "set", cacheKey, data });
+    } catch (_) {}
   }
 }
 
@@ -820,26 +1128,26 @@ export function invalidateCache(collectionName = null) {
     }
   }
 
+  idbMarkStale((k) => !collectionName || k.includes(`_${collectionName}_`)).catch(
+    () => {},
+  );
+
   try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const k = sessionStorage.key(i);
       if (k && k.startsWith("salesiq_cache_")) {
         if (!collectionName || k.includes(`_${collectionName}_`)) {
-          try {
-            const raw = localStorage.getItem(k);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              parsed.stale = true;
-              parsed.timestamp = 0;
-              localStorage.setItem(k, JSON.stringify(parsed));
-            }
-          } catch (_) {
-            localStorage.removeItem(k);
-          }
+          sessionStorage.removeItem(k);
         }
       }
     }
   } catch (_) {}
+
+  if (_syncChannel) {
+    try {
+      _syncChannel.postMessage({ type: "invalidate", collectionName });
+    } catch (_) {}
+  }
 }
 
 async function fetchFromFirestore(name, sorted, customAdminId) {
@@ -903,7 +1211,15 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
           );
           orphanedSales = staffSalesSnap.docs
             .map((d) => ({ ...d.data(), id: d.id, docId: d.id }))
-            .filter((s) => s.adminId !== tenantId);
+            .filter(
+              (s) =>
+                s.adminId !== tenantId &&
+                s.source !== "dummy" &&
+                s.source !== "demo" &&
+                !s.isDemo &&
+                s.salespersonId !== "demo" &&
+                s.salespersonId !== "system-demo",
+            );
         } catch (_) {}
       }
 
@@ -920,6 +1236,14 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
 
       const toHeal = [];
       orphanedSales.forEach((s) => {
+        if (
+          s.source === "dummy" ||
+          s.source === "demo" ||
+          s.isDemo ||
+          s.salespersonId === "demo" ||
+          s.salespersonId === "system-demo"
+        )
+          return;
         if (!salesMap.has(s.id)) {
           salesMap.set(s.id, {
             ...s,
@@ -1006,14 +1330,14 @@ export async function fetchAll(
     customAdminId !== undefined ? customAdminId : getActiveTenantId();
   const cacheKey = `salesiq_cache_${name}_${tenantId || "all"}_${Boolean(sorted)}`;
 
-  // 1. FAST PATH: Check client-side storage (0ms instant response)
+  // 1. FAST PATH (Tier 1): Check synchronous client storage (0ms instant response)
   if (!bypassCache) {
     const cached = getCachedCollection(cacheKey);
     if (cached && Array.isArray(cached.data)) {
       const age = Date.now() - (cached.timestamp || 0);
 
-      // Revalidate in background if older than 5s or marked stale
-      if (age > 5000 || cached.stale) {
+      // Revalidate in background if older than 30s or marked stale
+      if (age > 30000 || cached.stale) {
         queueMicrotask(() => {
           fetchFromFirestore(name, sorted, customAdminId)
             .then((fresh) => {
@@ -1031,17 +1355,44 @@ export async function fetchAll(
       // Return immediately in 0ms!
       return cached.data;
     }
+
+    // 2. High-Capacity IndexedDB lookup (Tier 2, 2-3ms)
+    try {
+      const idbCached = await getCachedCollectionAsync(cacheKey);
+      if (
+        idbCached &&
+        Array.isArray(idbCached.data) &&
+        idbCached.data.length > 0
+      ) {
+        const age = Date.now() - (idbCached.timestamp || 0);
+        if (age > 30000 || idbCached.stale) {
+          queueMicrotask(() => {
+            fetchFromFirestore(name, sorted, customAdminId)
+              .then((fresh) => {
+                setCachedCollection(cacheKey, fresh);
+                window.dispatchEvent(
+                  new CustomEvent("salesiq:cache-updated", {
+                    detail: { name, cacheKey, data: fresh },
+                  }),
+                );
+              })
+              .catch(() => {});
+          });
+        }
+        return idbCached.data;
+      }
+    } catch (_) {}
   }
 
-  // 2. COLD BOOT: Fetch from Firestore, store in client cache, and return
+  // 3. COLD BOOT: Fetch from Firestore, store in IndexedDB + RAM, and return
   try {
     const docs = await fetchFromFirestore(name, sorted, customAdminId);
     setCachedCollection(cacheKey, docs);
     return docs;
   } catch (e) {
     console.warn(`Primary fetch failed for ${name}:`, e);
-    const fallback = getCachedCollection(cacheKey);
-    if (fallback) return fallback.data;
+    const fallback = await getCachedCollectionAsync(cacheKey);
+    if (fallback && Array.isArray(fallback.data)) return fallback.data;
     return [];
   }
 }
@@ -1056,14 +1407,37 @@ export function watchCollection(
     customAdminId !== undefined ? customAdminId : getActiveTenantId();
   const cacheKey = `salesiq_cache_${name}_${tenantId || "all"}_${Boolean(sorted)}`;
 
-  // INSTANT RENDER: Emit cached client-side data immediately (0ms)!
+  // INSTANT RENDER (Tier 1): Emit synchronous memory/session cache immediately (0ms)!
+  let emittedInitial = false;
   const cached = getCachedCollection(cacheKey);
   if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
     try {
       callback(cached.data);
+      emittedInitial = true;
     } catch (err) {
       console.warn(`Error in cached callback for ${name}:`, err);
     }
+  }
+
+  // INSTANT RENDER (Tier 2): If not in memory, query IndexedDB (<3ms) and emit!
+  if (!emittedInitial) {
+    getCachedCollectionAsync(cacheKey)
+      .then((idbCached) => {
+        if (
+          !emittedInitial &&
+          idbCached &&
+          Array.isArray(idbCached.data) &&
+          idbCached.data.length > 0
+        ) {
+          try {
+            callback(idbCached.data);
+            emittedInitial = true;
+          } catch (err) {
+            console.warn(`Error in idb callback for ${name}:`, err);
+          }
+        }
+      })
+      .catch(() => {});
   }
 
   // Special Listener for sales: watches admin sales AND incoming staff sales in real time

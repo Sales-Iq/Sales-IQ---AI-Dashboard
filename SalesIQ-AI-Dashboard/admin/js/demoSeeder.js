@@ -333,6 +333,23 @@ function randomPayment() {
   return PAYMENT_METHODS[Math.floor(Math.random() * PAYMENT_METHODS.length)];
 }
 
+function resolveAdminProfile(profile = {}) {
+  let stored = null;
+  try {
+    stored = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+  } catch (_) {}
+
+  const p = profile || {};
+  return {
+    ...(stored || {}),
+    ...p,
+    id: p.id || stored?.id || "",
+    name: p.name || stored?.name || "",
+    email: p.email || stored?.email || "",
+    role: p.role || stored?.role || "Admin",
+  };
+}
+
 /* --------------------------
    Seed / Restock Products
 ---------------------------*/
@@ -584,7 +601,8 @@ export async function seedDemoCustomers(profile = null) {
    Generate 1 Dummy Sale
 ---------------------------*/
 export async function generateDummySale(profile = {}) {
-  const adminId = profile?.id || getActiveTenantId(profile);
+  const userProfile = resolveAdminProfile(profile);
+  const adminId = userProfile?.id || getActiveTenantId(userProfile);
   if (!adminId) {
     throw new Error("No active admin account found to generate sale.");
   }
@@ -594,7 +612,7 @@ export async function generateDummySale(profile = {}) {
   );
 
   if (!products.length) {
-    await seedDemoProducts({ restock: true, profile });
+    await seedDemoProducts({ restock: true, profile: userProfile });
     products = (await fetchAll("products", false, adminId)).filter(
       (p) => Number(p.stock || 0) > 0,
     );
@@ -691,11 +709,13 @@ export async function generateDummySale(profile = {}) {
     profit: (price - cost) * quantity,
     customerName: customer,
     paymentMethod: randomPayment(),
-    salespersonName: profile?.name || "Dummy Generator",
-    salespersonId: profile?.id || "demo",
+    salespersonName: userProfile?.name || userProfile?.email || "Admin",
+    salespersonId: userProfile?.id || "demo",
+    salespersonEmail: userProfile?.email || "",
+    salespersonRole: userProfile?.role || "Admin",
     source: "dummy",
     isDemo: true,
-    adminId: adminId,
+    adminId: userProfile?.id || adminId,
     createdAt: serverTimestamp(),
   };
 
@@ -759,7 +779,8 @@ export async function generateDummySale(profile = {}) {
    Generate Multiple Sales (Batched)
 ---------------------------*/
 export async function generateMultipleSales(count = 10, profile = {}) {
-  const adminId = profile?.id || getActiveTenantId(profile);
+  const userProfile = resolveAdminProfile(profile);
+  const adminId = userProfile?.id || getActiveTenantId(userProfile);
   if (!adminId) {
     throw new Error("No active admin account found to generate sales.");
   }
@@ -769,7 +790,7 @@ export async function generateMultipleSales(count = 10, profile = {}) {
   );
 
   if (!products.length) {
-    await seedDemoProducts({ restock: true, profile });
+    await seedDemoProducts({ restock: true, profile: userProfile });
     products = (await fetchAll("products", false, adminId)).filter(
       (p) => Number(p.stock || 0) > 0,
     );
@@ -780,7 +801,7 @@ export async function generateMultipleSales(count = 10, profile = {}) {
   }
 
   if (count <= 1) {
-    const sale = await generateDummySale(profile);
+    const sale = await generateDummySale(userProfile);
     return { count: 1, lastSale: sale };
   }
 
@@ -840,11 +861,13 @@ export async function generateMultipleSales(count = 10, profile = {}) {
         profit: (price - cost) * quantity,
         customerName: customer,
         paymentMethod: randomPayment(),
-        salespersonName: profile?.name || "Dummy Generator",
-        salespersonId: profile?.id || "demo",
+        salespersonName: userProfile?.name || userProfile?.email || "Admin",
+        salespersonId: userProfile?.id || "demo",
+        salespersonEmail: userProfile?.email || "",
+        salespersonRole: userProfile?.role || "Admin",
         source: "dummy",
         isDemo: true,
-        adminId: adminId,
+        adminId: userProfile?.id || adminId,
         createdAt: serverTimestamp(),
       });
     }
@@ -883,15 +906,16 @@ export async function generateMultipleSales(count = 10, profile = {}) {
    Populate Everything
 ---------------------------*/
 export async function populateEverything(profile = {}) {
-  const adminId = profile?.id || getActiveTenantId(profile);
+  const userProfile = resolveAdminProfile(profile);
+  const adminId = userProfile?.id || getActiveTenantId(userProfile);
   if (!adminId) {
     throw new Error("No active admin account found to populate database.");
   }
 
-  const products = await seedDemoProducts({ restock: true, profile });
-  const suppliers = await seedDemoSuppliers(profile);
-  const customers = await seedDemoCustomers(profile);
-  const sales = await generateMultipleSales(15, profile);
+  const products = await seedDemoProducts({ restock: true, profile: userProfile });
+  const suppliers = await seedDemoSuppliers(userProfile);
+  const customers = await seedDemoCustomers(userProfile);
+  const sales = await generateMultipleSales(15, userProfile);
 
   invalidateCache();
   await createNotification(
@@ -912,7 +936,8 @@ export function startDemoLive(interval = 5000, profile = {}) {
 
   demoInterval = setInterval(async () => {
     try {
-      await generateDummySale(profile);
+      const userProfile = resolveAdminProfile(profile);
+      await generateDummySale(userProfile);
     } catch (err) {
       console.error("Demo live error:", err);
     }

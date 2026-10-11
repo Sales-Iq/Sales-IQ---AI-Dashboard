@@ -215,11 +215,29 @@ export function setDemoInterval(ms) {
   return safe;
 }
 
+function getActiveAdminProfile(profile = null) {
+  let stored = null;
+  try {
+    stored = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+  } catch (_) {}
+
+  const p = profile || {};
+  return {
+    ...(stored || {}),
+    ...p,
+    id: p.id || stored?.id || "",
+    name: p.name || stored?.name || "",
+    email: p.email || stored?.email || "",
+    role: p.role || stored?.role || "Admin",
+  };
+}
+
 export async function seedDemoProducts({
   restock = false,
   profile = null,
 } = {}) {
-  const adminId = profile?.id || getActiveTenantId(profile);
+  const activeProfile = getActiveAdminProfile(profile);
+  const adminId = activeProfile?.id || getActiveTenantId(activeProfile);
   if (!adminId) return { created: 0, updated: 0, total: 0 };
 
   let created = 0;
@@ -278,7 +296,8 @@ export async function seedDemoProducts({
 }
 
 async function getDemoSaleProducts(profile = null) {
-  const adminId = profile?.id || getActiveTenantId(profile);
+  const activeProfile = getActiveAdminProfile(profile);
+  const adminId = activeProfile?.id || getActiveTenantId(activeProfile);
   if (!adminId) return [];
 
   let products = await fetchAll("products", false, adminId);
@@ -290,7 +309,7 @@ async function getDemoSaleProducts(profile = null) {
         String(p.id || "").startsWith("demo-")),
   );
   if (!demo.length) {
-    await seedDemoProducts({ profile });
+    await seedDemoProducts({ profile: activeProfile });
     products = await fetchAll("products", false, adminId);
     demo = products.filter(
       (p) =>
@@ -302,7 +321,7 @@ async function getDemoSaleProducts(profile = null) {
   }
   let available = demo.filter((p) => Number(p.stock || 0) > 0);
   if (!available.length && demo.length) {
-    await seedDemoProducts({ restock: true, profile });
+    await seedDemoProducts({ restock: true, profile: activeProfile });
     products = await fetchAll("products", false, adminId);
     available = products.filter(
       (p) =>
@@ -317,8 +336,9 @@ async function getDemoSaleProducts(profile = null) {
 }
 
 export async function createDummySale(profile = {}) {
-  const adminId = profile?.id || getActiveTenantId(profile);
-  const products = await getDemoSaleProducts(profile);
+  const activeProfile = getActiveAdminProfile(profile);
+  const adminId = activeProfile?.id || getActiveTenantId(activeProfile);
+  const products = await getDemoSaleProducts(activeProfile);
   if (!products.length)
     throw new Error("No demo products available. Seed demo products first.");
 
@@ -356,12 +376,14 @@ export async function createDummySale(profile = {}) {
       profit,
       customerName: randomItem(customerNames),
       paymentMethod: randomItem(paymentModes),
-      salespersonId: "system-demo",
-      salespersonName: "System Demo",
+      salespersonId: activeProfile?.id || "demo",
+      salespersonName: activeProfile?.name || activeProfile?.email || "Admin",
+      salespersonEmail: activeProfile?.email || "",
+      salespersonRole: activeProfile?.role || "Admin",
       source: "dummy",
       isDemo: true,
-      adminId: adminId || product.adminId || null,
-      generatedBy: profile?.id || "admin-demo-session",
+      adminId: activeProfile?.id || adminId || null,
+      generatedBy: activeProfile?.id || "admin-demo-session",
       createdAt: serverTimestamp(),
     };
 
@@ -389,11 +411,13 @@ export function startDemoLiveSales({
   let timer = null;
 
   const tick = async () => {
-    if (stopped || !isDemoLiveEnabled() || busy) return;
+    const activeProfile = getActiveAdminProfile(profile);
+    const adminId = activeProfile?.id;
+    if (stopped || !isDemoLiveEnabled(adminId) || busy) return;
     if (!takeDemoLock(intervalMs)) return;
     busy = true;
     try {
-      const sale = await createDummySale(profile);
+      const sale = await createDummySale(activeProfile);
       if (typeof onSale === "function") onSale(sale);
     } catch (err) {
       if (typeof onError === "function") onError(err);
@@ -411,4 +435,15 @@ export function startDemoLiveSales({
     clearInterval(timer);
     releaseDemoLock();
   };
+}
+
+export async function runDemoTick(profile = null) {
+  const activeProfile = getActiveAdminProfile(profile);
+  return await createDummySale(activeProfile);
+}
+
+if (typeof window !== "undefined") {
+  window.createDummySale = createDummySale;
+  window.startDemoLiveSales = startDemoLiveSales;
+  window.runDemoTick = runDemoTick;
 }

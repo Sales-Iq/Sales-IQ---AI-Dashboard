@@ -20,27 +20,69 @@ const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "sales", profile);
 
 let sales = [];
+let staffUsers = [];
 
-function sourceBadge(source) {
-  const s = String(source || "")
-    .toLowerCase()
-    .trim();
-  if (s === "dummy" || s === "demo") {
-    return '<span class="badge badge-warn">Dummy</span>';
+function getActiveProfile() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+    return {
+      ...(profile || {}),
+      ...(stored || {}),
+      name: stored?.name || profile?.name || "",
+      email: stored?.email || profile?.email || "",
+      id: stored?.id || profile?.id || "",
+      role: stored?.role || profile?.role || "Admin",
+    };
+  } catch (_) {
+    return profile || {};
   }
-  if (s === "admin") {
-    return '<span class="badge bg-purple-500/20 text-purple-300 border border-purple-500/30">Admin</span>';
-  }
-  return '<span class="badge badge-ok font-semibold">Staff</span>';
 }
 
-function sourceLabel(source) {
-  const s = String(source || "")
-    .toLowerCase()
-    .trim();
-  if (s === "dummy" || s === "demo") return "Dummy";
-  if (s === "admin") return "Admin";
-  return "Staff";
+function isDummySale(sale) {
+  if (!sale) return false;
+  if (
+    sale.source === "dummy" ||
+    sale.source === "demo" ||
+    Boolean(sale.isDemo)
+  ) return true;
+  if (sale.salespersonId === "demo" || sale.salespersonId === "system-demo") return true;
+  if (
+    typeof sale.invoiceNumber === "string" &&
+    (sale.invoiceNumber.startsWith("DM-") || sale.invoiceNumber.startsWith("DUMMY-"))
+  ) return true;
+  return false;
+}
+
+function isStaffSale(sale) {
+  if (!sale || isDummySale(sale)) return false;
+  if (sale.source === "staff") return true;
+  if (sale.salespersonRole === "Sales Staff" || sale.role === "Sales Staff") return true;
+  if (sale.salespersonId && staffUsers.some((u) => u.id === sale.salespersonId)) return true;
+  if (sale.salespersonId && sale.salespersonId !== profile.id && sale.source !== "admin") return true;
+  return false;
+}
+
+function isAdminSale(sale) {
+  if (!sale || isDummySale(sale)) return false;
+  if (sale.source === "admin") return true;
+  if (sale.salespersonId === profile.id || (!sale.source && !isStaffSale(sale))) return true;
+  return false;
+}
+
+function sourceBadge(source, sale) {
+  if ((sale && isDummySale(sale)) || source === "dummy" || source === "demo") {
+    return '<span class="badge badge-warn font-semibold">Dummy</span>';
+  }
+  if ((sale && isStaffSale(sale)) || source === "staff") {
+    return '<span class="badge badge-ok font-semibold">Staff</span>';
+  }
+  return '<span class="badge bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">Admin</span>';
+}
+
+function sourceLabel(source, sale) {
+  if ((sale && isDummySale(sale)) || source === "dummy" || source === "demo") return "Dummy";
+  if ((sale && isStaffSale(sale)) || source === "staff") return "Staff";
+  return "Admin";
 }
 
 function saleDay(s) {
@@ -53,11 +95,61 @@ function saleDay(s) {
 }
 
 function getSalespersonDisplay(s) {
+  if (!s) return "-";
+
+  const active = getActiveProfile();
+  const adminName = active.name || active.email || "Admin";
+
+  // 1. Demo / Dummy sale
+  if (isDummySale(s)) {
+    if (
+      s.salespersonName &&
+      !["System Demo", "Dummy Generator", "demo", "Admin"].includes(s.salespersonName)
+    ) {
+      return s.salespersonName;
+    }
+    if (adminName && adminName !== "Admin") return adminName;
+    if (s.salespersonName) return s.salespersonName;
+    if (s.salespersonEmail) return s.salespersonEmail;
+    return adminName;
+  }
+
+  // 2. Admin sale
+  if (isAdminSale(s) || s.source === "admin") {
+    if (
+      s.salespersonName &&
+      !["System Demo", "Dummy Generator", "demo", "Admin"].includes(s.salespersonName)
+    ) {
+      return s.salespersonName;
+    }
+    if (adminName && adminName !== "Admin") return adminName;
+    if (s.salespersonName) return s.salespersonName;
+    if (s.salespersonEmail) return s.salespersonEmail;
+    return adminName;
+  }
+
+  // 3. Staff sale
+  if (isStaffSale(s) || s.source === "staff") {
+    if (
+      s.salespersonName &&
+      !["System Demo", "Dummy Generator", "demo", "Sales Staff", "Admin"].includes(s.salespersonName)
+    ) {
+      return s.salespersonName;
+    }
+    if (s.salespersonId && Array.isArray(staffUsers)) {
+      const matched = staffUsers.find((u) => u.id === s.salespersonId);
+      if (matched?.name) return matched.name;
+      if (matched?.email) return matched.email;
+    }
+    if (s.salespersonEmail) return s.salespersonEmail;
+    if (s.salespersonName) return s.salespersonName;
+    return "Sales Staff";
+  }
+
+  // Fallback
   if (s.salespersonName) return s.salespersonName;
   if (s.salespersonEmail) return s.salespersonEmail;
-  if (s.source === "admin") return "Admin";
-  if (s.source === "dummy" || s.source === "demo") return "Demo Live";
-  return "Sales Staff";
+  return adminName;
 }
 
 function filtered() {
@@ -67,10 +159,11 @@ function filtered() {
 
   return sales.filter((s) => {
     const day = saleDay(s);
+    const spDisplay = getSalespersonDisplay(s).toLowerCase();
     const spName = (s.salespersonName || "").toLowerCase();
     const spEmail = (s.salespersonEmail || "").toLowerCase();
     const spId = (s.salespersonId || "").toLowerCase();
-    const src = (s.source || "").toLowerCase();
+    const src = sourceLabel(s.source, s).toLowerCase();
     const pMethod = s.paymentMethod || "";
     const pName = (s.productName || "").toLowerCase();
     const inv = (s.invoiceNumber || s.invoice || "").toLowerCase();
@@ -78,6 +171,7 @@ function filtered() {
     return (
       (!d || day === d) &&
       (!sp ||
+        spDisplay.includes(sp) ||
         spName.includes(sp) ||
         spEmail.includes(sp) ||
         spId.includes(sp) ||
@@ -114,14 +208,23 @@ function render() {
             ${rows
               .map((s) => {
                 const spTitle = getSalespersonDisplay(s);
+                let spEmail = s.salespersonEmail || "";
+                if (!spEmail && s.salespersonId && Array.isArray(staffUsers)) {
+                  const matched = staffUsers.find((u) => u.id === s.salespersonId);
+                  if (matched?.email) spEmail = matched.email;
+                }
+                if (!spEmail && (isAdminSale(s) || isDummySale(s))) {
+                  const active = getActiveProfile();
+                  spEmail = active.email || "";
+                }
                 const hasSeparateEmail =
-                  s.salespersonEmail && s.salespersonEmail !== spTitle;
+                  spEmail && spEmail !== spTitle;
                 const salespersonCell = `
                   <div>
                     <div class="font-medium text-slate-100">${spTitle}</div>
                     ${
                       hasSeparateEmail
-                        ? `<div class="text-xs text-slate-400">${s.salespersonEmail}</div>`
+                        ? `<div class="text-xs text-slate-400">${spEmail}</div>`
                         : ""
                     }
                   </div>
@@ -135,7 +238,7 @@ function render() {
                     <td class="font-mono font-bold text-emerald-400">${money(s.totalAmount)}</td>
                     <td>${dateText(s.createdAt)}</td>
                     <td>${salespersonCell}</td>
-                    <td>${sourceBadge(s.source)}</td>
+                    <td>${sourceBadge(s.source, s)}</td>
                     <td><span class="badge bg-slate-800 text-slate-300 border border-slate-700/60">${s.paymentMethod || "Cash"}</span></td>
                     <td class="text-right">
                       <button
@@ -200,17 +303,29 @@ const expBtn = $("#exportSalesCsv");
 if (expBtn) {
   expBtn.onclick = () => {
     toCSV(
-      filtered().map((s) => ({
-        invoice: s.invoiceNumber || s.invoice || "",
-        product: s.productName || "",
-        quantity: s.quantity || 0,
-        total: s.totalAmount || 0,
-        date: dateText(s.createdAt),
-        salesperson: getSalespersonDisplay(s),
-        salespersonEmail: s.salespersonEmail || "",
-        source: sourceLabel(s.source),
-        payment: s.paymentMethod || "Cash",
-      })),
+      filtered().map((s) => {
+        const spTitle = getSalespersonDisplay(s);
+        let spEmail = s.salespersonEmail || "";
+        if (!spEmail && s.salespersonId && Array.isArray(staffUsers)) {
+          const matched = staffUsers.find((u) => u.id === s.salespersonId);
+          if (matched?.email) spEmail = matched.email;
+        }
+        if (!spEmail && (isAdminSale(s) || isDummySale(s))) {
+          const active = getActiveProfile();
+          spEmail = active.email || "";
+        }
+        return {
+          invoice: s.invoiceNumber || s.invoice || "",
+          product: s.productName || "",
+          quantity: s.quantity || 0,
+          total: s.totalAmount || 0,
+          date: dateText(s.createdAt),
+          salesperson: spTitle,
+          salespersonEmail: spEmail,
+          source: sourceLabel(s.source, s),
+          payment: s.paymentMethod || "Cash",
+        };
+      }),
       "sales-report.csv",
     );
   };
@@ -218,6 +333,16 @@ if (expBtn) {
 
 async function load() {
   const adminId = profile.id;
+
+  try {
+    const stRows = await fetchAll("staff", false).catch(() => []);
+    staffUsers = (stRows || []).filter(
+      (u) =>
+        u.adminId === profile.id ||
+        u.createdBy === profile.id ||
+        u.pendingRequest?.adminId === profile.id,
+    );
+  } catch (_) {}
 
   // 1. Instant 0ms render from client-side cache
   const cachedTrue = getCachedCollection(`salesiq_cache_sales_${adminId}_true`);
@@ -255,6 +380,15 @@ async function load() {
 
 // 3. Fallback event listener for background cache updates
 window.addEventListener("salesiq:cache-updated", (e) => {
+  if (e.detail?.name === "staff" && Array.isArray(e.detail.data)) {
+    staffUsers = e.detail.data.filter(
+      (u) =>
+        u.adminId === profile.id ||
+        u.createdBy === profile.id ||
+        u.pendingRequest?.adminId === profile.id,
+    );
+    render();
+  }
   if (e.detail?.name === "sales" && Array.isArray(e.detail.data)) {
     sales = e.detail.data;
     sales.sort((a, b) => {

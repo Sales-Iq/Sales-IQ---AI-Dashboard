@@ -40,142 +40,276 @@
             <div>
               <h2 class="page-title">Settings</h2>
               <p class="page-subtitle">
-                Business name, logo, currency, tax, invoice prefix, theme and
-                profile settings.
+                Store branding, currency, tax rates, invoice templates, and account profile.
               </p>
             </div>
             <div class="flex flex-wrap gap-3"></div>
           </div>
-          <div class="grid xl:grid-cols-2 gap-6">
-            <form id="businessSettingsForm" class="glass p-6 space-y-4">
-              <h3 class="font-black text-xl">Business Settings</h3>
-              <div>
-                <label class="label">Business Name</label
-                ><input
-                  id="businessName"
-                  class="input"
-                  placeholder="SalesIQ Store"
-                />
-              </div>
-              <div>
-                <label class="label">Logo URL</label
-                ><input
-                  id="businessLogo"
-                  class="input"
-                  placeholder="https://..."
-                />
-              </div>
-              <div>
-                <label class="label">Currency</label
-                ><select id="currency" class="select">
-                  <option value="₹">₹ INR</option>
-                  <option value="$">$ USD</option>
-                  <option value="€">€ EUR</option>
-                  <option value="£">£ GBP</option>
-                </select>
-              </div>
-              <div>
-                <label class="label">Tax Percentage</label
-                ><input
-                  id="taxPercent"
-                  class="input"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <label class="label">Invoice Prefix</label
-                ><input id="invoicePrefix" class="input" placeholder="SIQ" />
-              </div>
-              <div>
-                <label class="label">Theme</label
-                ><select id="themeMode" class="select">
-                  <option value="dark">Dark</option>
-                  <option value="light">Light</option>
-                </select>
-              </div>
-              <button class="btn btn-primary w-full">Save Settings</button>
-            </form>
 
-            <div class="space-y-6">
-              <form id="aiSettingsForm" class="glass p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                  <h3 class="font-black text-xl flex items-center gap-2">
-                    <span>✨</span> Gemini AI Configuration
-                  </h3>
-                  <span class="badge badge-primary text-xs"
-                    >Live Multi-Model</span
+          <div class="grid xl:grid-cols-2 gap-6">
+            <!-- Left Column: Business & Store Configuration -->
+            <form id="businessSettingsForm" class="glass p-6 space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <h3 class="font-black text-xl flex items-center gap-2">
+                  <span>🏪</span> Business & Store Branding
+                </h3>
+                <span class="badge badge-primary text-xs">Live Sync</span>
+              </div>
+
+              <div>
+                <label class="label">Business Name</label>
+                <input
+                  id="businessName"
+                  class="input w-full"
+                  placeholder="e.g. SalesIQ Retail Store"
+                />
+                <p class="text-[11px] text-slate-400 mt-1">Appears on invoices, customer receipts, and reports.</p>
+              </div>
+
+              <div>
+                <label class="label">Logo URL</label>
+                <div class="flex gap-3 items-center">
+                  <input
+                    id="businessLogo"
+                    class="input flex-1"
+                    placeholder="https://example.com/logo.png"
+                  />
+                  <div
+                    id="logoPreviewBox"
+                    class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center overflow-hidden flex-shrink-0"
+                    title="Logo Preview"
                   >
-                </div>
-                <p class="text-xs text-slate-400">
-                  Configure your Google AI Studio API Key for live executive
-                  briefings, predictive forecasting, and automated column
-                  mapping.
-                </p>
-                <div>
-                  <label class="label">Gemini API Key</label>
-                  <div class="flex gap-2">
-                    <input
-                      id="geminiApiKey"
-                      class="input flex-1 font-mono text-xs"
-                      type="password"
-                      placeholder="AQ.Ab8RN6... or AIzaSy..."
+                    <span id="logoFallbackIcon" class="text-lg">🏪</span>
+                    <img
+                      id="logoPreviewImg"
+                      class="w-full h-full object-contain hidden"
+                      alt="Store Logo"
                     />
-                    <button
-                      type="button"
-                      id="toggleGeminiKeyVis"
-                      class="btn btn-ghost px-3 text-sm"
-                      title="Show / Hide"
-                    >
-                      👁️
-                    </button>
                   </div>
                 </div>
-                <div
-                  class="flex items-center justify-between text-xs text-slate-400"
-                >
-                  <span id="geminiKeyStatus">Status: Loaded</span>
-                  <button
-                    type="button"
-                    id="testGeminiKeyBtn"
-                    class="text-sky-400 hover:text-sky-300 font-bold transition"
-                  >
-                    ⚡ Test Connection
-                  </button>
-                </div>
-                <div class="flex gap-3 pt-1">
-                  <button type="submit" class="btn btn-primary flex-1">
-                    Save AI Key
-                  </button>
-                  <button
-                    type="button"
-                    id="clearAiCooldownBtn"
-                    class="btn btn-ghost text-xs"
-                    title="Reset temporary rate-limit cooldown markers"
-                  >
-                    Reset Quota Cache
-                  </button>
-                </div>
-              </form>
+                <p class="text-[11px] text-slate-400 mt-1">Direct HTTPS image link. Appears on printed receipts and invoices.</p>
+              </div>
 
-              <form id="passwordForm" class="glass p-6 space-y-4">
-                <h3 class="font-black text-xl">Change Password</h3>
-                <p class="text-slate-400">
-                  Requires recent login. If it fails, use Forgot Password from
-                  login page.
-                </p>
+              <div class="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="label">New Password</label
-                  ><input
-                    id="newPassword"
-                    class="input"
-                    type="password"
-                    minlength="6"
+                  <label class="label">Currency</label>
+                  <select id="currency" class="select w-full">
+                    <option value="₹">₹ INR (Indian Rupee)</option>
+                    <option value="$">$ USD (US Dollar)</option>
+                    <option value="€">€ EUR (Euro)</option>
+                    <option value="£">£ GBP (British Pound)</option>
+                    <option value="AED">AED (UAE Dirham)</option>
+                    <option value="CAD">$ CAD (Canadian Dollar)</option>
+                    <option value="AUD">$ AUD (Australian Dollar)</option>
+                    <option value="SGD">$ SGD (Singapore Dollar)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label">Default Tax / GST (%)</label>
+                  <input
+                    id="taxPercent"
+                    class="input w-full"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder="0"
                   />
                 </div>
-                <button class="btn btn-warn w-full">Change Password</button>
-              </form>
+              </div>
+
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="label">Invoice Prefix</label>
+                  <input
+                    id="invoicePrefix"
+                    class="input w-full font-mono uppercase"
+                    placeholder="SIQ"
+                    maxlength="10"
+                  />
+                  <p class="text-[11px] text-slate-400 mt-1">e.g. INV-XXXX, SIQ-XXXX</p>
+                </div>
+                <div>
+                  <label class="label">Theme Mode</label>
+                  <select id="themeMode" class="select w-full">
+                    <option value="dark">🌙 Dark Mode</option>
+                    <option value="light">☀️ Light Mode</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="pt-2">
+                <button type="submit" id="saveBusinessSettingsBtn" class="btn btn-primary w-full py-2.5">
+                  💾 Save Business Settings
+                </button>
+              </div>
+            </form>
+
+            <!-- Right Column: Profile & Live Invoice Branding Preview -->
+            <div class="space-y-6">
+              <!-- Admin Profile & Identity -->
+              <div class="glass p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                  <h3 class="font-black text-xl flex items-center gap-2">
+                    <span>👤</span> Administrator Profile
+                  </h3>
+                  <span class="badge badge-purple text-xs font-bold">Admin Account</span>
+                </div>
+
+                <div class="flex items-center gap-4 p-3 rounded-2xl bg-slate-900/60 border border-slate-800">
+                  <div
+                    id="profileAvatar"
+                    class="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg flex-shrink-0 shadow-lg shadow-sky-500/20"
+                  >
+                    A
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div id="profileDisplayName" class="font-bold text-slate-100 truncate text-base">
+                      Admin
+                    </div>
+                    <div id="profileEmail" class="text-xs text-slate-400 truncate">
+                      admin@salesiq.app
+                    </div>
+                  </div>
+                  <span class="badge badge-ok text-[11px] py-0.5 px-2">Active</span>
+                </div>
+
+                <div class="space-y-3 pt-1">
+                  <div>
+                    <label class="label">Display Name</label>
+                    <div class="flex gap-2">
+                      <input
+                        id="adminDisplayNameInput"
+                        class="input flex-1"
+                        placeholder="Your Full Name"
+                      />
+                      <button
+                        type="button"
+                        id="saveProfileNameBtn"
+                        class="btn btn-primary px-4 text-xs font-semibold"
+                      >
+                        Update
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="label">Admin Tenant ID (Store Code)</label>
+                    <div class="flex gap-2">
+                      <input
+                        id="adminTenantId"
+                        class="input flex-1 font-mono text-xs text-slate-300 bg-slate-950/70"
+                        readonly
+                      />
+                      <button
+                        type="button"
+                        id="copyTenantIdBtn"
+                        class="btn btn-ghost px-3 text-xs"
+                        title="Copy Store ID to clipboard"
+                      >
+                        📋 Copy
+                      </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">
+                      Staff members use this ID to connect their accounts to your store.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Invoice Branding Preview -->
+              <div class="glass p-6 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-black text-lg flex items-center gap-2">
+                    <span>🧾</span> Live Invoice Preview
+                  </h3>
+                  <span class="badge badge-primary text-[11px]">Realtime Preview</span>
+                </div>
+                <p class="text-xs text-slate-400">
+                  See how your branding details will appear on printed invoices & customer receipts.
+                </p>
+
+                <div class="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3 font-sans text-xs">
+                  <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        id="invoicePreviewLogoBox"
+                        class="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-400/30 flex items-center justify-center overflow-hidden"
+                      >
+                        <span id="invoicePreviewFallback" class="text-sm">🏪</span>
+                        <img
+                          id="invoicePreviewLogoImg"
+                          class="w-full h-full object-contain hidden"
+                          alt="Logo"
+                        />
+                      </div>
+                      <div>
+                        <div id="invoicePreviewBizName" class="font-bold text-sm text-slate-100">
+                          SalesIQ Store
+                        </div>
+                        <div class="text-[10px] text-slate-400">Official Retail Invoice</div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div id="invoicePreviewSampleNumber" class="font-mono font-bold text-sky-400">
+                        SIQ-74892011
+                      </div>
+                      <div class="text-[10px] text-slate-400">Original Copy</div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-1.5 py-1 text-slate-300">
+                    <div class="flex justify-between">
+                      <span>Sample Product Item x 2</span>
+                      <span id="invoicePreviewSampleSubtotal" class="font-mono">₹1,200.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                      <span id="invoicePreviewTaxLabel">Tax (0%)</span>
+                      <span id="invoicePreviewSampleTax" class="font-mono">₹0.00</span>
+                    </div>
+                    <div class="flex justify-between border-t border-slate-800/80 pt-1.5 font-bold text-emerald-400 text-sm">
+                      <span>Grand Total</span>
+                      <span id="invoicePreviewSampleTotal" class="font-mono">₹1,200.00</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Local Cache & System Diagnostics -->
+              <div class="glass p-6 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-black text-lg flex items-center gap-2">
+                    <span>⚡</span> System Storage & Diagnostics
+                  </h3>
+                  <span class="badge badge-ok text-[11px]">IndexedDB Cache Active</span>
+                </div>
+                <p class="text-xs text-slate-400">
+                  SalesIQ caches products, sales, and customers in high-speed browser memory for 0ms offline-first loading.
+                </p>
+
+                <div class="grid grid-cols-3 gap-2.5 py-1 text-center">
+                  <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                    <div id="cacheProductCount" class="font-bold text-sky-400 text-base">0</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Products</div>
+                  </div>
+                  <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                    <div id="cacheSaleCount" class="font-bold text-purple-400 text-base">0</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Sales</div>
+                  </div>
+                  <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                    <div id="cacheCustCount" class="font-bold text-emerald-400 text-base">0</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Customers</div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  id="clearLocalCacheBtn"
+                  class="btn btn-ghost btn-sm w-full text-xs text-rose-300 hover:text-rose-200 hover:bg-rose-500/15"
+                >
+                  🗑️ Clear Local Cache & Hard Reload
+                </button>
+              </div>
             </div>
           </div>
         </main>

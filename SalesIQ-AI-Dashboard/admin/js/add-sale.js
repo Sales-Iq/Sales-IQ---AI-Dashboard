@@ -11,6 +11,8 @@ import {
   createNotification,
   invalidateCache,
   hideSkeletonLoader,
+  onlyDate,
+  convertFromINR,
 } from "../../js/shared.js";
 
 import {
@@ -19,6 +21,7 @@ import {
   collection,
   addDoc,
   serverTimestamp,
+  Timestamp,
   runTransaction,
   query,
   where,
@@ -72,19 +75,48 @@ window.addEventListener("salesiq:cache-updated", (e) => {
   }
 });
 
+function getLocalDateString(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function initSaleDate() {
+  const dateInput = $("#saleDate");
+  if (dateInput && !dateInput.value) {
+    dateInput.value = getLocalDateString();
+  }
+}
+
+function getFormattedSaleDate() {
+  const val = $("#saleDate")?.value;
+  if (!val) return onlyDate(new Date());
+  const [py, pm, pd] = val.split("-").map(Number);
+  if (py && pm && pd) {
+    return onlyDate(new Date(py, pm - 1, pd));
+  }
+  return onlyDate(new Date());
+}
+
 function updatePreview() {
   const qty = Number($("#saleQty").value || 1);
   selected = products.find((product) => product.id === $("#saleProduct").value);
 
-  $("#salePrice").value = selected?.price || 0;
+  $("#salePrice").value = selected ? convertFromINR(selected.price || 0).toFixed(2) : 0;
   $("#saleStock").value = selected?.stock || 0;
 
   const total = Number(selected?.price || 0) * qty;
-  $("#saleTotal").value = total;
+  $("#saleTotal").value = selected ? convertFromINR(total).toFixed(2) : 0;
+
+  const invoicePrefix = (
+    localStorage.getItem("salesiq_invoice_prefix") || "SIQ"
+  ).toUpperCase();
 
   $("#invoicePreview").innerHTML = selected
     ? `
-      <div><b>Invoice:</b> SIQ-${uid()}</div>
+      <div><b>Invoice:</b> ${invoicePrefix}-${uid()}</div>
+      <div><b>Date:</b> ${getFormattedSaleDate()}</div>
       <div><b>Product:</b> ${selected.name}</div>
 <div><b>Category:</b> ${selected.category || "-"}</div>
 ${
@@ -107,8 +139,30 @@ ${
 
 $("#saleProduct").onchange = updatePreview;
 
-["saleQty", "customerName", "paymentMethod"].forEach((id) => {
-  $("#" + id).addEventListener("input", updatePreview);
+["saleQty", "customerName", "paymentMethod", "saleDate"].forEach((id) => {
+  const el = $("#" + id);
+  if (el) {
+    el.addEventListener("input", updatePreview);
+    el.addEventListener("change", updatePreview);
+  }
+});
+
+const setTodayBtn = $("#setTodayBtn");
+if (setTodayBtn) {
+  setTodayBtn.onclick = () => {
+    const saleDateInput = $("#saleDate");
+    if (saleDateInput) {
+      saleDateInput.value = getLocalDateString();
+      updatePreview();
+    }
+  };
+}
+
+$("#billingForm").addEventListener("reset", () => {
+  setTimeout(() => {
+    initSaleDate();
+    updatePreview();
+  }, 0);
 });
 
 $("#billingForm").onsubmit = async (e) => {
@@ -123,10 +177,15 @@ $("#billingForm").onsubmit = async (e) => {
     );
     if (!selected) throw new Error("Select product.");
 
-    const quantity = Number($("#saleQty").value);
-    if (quantity <= 0) throw new Error("Quantity must be greater than 0.");
+    const quantity = Math.floor(Number($("#saleQty")?.value || 0));
+    if (!quantity || quantity <= 0) {
+      throw new Error("Please enter a valid quantity of at least 1.");
+    }
 
-    const invoiceNumber = `SIQ-${Date.now().toString().slice(-8)}`;
+    const prefix = (
+      localStorage.getItem("salesiq_invoice_prefix") || "SIQ"
+    ).toUpperCase();
+    const invoiceNumber = `${prefix}-${Date.now().toString().slice(-8)}`;
     let newStock = 0;
 
     // Stores every batch used in this sale
@@ -210,6 +269,48 @@ $("#billingForm").onsubmit = async (e) => {
       await batchWriter.commit();
     }
 
+    const activeProfile = (() => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+        return {
+          ...(profile || {}),
+          ...(stored || {}),
+          name: stored?.name || profile?.name || "",
+          email: stored?.email || profile?.email || "",
+          id: stored?.id || profile?.id || "",
+          role: stored?.role || profile?.role || (isStaff ? "Sales Staff" : "Admin"),
+        };
+      } catch (_) {
+        return profile || {};
+      }
+    })();
+
+    const pickedDate = $("#saleDate")?.value || getLocalDateString();
+    let saleDateObj;
+    if (pickedDate) {
+      const [py, pm, pd] = pickedDate.split("-").map(Number);
+      const now = new Date();
+      const isToday =
+        now.getFullYear() === py &&
+        now.getMonth() + 1 === pm &&
+        now.getDate() === pd;
+
+      if (isToday) {
+        saleDateObj = now;
+      } else {
+        saleDateObj = new Date(
+          py,
+          pm - 1,
+          pd,
+          now.getHours(),
+          now.getMinutes(),
+          now.getSeconds(),
+        );
+      }
+    } else {
+      saleDateObj = new Date();
+    }
+
     const sale = {
       category: selected.category || "",
       invoiceNumber,
@@ -224,12 +325,18 @@ $("#billingForm").onsubmit = async (e) => {
         (Number(selected.price) - Number(selected.costPrice || 0)) * quantity,
       customerName: $("#customerName").value.trim(),
       paymentMethod: $("#paymentMethod").value,
-      salespersonId: profile.id,
-      salespersonName: profile.name || profile.email,
+      saleDate: pickedDate,
+      date: pickedDate,
+      salespersonId: activeProfile.id || profile.id,
+      salespersonName:
+        activeProfile.name || activeProfile.email || (isStaff ? "Sales Staff" : "Admin"),
+      salespersonEmail: activeProfile.email || "",
+      salespersonRole:
+        activeProfile.role || profile.role || (isStaff ? "Sales Staff" : "Admin"),
       source: isStaff ? "staff" : "admin",
-      adminId: isStaff ? profile.adminId || null : profile.id,
+      adminId: isStaff ? (activeProfile.adminId || profile.adminId || null) : (activeProfile.id || profile.id),
       isDemo: false,
-      createdAt: serverTimestamp(),
+      createdAt: Timestamp.fromDate(saleDateObj),
     };
 
     if (soldBatches.length > 0) {
@@ -242,15 +349,19 @@ $("#billingForm").onsubmit = async (e) => {
       await addDoc(collection(db, "customers"), {
         name: sale.customerName,
         totalSpent: sale.totalAmount,
-        lastPurchaseDate: new Date().toISOString().slice(0, 10),
+        lastPurchaseDate: pickedDate,
         adminId: sale.adminId,
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.fromDate(saleDateObj),
         source: sale.source,
       }).catch(() => {});
     }
 
+    const dateLabel =
+      sale.saleDate && sale.saleDate !== getLocalDateString()
+        ? ` (Date: ${sale.saleDate})`
+        : "";
     await createNotification(
-      `New sale ${invoiceNumber}: ${selected.name} x ${quantity}. Stock left: ${newStock}.`,
+      `New sale ${invoiceNumber}${dateLabel}: ${selected.name} x ${quantity}. Stock left: ${newStock}.`,
       "sale",
       sale.adminId,
     );
@@ -268,6 +379,7 @@ $("#billingForm").onsubmit = async (e) => {
     invalidateCache("customers");
     toast(`Invoice ${invoiceNumber} generated.`);
     $("#billingForm").reset();
+    initSaleDate();
     loadProducts();
   } catch (err) {
     toast(err.message, "err");
@@ -278,17 +390,41 @@ $("#billingForm").onsubmit = async (e) => {
 
 $("#printInvoice").onclick = () => {
   const html = $("#invoicePreview").innerHTML;
+  const bizName = localStorage.getItem("salesiq_business_name") || "SalesIQ";
+  const logoUrl = localStorage.getItem("salesiq_business_logo") || "";
   const w = window.open("", "_blank");
 
   w.document.write(`
-    <title>Invoice</title>
-    <body style="font-family:Arial;padding:30px">
-      <h1>SalesIQ Invoice</h1>
-      ${html}
-    </body>
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${bizName} - Invoice</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 32px; max-width: 600px; margin: 0 auto; color: #0f172a; }
+          .header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; }
+          .header img { height: 48px; max-width: 140px; object-fit: contain; }
+          .header-title h1 { margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; }
+          .header-title p { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+          .invoice-body { font-size: 14px; line-height: 1.8; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : '<span style="font-size:32px">🏪</span>'}
+          <div class="header-title">
+            <h1>${bizName}</h1>
+            <p>Official Retail Invoice</p>
+          </div>
+        </div>
+        <div class="invoice-body">
+          ${html}
+        </div>
+      </body>
+    </html>
   `);
 
   w.print();
 };
 
+initSaleDate();
 loadProducts();

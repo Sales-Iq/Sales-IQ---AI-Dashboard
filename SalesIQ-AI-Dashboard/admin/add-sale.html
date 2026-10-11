@@ -77,8 +77,8 @@
                 <label class="label">Total Amount</label
                 ><input id="saleTotal" class="input" type="number" readonly />
               </div>
-              <div>
-                <label class="label">Customer Name</label
+              <div class="md:col-span-2">
+                <label class="label" for="customerName">Customer Name</label
                 ><input
                   id="customerName"
                   class="input"
@@ -87,13 +87,31 @@
                 />
               </div>
               <div>
-                <label class="label">Payment Method</label
+                <label class="label" for="paymentMethod">Payment Method</label
                 ><select id="paymentMethod" class="select">
                   <option>Cash</option>
                   <option>UPI</option>
                   <option>Card</option>
                   <option>Net Banking</option>
                 </select>
+              </div>
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="label !mb-0" for="saleDate">Sale Date</label>
+                  <button
+                    type="button"
+                    id="setTodayBtn"
+                    class="text-xs text-sky-400 hover:text-sky-300 font-semibold transition"
+                  >
+                    Set to Today
+                  </button>
+                </div>
+                <input
+                  id="saleDate"
+                  class="input"
+                  type="date"
+                  required
+                />
               </div>
               <div class="md:col-span-2">
                 <button class="btn btn-primary w-full" type="submit">

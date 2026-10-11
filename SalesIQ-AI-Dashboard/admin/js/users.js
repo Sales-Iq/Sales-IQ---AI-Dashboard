@@ -2,12 +2,15 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   $$,
   toast,
   dateText,
   badgeForStatus,
   emptyState,
+  invalidateCache,
 } from "../../js/shared.js";
 
 import {
@@ -30,6 +33,26 @@ const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "users", profile);
 
 let allUsers = [];
+
+// 1. Instant 0ms cached render
+const cachedAdmins = getCachedCollection("salesiq_cache_admins_all_false");
+const cachedStaff =
+  getCachedCollection(`salesiq_cache_staff_${profile.id}_false`) ||
+  getCachedCollection("salesiq_cache_staff_all_false");
+if (cachedAdmins?.data?.length || cachedStaff?.data?.length) {
+  allUsers = [
+    ...(cachedAdmins?.data || []).map((u) => ({
+      ...u,
+      accountCollection: "admins",
+    })),
+    ...(cachedStaff?.data || []).map((u) => ({
+      ...u,
+      accountCollection: "staff",
+    })),
+  ];
+  renderAll();
+  hideSkeletonLoader();
+}
 const modal = $("#userModal");
 
 function safeArg(value) {
@@ -88,10 +111,16 @@ function renderSection(containerId, users, emptyMsg, isStaff = false) {
                 <td class="font-black">${u.name || "-"}</td>
                 <td>${u.email || "-"}</td>
                 <td>
-                  <select class="select" onchange="changeRole('${safeArg(u.id)}', this.value)">
-                    <option ${u.role === "Admin" ? "selected" : ""}>Admin</option>
-                    <option ${u.role === "Sales Staff" ? "selected" : ""}>Sales Staff</option>
-                  </select>
+                  ${
+                    profile.role === "Super Admin"
+                      ? `<select class="select" onchange="changeRole('${safeArg(u.id)}', this.value)">
+                           <option ${u.role === "Admin" ? "selected" : ""}>Admin</option>
+                           <option ${u.role === "Sales Staff" ? "selected" : ""}>Sales Staff</option>
+                         </select>`
+                      : `<span class="badge ${u.role === "Admin" ? "badge-primary" : "badge-info"} font-bold px-2.5 py-1">
+                           ${u.role || "Sales Staff"}
+                         </span>`
+                  }
                 </td>
                 ${isStaff ? `<td>${connectionHTML}</td>` : ""}
                 <td>${badgeForStatus(u.status || "active")}</td>
@@ -189,6 +218,10 @@ function renderAll() {
 }
 
 window.changeRole = async (id, role) => {
+  if (profile.role !== "Super Admin") {
+    toast("Permission Denied: Only Super Admin can change user roles.", "err");
+    return;
+  }
   const user = allUsers.find((u) => u.id === id);
   if (!user) return toast("Account not found", "err");
 
@@ -485,7 +518,10 @@ $("#userForm").onsubmit = async (e) => {
     const name = $("#staffName").value.trim();
     const email = $("#staffEmail").value.trim();
     const password = $("#staffPassword").value;
-    const role = $("#staffRole").value;
+    const role =
+      profile.role === "Super Admin"
+        ? $("#staffRole")?.value || "Sales Staff"
+        : "Sales Staff";
     const accountCollection = accountCollectionForRole(role);
 
     secondary = initializeApp(firebaseConfig, "secondary-" + Date.now());
@@ -554,6 +590,8 @@ async function load() {
   } catch (err) {
     console.error(err);
     toast("Could not load admin/staff accounts. Check Firestore rules.", "err");
+  } finally {
+    hideSkeletonLoader();
   }
 }
 

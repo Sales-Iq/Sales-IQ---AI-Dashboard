@@ -105,6 +105,44 @@ body.light {
     transform: translate3d(8vw, -6vh, 0) scale(1.15);
   }
 }
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes floaty {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+@keyframes pulseSoft {
+  0%, 100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+.animate-slideUp {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.animate-floaty {
+  animation: floaty 6s ease-in-out infinite;
+}
+.animate-pulseSoft {
+  animation: pulseSoft 2.5s ease-in-out infinite;
+}
+
 /* Skeleton Loader */
 .skeleton-loader {
   position: fixed;
@@ -285,6 +323,12 @@ body.light {
 .light .textarea {
   background: rgba(255, 255, 255, 0.74);
   color: #0f172a;
+}
+input[type="date"] {
+  color-scheme: dark;
+}
+.light input[type="date"] {
+  color-scheme: light;
 }
 .input:focus,
 .select:focus,

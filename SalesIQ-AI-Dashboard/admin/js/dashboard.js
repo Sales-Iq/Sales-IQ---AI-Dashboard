@@ -13,6 +13,9 @@ import {
   watchCollection,
   toast,
   setBusy,
+  hideSkeletonLoader,
+  convertFromINR,
+  getCurrency,
 } from "../../js/shared.js";
 import {
   db,
@@ -46,14 +49,54 @@ let products = [];
 let sales = [];
 let customers = [];
 let staffUsers = [];
+let adminUsers = [];
 let recentSalesFilter = "all";
 
+// Instant 0ms cached boot
 try {
-  const [pRows, sRows, cRows, stRows] = await Promise.all([
+  const cachedP = getCachedCollection(`salesiq_cache_products_${profile.id}_false`);
+  const cachedS = getCachedCollection(`salesiq_cache_sales_${profile.id}_true`);
+  const cachedC = getCachedCollection(`salesiq_cache_customers_${profile.id}_false`);
+  const cachedSt = getCachedCollection("salesiq_cache_staff_all_false");
+  const cachedAdm = getCachedCollection("salesiq_cache_admins_all_false");
+
+  const pData = cachedP?.data || (Array.isArray(cachedP) ? cachedP : null);
+  const sData = cachedS?.data || (Array.isArray(cachedS) ? cachedS : null);
+  const cData = cachedC?.data || (Array.isArray(cachedC) ? cachedC : null);
+  const stData = cachedSt?.data || (Array.isArray(cachedSt) ? cachedSt : null);
+  const admData = cachedAdm?.data || (Array.isArray(cachedAdm) ? cachedAdm : null);
+
+  if (pData || sData || cData || stData || admData) {
+    if (pData) products = pData;
+    if (sData) sales = sData;
+    if (cData) customers = cData;
+    if (stData) {
+      staffUsers = stData.filter(
+        (u) =>
+          u.adminId === profile.id ||
+          u.createdBy === profile.id ||
+          u.pendingRequest?.adminId === profile.id,
+      );
+    }
+    if (admData) {
+      adminUsers = admData.filter(
+        (u) => u.createdBy === profile.id && u.id !== profile.id,
+      );
+    }
+    renderDashboard();
+    hideSkeletonLoader();
+  }
+} catch (e) {
+  console.warn("Cached dashboard restore:", e);
+}
+
+try {
+  const [pRows, sRows, cRows, stRows, admRows] = await Promise.all([
     fetchAll("products", false, profile.id).catch(() => []),
     fetchAll("sales", true, profile.id).catch(() => []),
     fetchAll("customers", false, profile.id).catch(() => []),
     fetchAll("staff", false).catch(() => []),
+    fetchAll("admins", false).catch(() => []),
   ]);
   products = pRows || [];
   sales = sRows || [];
@@ -63,6 +106,9 @@ try {
       u.adminId === profile.id ||
       u.createdBy === profile.id ||
       u.pendingRequest?.adminId === profile.id,
+  );
+  adminUsers = (admRows || []).filter(
+    (u) => u.createdBy === profile.id && u.id !== profile.id,
   );
   renderDashboard();
 } catch (err) {
@@ -75,11 +121,35 @@ let chartEndDate = localStorage.getItem("salesiq_chart_end") || "";
 let lastStartVal = "";
 let lastEndVal = "";
 
+function getActiveProfile() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+    return {
+      ...(profile || {}),
+      ...(stored || {}),
+      name: stored?.name || profile?.name || "",
+      email: stored?.email || profile?.email || "",
+      id: stored?.id || profile?.id || "",
+      role: stored?.role || profile?.role || "Admin",
+    };
+  } catch (_) {
+    return profile || {};
+  }
+}
+
 function isDummySale(sale) {
   if (!sale) return false;
-  return (
-    sale.source === "dummy" || sale.source === "demo" || Boolean(sale.isDemo)
-  );
+  if (
+    sale.source === "dummy" ||
+    sale.source === "demo" ||
+    Boolean(sale.isDemo)
+  ) return true;
+  if (sale.salespersonId === "demo" || sale.salespersonId === "system-demo") return true;
+  if (
+    typeof sale.invoiceNumber === "string" &&
+    (sale.invoiceNumber.startsWith("DM-") || sale.invoiceNumber.startsWith("DUMMY-"))
+  ) return true;
+  return false;
 }
 
 function isStaffSale(sale) {
@@ -100,16 +170,60 @@ function isAdminSale(sale) {
 
 function getSalespersonDisplay(s) {
   if (!s) return "-";
+
+  const active = getActiveProfile();
+  const adminName = active.name || active.email || "Admin";
+
+  // 1. Demo / Dummy sale
+  if (isDummySale(s)) {
+    if (
+      s.salespersonName &&
+      !["System Demo", "Dummy Generator", "demo", "Admin"].includes(s.salespersonName)
+    ) {
+      return s.salespersonName;
+    }
+    if (adminName && adminName !== "Admin") return adminName;
+    if (s.salespersonName) return s.salespersonName;
+    if (s.salespersonEmail) return s.salespersonEmail;
+    return adminName;
+  }
+
+  // 2. Admin sale
+  if (isAdminSale(s) || s.source === "admin") {
+    if (
+      s.salespersonName &&
+      !["System Demo", "Dummy Generator", "demo", "Admin"].includes(s.salespersonName)
+    ) {
+      return s.salespersonName;
+    }
+    if (adminName && adminName !== "Admin") return adminName;
+    if (s.salespersonName) return s.salespersonName;
+    if (s.salespersonEmail) return s.salespersonEmail;
+    return adminName;
+  }
+
+  // 3. Staff sale
+  if (isStaffSale(s) || s.source === "staff") {
+    if (
+      s.salespersonName &&
+      !["System Demo", "Dummy Generator", "demo", "Sales Staff", "Admin"].includes(s.salespersonName)
+    ) {
+      return s.salespersonName;
+    }
+    if (s.salespersonId && Array.isArray(staffUsers)) {
+      const matched = staffUsers.find((u) => u.id === s.salespersonId);
+      if (matched?.name) return matched.name;
+      if (matched?.email) return matched.email;
+    }
+    if (s.salespersonEmail) return s.salespersonEmail;
+    if (s.salespersonName) return s.salespersonName;
+    return "Sales Staff";
+  }
+
+  // Fallback
   if (s.salespersonName) return s.salespersonName;
   if (s.salespersonEmail) return s.salespersonEmail;
-  if (s.salespersonId) {
-    const matched = staffUsers.find((u) => u.id === s.salespersonId);
-    if (matched?.name) return matched.name;
-    if (matched?.email) return matched.email;
-  }
-  if (isDummySale(s)) return "System Demo";
-  if (isStaffSale(s)) return "Sales Staff";
-  return profile.name || profile.email || "Admin";
+  return adminName;
 }
 
 function saleDate(sale) {
@@ -154,11 +268,12 @@ let isRunningTick = false;
 
 async function runDemoTick() {
   if (isRunningTick) return;
-  if (!isDemoLiveEnabled(profile.id)) return;
+  const currentProfile = getActiveProfile();
+  if (!isDemoLiveEnabled(currentProfile?.id || profile.id)) return;
   isRunningTick = true;
 
   try {
-    const sale = await generateDummySale(profile);
+    const sale = await generateDummySale(currentProfile);
     if (sale) {
       toast(
         `Live demo sale: ${sale.productName || "Product"} x ${sale.quantity || 1}`,
@@ -179,7 +294,9 @@ function startRunnerIfNeeded() {
     stopDemoRunner = null;
   }
 
-  if (!isDemoLiveEnabled(profile.id)) return;
+  const currentProfile = getActiveProfile();
+
+  if (!isDemoLiveEnabled(currentProfile?.id || profile.id)) return;
 
   const interval = 5000;
 
@@ -187,7 +304,8 @@ function startRunnerIfNeeded() {
   runDemoTick();
 
   stopDemoRunner = setInterval(() => {
-    if (!isDemoLiveEnabled(profile.id)) {
+    const p = getActiveProfile();
+    if (!isDemoLiveEnabled(p?.id || profile.id)) {
       if (stopDemoRunner) clearInterval(stopDemoRunner);
       stopDemoRunner = null;
       return;
@@ -211,7 +329,7 @@ function renderStats({ salesToday, monthSales, low, out }) {
           0,
         ),
       ),
-      `${salesToday.length} orders • ${dummyToday} dummy • ${staffToday} staff`,
+      `${salesToday.length} orders • ${dummyToday} dummy • ${staffToday} staff orders`,
     ],
     [
       "Monthly revenue",
@@ -416,7 +534,7 @@ function renderSalesChart() {
     byDay[key] = (byDay[key] || 0) + Number(sale.totalAmount || 0);
   });
 
-  const chartData = dateKeys.map((k) => byDay[k] || 0);
+  const chartData = dateKeys.map((k) => convertFromINR(byDay[k] || 0));
   const chartLabels = dateKeys.map(formatShortDate);
 
   const totalPeriodSales = chartData.reduce((sum, val) => sum + val, 0);
@@ -432,7 +550,7 @@ function renderSalesChart() {
     const startTxt = formatFullDate(range.start);
     const endTxt = formatFullDate(range.end);
     const labelPrefix = range.isCustom ? "Custom range" : "Default";
-    rangeTextEl.innerHTML = `${labelPrefix}: <b>${startTxt}</b> to <b>${endTxt}</b> • Total: <b class="text-sky-400">${money(totalPeriodSales)}</b> (${totalPeriodOrders} ${totalPeriodOrders === 1 ? "order" : "orders"})`;
+    rangeTextEl.innerHTML = `${labelPrefix}: <b>${startTxt}</b> to <b>${endTxt}</b> • Total: <b class="text-sky-400">${money(totalPeriodSales, getCurrency(), false)}</b> (${totalPeriodOrders} ${totalPeriodOrders === 1 ? "order" : "orders"})`;
   }
 
   makeChart(
@@ -460,7 +578,7 @@ function renderSalesChart() {
               const idx = items[0]?.dataIndex;
               return dateKeys[idx] ? formatFullDate(dateKeys[idx]) : "";
             },
-            label: (item) => ` Sales: ${money(item.raw)}`,
+            label: (item) => ` Sales: ${money(item.raw, getCurrency(), false)}`,
           },
         },
       },
@@ -470,6 +588,11 @@ function renderSalesChart() {
             autoSkip: true,
             maxTicksLimit: 12,
             maxRotation: 0,
+          },
+        },
+        y: {
+          ticks: {
+            callback: (val) => money(val, getCurrency(), false),
           },
         },
       },
@@ -524,7 +647,7 @@ function renderRecentSales() {
 
   const countBadge = $("#recentSalesCountBadge");
   if (countBadge) {
-    countBadge.textContent = `${sortedSales.length} total • ${staffCount} staff`;
+    countBadge.textContent = `${sortedSales.length} total • ${staffCount} staff sales`;
   }
 
   const filteredSales = sortedSales.filter((s) => {
@@ -557,9 +680,13 @@ function renderRecentSales() {
               .map((sale) => {
                 const spTitle = getSalespersonDisplay(sale);
                 let spEmail = sale.salespersonEmail || "";
-                if (!spEmail && sale.salespersonId) {
+                if (!spEmail && sale.salespersonId && Array.isArray(staffUsers)) {
                   const matched = staffUsers.find((u) => u.id === sale.salespersonId);
                   if (matched?.email) spEmail = matched.email;
+                }
+                if (!spEmail && (isAdminSale(sale) || isDummySale(sale))) {
+                  const active = getActiveProfile();
+                  spEmail = active.email || "";
                 }
                 const hasSeparateEmail = spEmail && spEmail !== spTitle;
                 const staff = isStaffSale(sale);
@@ -648,30 +775,44 @@ function renderAiSummary({ low, out }) {
   ].sort((a, b) => b[1] - a[1])[0];
 
   const dummyCount = sales.filter(isDummySale).length;
-  const staffSales = sales.filter(isStaffSale).length;
-  const adminSales = sales.filter(isAdminSale).length;
-  const staffCount = staffSales;
 
-  const myStaff = staffUsers.filter((u) => u.adminId === profile.id);
-  const myStaffCount = myStaff.length;
+  // Only consider staff strictly connected to this respective admin
+  const connectedStaff = staffUsers.filter((u) => u.adminId === profile.id);
+  const connectedStaffCount = connectedStaff.length;
 
-  const staffText =
-    myStaffCount > 0 ? `, and <b>${myStaffCount}</b> sales staff` : "";
+  // Only consider co-admins created by / linked to this respective admin
+  const connectedAdmins = adminUsers.filter(
+    (u) => u.createdBy === profile.id && u.id !== profile.id,
+  );
+  const connectedAdminCount = connectedAdmins.length;
+
+  const teamParts = [];
+  teamParts.push(`<b>${connectedStaffCount}</b> connected sales staff`);
+  if (connectedAdminCount > 0) {
+    teamParts.push(
+      `<b>${connectedAdminCount}</b> connected admin${connectedAdminCount === 1 ? "" : "s"}`,
+    );
+  }
+
+  const staffText = `, and ${teamParts.join(" and ")}`;
 
   aiEl.innerHTML =
-    products.length || sales.length || staffUsers.length
+    products.length ||
+    sales.length ||
+    connectedStaff.length ||
+    connectedAdminCount
       ? `
       Your dashboard has <b>${products.length}</b> products and <b>${sales.length}</b> sales records${staffText}.<br><br>
-      <span class="badge badge-warn">${dummyCount} dummy</span>
-      <span class="badge badge-ok" title="Staff sales">${staffCount} staff</span>
-      ${adminSales > 0 && staffSales > 0 ? `<span class="badge badge-purple" title="Admin sales">${adminSales} admin</span>` : ""}
+      <span class="badge ${connectedStaffCount > 0 ? "badge-ok" : "bg-slate-800 text-slate-400 border border-slate-700"}" title="Sales staff connected to this admin">${connectedStaffCount} connected staff</span>
+      ${connectedAdminCount > 0 ? `<span class="badge badge-purple" title="Admins connected to this admin">${connectedAdminCount} connected admin${connectedAdminCount === 1 ? "" : "s"}</span>` : ""}
+      ${dummyCount > 0 ? `<span class="badge badge-warn">${dummyCount} dummy sales</span>` : ""}
       ${low ? `<br><br><span class="badge badge-warn">${low} products are low stock</span>` : ""}
       ${out ? `<br><br><span class="badge badge-danger">${out} products are out of stock</span>` : ""}
       ${fastest ? `<br><br>Fast-selling product: <b>${fastest[0]}</b> (${fastest[1]} units sold).` : ""}
     `
       : emptyState(
           "No AI summary yet",
-          "Add products, start dummy live data, or create staff sales to generate a business summary.",
+          "Add products, start dummy live data, or connect staff to generate a business summary.",
         );
 }
 
@@ -694,6 +835,17 @@ function renderDashboard() {
   renderRecentSales();
   renderAiSummary({ low, out });
   renderDemoControls();
+  hideSkeletonLoader();
+}
+
+let renderPending = false;
+function scheduleRenderDashboard() {
+  if (renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(() => {
+    renderPending = false;
+    renderDashboard();
+  });
 }
 
 $("#seedDemoProducts")?.addEventListener("click", async (e) => {
@@ -719,11 +871,12 @@ $("#generateDemoSale")?.addEventListener("click", async (e) => {
   setBusy(btn, true, `Generating ${count}...`);
 
   try {
+    const currentProfile = getActiveProfile();
     if (count === 1) {
-      const sale = await generateDummySale(profile);
+      const sale = await generateDummySale(currentProfile);
       toast(`Dummy sale added: ${sale.productName} x ${sale.quantity}`);
     } else {
-      const res = await generateMultipleSales(count, profile);
+      const res = await generateMultipleSales(count, currentProfile);
       toast(`${res.count} dummy sales generated successfully!`);
     }
   } catch (err) {
@@ -738,7 +891,7 @@ $("#generateCustomers")?.addEventListener("click", async (e) => {
   setBusy(btn, true, "Adding customers...");
 
   try {
-    const res = await seedDemoCustomers(profile);
+    const res = await seedDemoCustomers(getActiveProfile());
     toast(`Customers seeded: ${res.created} added, ${res.updated} updated.`);
   } catch (err) {
     toast(err.message, "err");
@@ -752,7 +905,7 @@ $("#generateSuppliers")?.addEventListener("click", async (e) => {
   setBusy(btn, true, "Adding suppliers...");
 
   try {
-    const res = await seedDemoSuppliers(profile);
+    const res = await seedDemoSuppliers(getActiveProfile());
     toast(`Suppliers seeded: ${res.created} added, ${res.updated} updated.`);
   } catch (err) {
     toast(err.message, "err");
@@ -766,7 +919,8 @@ $("#generateEverything")?.addEventListener("click", async (e) => {
   setBusy(btn, true, "Populating DB...");
 
   try {
-    await populateEverything(profile);
+    const currentProfile = getActiveProfile();
+    await populateEverything(currentProfile);
     toast(
       "Full demo database populated: products, suppliers, customers, and sales!",
     );
@@ -778,8 +932,10 @@ $("#generateEverything")?.addEventListener("click", async (e) => {
 });
 
 $("#toggleDemoLive")?.addEventListener("click", () => {
-  const newState = !isDemoLiveEnabled(profile.id);
-  setDemoLiveEnabled(newState, profile.id);
+  const currentProfile = getActiveProfile();
+  const targetId = currentProfile?.id || profile.id;
+  const newState = !isDemoLiveEnabled(targetId);
+  setDemoLiveEnabled(newState, targetId);
   renderDemoControls();
   startRunnerIfNeeded();
   toast(newState ? "Dummy live sales started." : "Dummy live sales stopped.");
@@ -790,7 +946,7 @@ const unsubs = [
     "products",
     (rows) => {
       products = rows;
-      renderDashboard();
+      scheduleRenderDashboard();
     },
     false,
     profile.id,
@@ -799,7 +955,7 @@ const unsubs = [
     "sales",
     (rows) => {
       sales = rows;
-      renderDashboard();
+      scheduleRenderDashboard();
     },
     true,
     profile.id,
@@ -808,7 +964,7 @@ const unsubs = [
     "customers",
     (rows) => {
       customers = rows;
-      renderDashboard();
+      scheduleRenderDashboard();
     },
     false,
     profile.id,
@@ -822,7 +978,17 @@ const unsubs = [
           u.createdBy === profile.id ||
           u.pendingRequest?.adminId === profile.id,
       );
-      renderDashboard();
+      scheduleRenderDashboard();
+    },
+    false,
+  ),
+  watchCollection(
+    "admins",
+    (rows) => {
+      adminUsers = rows.filter(
+        (u) => u.createdBy === profile.id && u.id !== profile.id,
+      );
+      scheduleRenderDashboard();
     },
     false,
   ),
@@ -831,7 +997,20 @@ const unsubs = [
 window.addEventListener("salesiq:cache-updated", (e) => {
   if (e.detail?.name === "sales" && Array.isArray(e.detail.data)) {
     sales = e.detail.data;
-    renderDashboard();
+    scheduleRenderDashboard();
+  } else if (e.detail?.name === "staff" && Array.isArray(e.detail.data)) {
+    staffUsers = e.detail.data.filter(
+      (u) =>
+        u.adminId === profile.id ||
+        u.createdBy === profile.id ||
+        u.pendingRequest?.adminId === profile.id,
+    );
+    scheduleRenderDashboard();
+  } else if (e.detail?.name === "admins" && Array.isArray(e.detail.data)) {
+    adminUsers = e.detail.data.filter(
+      (u) => u.createdBy === profile.id && u.id !== profile.id,
+    );
+    scheduleRenderDashboard();
   }
 });
 
@@ -1007,8 +1186,8 @@ function initManualSaleModal() {
     const p = products.find((x) => x.id === pId);
     const qty = Number(qtyInput.value || 1);
     const price = Number(p?.price || 0);
-    priceInput.value = price;
-    totalInput.value = price * qty;
+    priceInput.value = convertFromINR(price).toFixed(2);
+    totalInput.value = convertFromINR(price * qty).toFixed(2);
   }
 
   function openModal() {
@@ -1025,8 +1204,12 @@ function initManualSaleModal() {
     qtyInput.value = 1;
     priceInput.value = 0;
     totalInput.value = 0;
-    $("#manualCustomerName").value = "";
-    $("#manualPaymentMethod").value = "Cash";
+    if ($("#manualSalePriceLabel")) {
+      $("#manualSalePriceLabel").textContent = `Unit Price (${getCurrency()})`;
+    }
+    if ($("#manualSaleTotalLabel")) {
+      $("#manualSaleTotalLabel").textContent = `Total Amount (${getCurrency()})`;
+    }
 
     modal.classList.add("show");
   }
@@ -1097,6 +1280,7 @@ function initManualSaleModal() {
         updatedAt: Timestamp.now(),
       }).catch((err) => console.warn("Stock update warning:", err));
 
+      const activeAdmin = getActiveProfile();
       const saleData = {
         invoiceNumber,
         productId: p.id,
@@ -1109,9 +1293,12 @@ function initManualSaleModal() {
         profit: (price - cost) * qty,
         customerName: customer,
         paymentMethod: payment,
-        salespersonName: profile?.name || profile?.email || "Admin",
-        salespersonId: profile?.id || "admin",
+        salespersonName: activeAdmin.name || activeAdmin.email || "Admin",
+        salespersonId: activeAdmin.id || profile?.id || "admin",
+        salespersonEmail: activeAdmin.email || "",
+        salespersonRole: "Admin",
         source: "admin",
+        adminId: activeAdmin.id || profile?.id || null,
         isDemo: false,
         createdAt: Timestamp.fromDate(saleDateObj),
       };

@@ -12,6 +12,7 @@ import {
   money,
   emptyState,
   createNotification,
+  invalidateCache,
 } from "../../js/shared.js";
 import {
   db,
@@ -231,6 +232,8 @@ $("#stockForm").onsubmit = async (e) => {
     updatedAt: serverTimestamp(),
   });
   toast("Stock updated.");
+  invalidateCache("products");
+  invalidateCache("productBatches");
   modal.classList.remove("show");
   load();
 };

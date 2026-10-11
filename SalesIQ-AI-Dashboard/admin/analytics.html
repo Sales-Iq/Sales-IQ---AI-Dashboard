@@ -27,9 +27,107 @@
     <div class="app-main">
       <header id="appHeader" class="app-header"></header>
       <main class="page-container animate-slideUp">
-        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Analytics</h2><p class="page-subtitle">Charts and reports from real Firestore sales data.</p></div><div class="flex flex-wrap gap-3"></div></div>
-<div class="grid xl:grid-cols-2 gap-6 mb-6"><div class="glass chart-box"><h3 class="font-black mb-3">Daily Sales Trend</h3><div class="chart-wrap"><canvas id="dailySalesChart"></canvas></div></div><div class="glass chart-box"><h3 class="font-black mb-3">Monthly Sales</h3><div class="chart-wrap"><canvas id="monthlySalesChart"></canvas></div></div><div class="glass chart-box"><h3 class="font-black mb-3">Top Selling Products</h3><div class="chart-wrap"><canvas id="topProductsChart"></canvas></div></div><div class="glass chart-box"><h3 class="font-black mb-3">Category-wise Sales</h3><div class="chart-wrap"><canvas id="categorySalesChart"></canvas></div></div><div class="glass chart-box"><h3 class="font-black mb-3">Revenue Growth Area</h3><div class="chart-wrap"><canvas id="revenueChart"></canvas></div></div><div class="glass chart-box"><h3 class="font-black mb-3">Profit Chart</h3><div class="chart-wrap"><canvas id="profitChart"></canvas></div></div></div>
-<div class="glass p-5"><h3 class="font-black mb-4">Least-selling Products & Stock Movement</h3><div id="leastProducts"></div></div>
+        <!-- Header & Timeframe Filter -->
+        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div>
+            <h2 class="page-title">Analytics</h2>
+            <p class="page-subtitle">Real-time financial performance, profitability curves, and stock movement analysis.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <div id="timeframeFilterGroup" class="flex items-center gap-1.5 p-1 bg-slate-900/80 border border-slate-800 rounded-xl">
+              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-primary font-medium" data-timeframe="all">All Time</button>
+              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="30d">Last 30 Days</button>
+              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="month">This Month</button>
+              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="7d">Last 7 Days</button>
+              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="today">Today</button>
+            </div>
+            <a href="ai-insights.html" class="btn btn-ghost" title="Explore AI-driven revenue & inventory insights">
+              🤖 AI Insights
+            </a>
+          </div>
+        </div>
+
+        <!-- Top KPI Stats Grid -->
+        <div id="analyticsStats" class="stats-grid mb-6"></div>
+
+        <!-- Charts Grid -->
+        <div class="grid xl:grid-cols-2 gap-6 mb-6">
+          <div class="glass chart-box">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-black text-slate-100 flex items-center gap-2">
+                <span>📈</span> Daily Sales Trend
+              </h3>
+              <span id="dailySalesBadge" class="text-xs text-sky-400 font-bold"></span>
+            </div>
+            <div class="chart-wrap"><canvas id="dailySalesChart"></canvas></div>
+          </div>
+
+          <div class="glass chart-box">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-black text-slate-100 flex items-center gap-2">
+                <span>📊</span> Monthly Sales
+              </h3>
+              <span id="monthlySalesBadge" class="text-xs text-purple-400 font-bold"></span>
+            </div>
+            <div class="chart-wrap"><canvas id="monthlySalesChart"></canvas></div>
+          </div>
+
+          <div class="glass chart-box">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-black text-slate-100 flex items-center gap-2">
+                <span>🏆</span> Top Selling Products
+              </h3>
+              <span id="topProductsBadge" class="text-xs text-emerald-400 font-bold"></span>
+            </div>
+            <div class="chart-wrap"><canvas id="topProductsChart"></canvas></div>
+          </div>
+
+          <div class="glass chart-box">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-black text-slate-100 flex items-center gap-2">
+                <span>🏷️</span> Category-wise Sales
+              </h3>
+              <span id="categoryBadge" class="text-xs text-amber-400 font-bold"></span>
+            </div>
+            <div class="chart-wrap"><canvas id="categorySalesChart"></canvas></div>
+          </div>
+
+          <div class="glass chart-box">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-black text-slate-100 flex items-center gap-2">
+                <span>🚀</span> Revenue Growth Area
+              </h3>
+              <span id="growthBadge" class="text-xs text-sky-400 font-bold"></span>
+            </div>
+            <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
+          </div>
+
+          <div class="glass chart-box">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-black text-slate-100 flex items-center gap-2">
+                <span>💰</span> Gross Profit Trend
+              </h3>
+              <span id="profitBadge" class="text-xs text-emerald-400 font-bold"></span>
+            </div>
+            <div class="chart-wrap"><canvas id="profitChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Least-Selling Products & Inventory Movement -->
+        <div class="glass p-5">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="font-black text-lg text-slate-100 flex items-center gap-2">
+                <span>📦</span> Least-selling Products & Stock Movement
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Identifies zero-sales dead inventory, slow movers, and capital locked up in warehouse shelves.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="deadStockCountBadge" class="badge badge-warn text-xs"></span>
+            </div>
+          </div>
+          <div id="leastProducts"></div>
+        </div>
 
       </main>
     </div>
@@ -38,7 +136,7 @@
   <div id="toastRoot" class="toast-root"></div>
   <script src="../js/fallback-ui.js" defer></script>
   <script src="../js/liquid-glass.js" defer></script>
-<script type="module" src="../js/shared.js"></script>
+  <script type="module" src="../js/shared.js"></script>
   <script type="module" src="js/analytics.js"></script>
 </body>
 </html>

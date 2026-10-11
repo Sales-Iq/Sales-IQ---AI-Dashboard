@@ -12,7 +12,7 @@ import {
   sendPasswordResetEmail,
 } from "./firebase-config.js";
 
-import { $, toast, setBusy } from "./shared.js";
+import { $, toast, setBusy, syncTenantCurrency } from "./shared.js";
 import {
   accountCollectionForRole,
   getAccountProfile,
@@ -58,6 +58,27 @@ async function redirectByRole(user) {
   if (data.status === "inactive") {
     toast("Your account is inactive. Contact admin.", "err");
     return;
+  }
+
+  // Cache user profile for instant 0ms session resume
+  try {
+    localStorage.setItem("salesiq_user", JSON.stringify(data));
+  } catch (_) {}
+
+  // Check and apply tenant currency & business settings on login
+  try {
+    const tenantId =
+      data.role === "Sales Staff"
+        ? data.adminId || data.createdBy || data.id
+        : data.role === "Super Admin"
+          ? "main"
+          : data.id;
+
+    if (tenantId) {
+      await syncTenantCurrency(tenantId);
+    }
+  } catch (err) {
+    console.warn("Could not load tenant currency at login:", err);
   }
 
   location.href =

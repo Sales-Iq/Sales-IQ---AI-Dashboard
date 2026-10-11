@@ -2,6 +2,8 @@ import {
   requireAuth,
   initAppShell,
   fetchAll,
+  getCachedCollection,
+  hideSkeletonLoader,
   $,
   money,
   dateText,
@@ -26,30 +28,56 @@ const cards = [
   ["Profit", "profit"],
   ["Salesperson Performance", "performance"],
 ];
-async function load() {
-  [products, sales, purchases, admins, staff] = await Promise.all([
-    fetchAll("products"),
-    fetchAll("sales"),
-    fetchAll("purchases"),
-    fetchAll("admins"),
-    fetchAll("staff"),
-  ]);
-  accounts = [
-    ...admins.map((a) => ({ ...a, accountCollection: "admins" })),
-    ...staff.map((s) => ({ ...s, accountCollection: "staff" })),
-  ];
-  $("#reportCards").innerHTML = cards
+
+// 1. Instant 0ms Synchronous Render for Report Cards
+const cardsContainer = $("#reportCards");
+if (cardsContainer) {
+  cardsContainer.innerHTML = cards
     .map(
       (c) =>
         `<div class="glass p-5 glass-card-hover"><h3 class="font-black text-xl">${c[0]}</h3><p class="text-slate-400 my-3">Download ${c[0].toLowerCase()} report.</p><div class="flex gap-2 flex-wrap"><button class="btn btn-primary btn-sm" onclick="downloadReport('${c[1]}','pdf')">PDF</button><button class="btn btn-success btn-sm" onclick="downloadReport('${c[1]}','csv')">CSV</button><button class="btn btn-ghost btn-sm" onclick="downloadReport('${c[1]}','excel')">Excel</button></div></div>`,
     )
     .join("");
-  $("#reportPreview").innerHTML = sales.length
+}
+
+// 2. Instant 0ms Cached Preview
+function renderPreview() {
+  const preview = $("#reportPreview");
+  if (!preview) return;
+  preview.innerHTML = sales.length || products.length
     ? `<p>Total sales records: <b>${sales.length}</b></p><p>Total inventory items: <b>${products.length}</b></p><p>Admin accounts: <b>${admins.length}</b> | Staff accounts: <b>${staff.length}</b></p>`
     : emptyState(
         "No report data",
         "Add sales/products to download detailed reports.",
       );
+}
+
+const cSales = getCachedCollection(`salesiq_cache_sales_${profile.id}_true`);
+const cProds = getCachedCollection(`salesiq_cache_products_${profile.id}_false`);
+if (cSales?.data || cProds?.data) {
+  sales = cSales?.data || [];
+  products = cProds?.data || [];
+  renderPreview();
+  hideSkeletonLoader();
+}
+
+async function load() {
+  try {
+    [products, sales, purchases, admins, staff] = await Promise.all([
+      fetchAll("products", false, profile.id),
+      fetchAll("sales", true, profile.id),
+      fetchAll("purchases", false, profile.id),
+      fetchAll("admins", false),
+      fetchAll("staff", false),
+    ]);
+    accounts = [
+      ...admins.map((a) => ({ ...a, accountCollection: "admins" })),
+      ...staff.map((s) => ({ ...s, accountCollection: "staff" })),
+    ];
+    renderPreview();
+  } finally {
+    hideSkeletonLoader();
+  }
 }
 function saleDay(s) {
   const d = toDate(s.createdAt);
@@ -85,10 +113,27 @@ function rowsFor(type) {
       profit: s.profit,
       date: dateText(s.createdAt),
     }));
+
+  function getReportSalesperson(s) {
+    if (!s) return "Unknown";
+    if (
+      s.salespersonName &&
+      !["System Demo", "Dummy Generator", "demo", "Unknown"].includes(s.salespersonName)
+    ) {
+      return s.salespersonName;
+    }
+    if (s.salespersonId && Array.isArray(accounts)) {
+      const acc = accounts.find((a) => a.id === s.salespersonId);
+      if (acc?.name) return acc.name;
+      if (acc?.email) return acc.email;
+    }
+    return profile?.name || profile?.email || "Admin";
+  }
+
   if (type === "performance") {
     const m = {};
     sales.forEach((s) => {
-      const k = s.salespersonName || "Unknown";
+      const k = getReportSalesperson(s);
       m[k] = m[k] || { salesperson: k, orders: 0, revenue: 0 };
       m[k].orders++;
       m[k].revenue += Number(s.totalAmount || 0);
@@ -105,7 +150,7 @@ function rowsFor(type) {
     quantity: s.quantity,
     total: s.totalAmount,
     payment: s.paymentMethod,
-    salesperson: s.salespersonName,
+    salesperson: getReportSalesperson(s),
     date: dateText(s.createdAt),
   }));
 }
