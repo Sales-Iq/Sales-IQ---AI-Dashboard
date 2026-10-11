@@ -40,6 +40,7 @@ initAppShell("admin", "products", profile);
 
 let products = [];
 let batches = [];
+let sales = [];
 
 // State for Excel / CSV Import
 let parsedImportData = {
@@ -48,6 +49,12 @@ let parsedImportData = {
   rows: [],
   currentMapping: {},
 };
+
+const modal = $("#productModal");
+const form = $("#productForm");
+const importModal = $("#importModal");
+const stockModal = $("#stockModal");
+const stockForm = $("#stockForm");
 
 function getProductBatches(productId) {
   return batches.filter(
@@ -80,9 +87,29 @@ function nearestExpiry(product) {
   return "-";
 }
 
-const modal = $("#productModal");
-const form = $("#productForm");
-const importModal = $("#importModal");
+function batchStatus(product) {
+  if (!product) return "";
+  const list = getProductBatches(product.id);
+  const nearest = list
+    .filter((b) => b.expiryDate)
+    .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))[0];
+  const expStr = nearest ? nearest.expiryDate : product.expiryDate;
+  if (!expStr) return "";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expStr);
+  expiry.setHours(0, 0, 0, 0);
+  const days = Math.ceil((expiry - today) / 86400000);
+
+  if (days < 0) {
+    return '<div class="mt-1"><span class="badge badge-danger text-xs font-semibold">Expired</span></div>';
+  }
+  if (days <= 30) {
+    return `<div class="mt-1"><span class="badge badge-warn text-xs font-semibold">Expires in ${days}d</span></div>`;
+  }
+  return '<div class="mt-1"><span class="badge badge-ok text-xs font-semibold">Fresh</span></div>';
+}
 
 const PERISHABLE_CATEGORIES = new Set(["food", "medicine"]);
 
@@ -243,6 +270,31 @@ function renderStats() {
   });
   const totalAlerts = lowStockCount + outOfStockCount;
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expiringBatchProductIds = new Set();
+  batches.forEach((b) => {
+    if (!b.expiryDate || Number(b.remainingQuantity) <= 0) return;
+    const exp = new Date(b.expiryDate);
+    exp.setHours(0, 0, 0, 0);
+    const days = Math.ceil((exp - today) / 86400000);
+    if (days >= 0 && days <= 30) {
+      if (b.productId) expiringBatchProductIds.add(b.productId);
+    }
+  });
+
+  products.forEach((p) => {
+    if (!p.expiryDate) return;
+    const exp = new Date(p.expiryDate);
+    exp.setHours(0, 0, 0, 0);
+    const days = Math.ceil((exp - today) / 86400000);
+    if (days >= 0 && days <= 30) {
+      expiringBatchProductIds.add(p.id);
+    }
+  });
+  const expiringSoonCount = expiringBatchProductIds.size;
+
   statsEl.innerHTML = `
     <div class="glass stat-card">
       <div class="stat-label">Total SKUs</div>
@@ -264,8 +316,17 @@ function renderStats() {
       <div class="stat-value ${totalAlerts > 0 ? "text-amber-400" : "text-emerald-400"}">${totalAlerts}</div>
       <div class="stat-hint">${
         totalAlerts > 0
-          ? `${lowStockCount} low stock · ${outOfStockCount} out of stock`
+          ? `${lowStockCount} low · ${outOfStockCount} out of stock`
           : "All items adequately stocked"
+      }</div>
+    </div>
+    <div class="glass stat-card">
+      <div class="stat-label">Expiring Soon (30d)</div>
+      <div class="stat-value ${expiringSoonCount > 0 ? "text-rose-400" : "text-slate-400"}">${expiringSoonCount}</div>
+      <div class="stat-hint">${
+        expiringSoonCount > 0
+          ? `${expiringSoonCount} item(s) near expiry`
+          : "No imminent expiry"
       }</div>
     </div>
   `;
@@ -396,7 +457,10 @@ function render() {
                     <td>${product.category || "-"}</td>
 
                     <td>${product.batchesCount !== undefined ? product.batchesCount : getProductBatches(product.id).length}</td>
-                    <td>${nearestExpiry(product)}</td>
+                    <td>
+                      <div>${nearestExpiry(product)}</div>
+                      ${batchStatus(product)}
+                    </td>
 
                     <td>${money(product.price)}</td>
                     <td>${money(product.costPrice)}</td>
@@ -409,7 +473,15 @@ function render() {
                     </td>
 
                     <td>
-                      <div class="flex gap-2">
+                      <div class="flex flex-wrap gap-1.5 items-center">
+                        <button
+                          class="btn btn-ghost btn-sm text-sky-400 hover:text-sky-300"
+                          onclick="openStock('${product.id}')"
+                          title="Quick stock update"
+                        >
+                          ⚡ Stock
+                        </button>
+
                         <button
                           class="btn btn-ghost btn-sm"
                           onclick="editProduct('${product.id}')"
@@ -479,26 +551,34 @@ async function load() {
   const cachedBatches = getCachedCollection(
     `salesiq_cache_productBatches_${adminId}_false`,
   );
+  const cachedSales = getCachedCollection(
+    `salesiq_cache_sales_${adminId}_false`,
+  );
   if (cachedProds?.data && cachedProds.data.length > 0) {
     products = [...cachedProds.data];
     if (cachedBatches?.data) batches = [...cachedBatches.data];
+    if (cachedSales?.data) sales = [...cachedSales.data];
     products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     updateCategoryDropdown();
     render();
+    renderMovement();
     hideSkeletonLoader();
   }
 
-  // 2. Parallel background fetch for products and batches
+  // 2. Parallel background fetch for products, batches, and sales
   try {
-    const [freshProducts, freshBatches] = await Promise.all([
+    const [freshProducts, freshBatches, freshSales] = await Promise.all([
       fetchAll("products", false, adminId),
       fetchAll("productBatches", false, adminId).catch(() => []),
+      fetchAll("sales", false, adminId).catch(() => []),
     ]);
     products = freshProducts;
     batches = freshBatches;
+    sales = freshSales;
     products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     updateCategoryDropdown();
     render();
+    renderMovement();
   } catch (err) {
     console.warn("Products load warning:", err);
   } finally {
@@ -573,6 +653,163 @@ if (exportProductsCsvBtn) {
   };
 }
 
+function renderMovement() {
+  const fastEl = $("#fastMovingList");
+  const slowEl = $("#slowMovingList");
+  if (!fastEl || !slowEl) return;
+
+  const map = new Map();
+  sales.forEach((s) => {
+    const pName = s.productName || s.name || "Unknown Product";
+    map.set(pName, (map.get(pName) || 0) + Number(s.quantity || 0));
+  });
+
+  const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]);
+
+  if (!sorted.length) {
+    const emptyHtml = emptyState(
+      "No sales data yet",
+      "Sales velocity will appear as orders occur.",
+    );
+    fastEl.innerHTML = emptyHtml;
+    slowEl.innerHTML = emptyHtml;
+    return;
+  }
+
+  const fastItems = sorted.slice(0, 5);
+  fastEl.innerHTML = `
+    <div class="space-y-2.5">
+      ${fastItems
+        .map(
+          ([name, qty]) => `
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5 pt-1">
+            <span class="font-semibold text-slate-200">${name}</span>
+            <span class="badge badge-ok">${qty} sold</span>
+          </div>
+        `,
+        )
+        .join("")}
+    </div>
+  `;
+
+  const slowItems = sorted.slice(-5).reverse();
+  slowEl.innerHTML = `
+    <div class="space-y-2.5">
+      ${slowItems
+        .map(
+          ([name, qty]) => `
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2.5 pt-1">
+            <span class="font-semibold text-slate-200">${name}</span>
+            <span class="badge badge-warn">${qty} sold</span>
+          </div>
+        `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+window.openStock = (id) => {
+  const p = products.find((x) => x.id === id);
+  if (!p) return;
+  $("#stockProductId").value = id;
+  $("#stockProductName").value = p.name || "";
+  $("#stockCurrentQty").value = p.stock ?? 0;
+  $("#stockNewQty").value = p.stock ?? 0;
+  if (stockModal && stockModal.parentElement !== document.body) {
+    document.body.appendChild(stockModal);
+  }
+  document.body.style.overflow = "hidden";
+  stockModal.classList.add("show");
+  $("#stockNewQty")?.focus();
+};
+
+function closeStockModal() {
+  if (stockModal) {
+    stockModal.classList.remove("show");
+    document.body.style.overflow = "";
+    stockForm?.reset();
+  }
+}
+
+$$("[data-close-stock-modal]").forEach((b) => {
+  b.onclick = closeStockModal;
+});
+
+if (stockModal) {
+  stockModal.addEventListener("click", (e) => {
+    if (e.target === stockModal) closeStockModal();
+  });
+}
+
+if (stockForm) {
+  stockForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const saveBtn = $("#saveStockBtn");
+    const id = $("#stockProductId").value;
+    const qty = Number($("#stockNewQty").value);
+    const p = products.find((x) => x.id === id);
+    if (!p) return;
+
+    setBusy(saveBtn, true, "Updating...");
+    try {
+      const newStatus = statusFor(qty, p.minStock);
+      await updateDoc(doc(db, "products", id), {
+        stock: qty,
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+
+      if (newStatus !== "Available") {
+        await createNotification(
+          `${p.name} stock level updated to ${qty} (${newStatus}).`,
+          "stock",
+        );
+      }
+
+      toast("Stock updated successfully.", "ok");
+      invalidateCache("products");
+      closeStockModal();
+      await load();
+    } catch (err) {
+      console.error("Error updating stock:", err);
+      toast(`Failed to update stock: ${err.message}`, "err");
+    } finally {
+      setBusy(saveBtn, false);
+    }
+  };
+}
+
+const generateAlertsBtn = $("#generateStockAlerts");
+if (generateAlertsBtn) {
+  generateAlertsBtn.onclick = async () => {
+    setBusy(generateAlertsBtn, true, "Checking...");
+    try {
+      let count = 0;
+      for (const p of products) {
+        const st = statusFor(p.stock, p.minStock);
+        if (st !== "Available") {
+          count++;
+          await createNotification(
+            `${p.name} stock is ${st}. Current stock: ${p.stock}. Minimum: ${p.minStock}.`,
+            "stock",
+          );
+        }
+      }
+      toast(
+        count
+          ? `Generated ${count} stock alert(s).`
+          : "All products are adequately stocked!",
+        "ok",
+      );
+    } catch (err) {
+      toast(`Alert scan failed: ${err.message}`, "err");
+    } finally {
+      setBusy(generateAlertsBtn, false);
+    }
+  };
+}
+
 $("#openProductModal").onclick = () => openModal();
 
 $$("[data-close-modal]").forEach((button) => {
@@ -587,6 +824,7 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (modal.classList.contains("show")) closeModal();
     if (importModal.classList.contains("show")) closeImportModal();
+    if (stockModal && stockModal.classList.contains("show")) closeStockModal();
   }
 });
 
@@ -1165,6 +1403,13 @@ window.addEventListener("salesiq:cache-updated", (e) => {
     updateCategoryDropdown();
     render();
     hideSkeletonLoader();
+  } else if (e.detail?.name === "sales") {
+    sales = e.detail.data;
+    renderMovement();
+  } else if (e.detail?.name === "productBatches") {
+    batches = e.detail.data;
+    renderStats();
+    render();
   }
 });
 

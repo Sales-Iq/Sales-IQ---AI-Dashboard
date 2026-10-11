@@ -522,8 +522,7 @@ export function initClickSpark() {
 
 const adminLinks = [
   ["dashboard", "Dashboard", "dashboard.html", "📊"],
-  ["products", "Products", "products.html", "📦"],
-  ["inventory", "Inventory", "inventory.html", "🏬"],
+  ["products", "Products & Inventory", "products.html", "📦"],
   ["sales", "Sales Records", "sales.html", "🧾"],
   ["add-sale", "Billing", "add-sale.html", "💳"],
   ["forecasting", "Forecasting", "forecasting.html", "🔮"],

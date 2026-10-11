@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>SalesIQ - Products</title>
+    <title>SalesIQ - Products & Inventory</title>
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -39,12 +39,19 @@
             class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
           >
             <div>
-              <h2 class="page-title">Product Management</h2>
+              <h2 class="page-title">Products & Inventory</h2>
               <p class="page-subtitle">
-                Add, edit, delete and track product status.
+                Unified catalog management, stock adjustments, batch tracking, and movement analysis.
               </p>
             </div>
             <div class="flex flex-wrap gap-2.5 items-center">
+              <button
+                class="btn btn-warn btn-sm"
+                id="generateStockAlerts"
+                title="Scan catalog and generate alerts for low or out of stock items"
+              >
+                🔔 Check Alerts
+              </button>
               <button
                 class="btn btn-ghost btn-sm"
                 id="downloadSampleTemplate"
@@ -79,7 +86,7 @@
           </div>
 
           <!-- Top Product Stats KPI Grid -->
-          <div class="stats-grid mb-6" id="productStats"></div>
+          <div class="stats-grid mb-6" id="productStats" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));"></div>
 
           <!-- Search, Category, Status, and Sort Filter Bar -->
           <div
@@ -123,7 +130,29 @@
               </button>
             </div>
           </div>
-          <div class="glass p-5"><div id="productsTable"></div></div>
+          <div class="glass p-5 mb-6"><div id="productsTable"></div></div>
+
+          <!-- Fast & Slow Moving Inventory Products (Sales Movement Analysis) -->
+          <div class="grid lg:grid-cols-2 gap-6 mb-6">
+            <div class="glass p-5">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-black text-lg flex items-center gap-2">
+                  <span>🔥 Fast-Moving Products</span>
+                </h3>
+                <span class="text-xs text-emerald-400 font-semibold">High Demand</span>
+              </div>
+              <div id="fastMovingList"></div>
+            </div>
+            <div class="glass p-5">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-black text-lg flex items-center gap-2">
+                  <span>🐢 Slow-Moving Products</span>
+                </h3>
+                <span class="text-xs text-amber-400 font-semibold">Low Velocity</span>
+              </div>
+              <div id="slowMovingList"></div>
+            </div>
+          </div>
         </main>
       </div>
     </div>
@@ -305,6 +334,42 @@
               Save Product
             </button>
           </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Quick Stock Update Modal (Fixed to Viewport) -->
+    <div id="stockModal" class="modal-backdrop">
+      <div class="modal-card glass-strong p-6" style="max-width: 440px">
+        <div class="flex justify-between items-center mb-5">
+          <h3 class="text-2xl font-black">Quick Stock Update</h3>
+          <button class="btn btn-ghost btn-sm" data-close-stock-modal>✕</button>
+        </div>
+        <form id="stockForm" class="space-y-4">
+          <input type="hidden" id="stockProductId" />
+          <div>
+            <label class="label">Product</label>
+            <input id="stockProductName" class="input bg-slate-900/60" disabled />
+          </div>
+          <div>
+            <label class="label">Current Stock</label>
+            <input id="stockCurrentQty" class="input bg-slate-900/60" disabled />
+          </div>
+          <div>
+            <label class="label" for="stockNewQty">
+              New Stock Quantity <span class="required-mark">*</span>
+            </label>
+            <input
+              id="stockNewQty"
+              class="input"
+              type="number"
+              min="0"
+              required
+            />
+          </div>
+          <button class="btn btn-primary w-full" type="submit" id="saveStockBtn">
+            Update Stock
+          </button>
         </form>
       </div>
     </div>
