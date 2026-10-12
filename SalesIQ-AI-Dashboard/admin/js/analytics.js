@@ -14,14 +14,71 @@ import {
   fetchAll,
   convertFromINR,
   getCurrency,
+  toCSV,
+  toast,
 } from "../../js/shared.js";
 
 const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "analytics", profile);
 
+// ── State & Config ─────────────────────────────────────────────────────────
 let sales = [];
 let products = [];
 let currentTimeframe = "all";
+let customStartDate = "";
+let customEndDate = "";
+let timelineGranularity = "daily";
+let deadStockSearchTerm = "";
+let deadStockCategory = "all";
+
+const DEFAULT_CHART_PREFS = {
+  dailySales: { type: "line", metric: "revenue" },
+  monthlySales: { type: "bar", metric: "revenue" },
+  topProducts: { type: "bar", metric: "units" },
+  categorySales: { type: "doughnut", metric: "revenue" },
+  revenueGrowth: { type: "area" },
+  profitTrend: { type: "line", metric: "profit" },
+  paymentMethod: { type: "doughnut", metric: "revenue" },
+  dayOfWeek: { type: "bar", metric: "revenue" },
+  aovTrend: { type: "line" },
+  staffPerformance: { type: "bar", metric: "revenue" },
+};
+
+function loadChartPrefs() {
+  try {
+    const saved = localStorage.getItem("salesiq_analytics_chart_prefs");
+    if (saved) return { ...DEFAULT_CHART_PREFS, ...JSON.parse(saved) };
+  } catch (_) {}
+  return { ...DEFAULT_CHART_PREFS };
+}
+
+function saveChartPrefs() {
+  try {
+    localStorage.setItem("salesiq_analytics_chart_prefs", JSON.stringify(chartPrefs));
+  } catch (_) {}
+}
+
+let chartPrefs = loadChartPrefs();
+
+// Global export helper for chart PNGs
+window.salesiqChartExport = function (canvasId, title = "chart") {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) {
+    toast("Chart canvas not found", "warn");
+    return;
+  }
+  try {
+    const link = document.createElement("a");
+    const dStr = new Date().toISOString().slice(0, 10);
+    link.download = `salesiq-${title.toLowerCase()}-${dStr}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    toast(`Exported ${title} as PNG`, "ok");
+  } catch (err) {
+    console.error("Export chart error:", err);
+    toast("Failed to export chart image", "danger");
+  }
+};
 
 // ── 1. Instant 0ms cached boot ─────────────────────────────────────────────
 try {
@@ -38,6 +95,7 @@ try {
   if (sData || pData) {
     if (sData) sales = sData;
     if (pData) products = pData;
+    populateCategoryFilter();
     renderAnalytics();
     hideSkeletonLoader();
   }
@@ -53,6 +111,7 @@ try {
   ]);
   if (sRows) sales = sRows;
   if (pRows) products = pRows;
+  populateCategoryFilter();
   renderAnalytics();
 } catch (err) {
   console.warn("Initial analytics fetch error:", err);
@@ -62,8 +121,10 @@ try {
 
 // ── 3. Date & Timeframe Helpers ────────────────────────────────────────────
 function saleDate(sale) {
-  if (!sale?.createdAt) return null;
-  const d = toDate(sale.createdAt);
+  if (!sale) return null;
+  const raw = sale.createdAt || sale.saleDate || sale.date;
+  if (!raw) return null;
+  const d = toDate(raw);
   return d && !isNaN(d.getTime()) ? d : null;
 }
 
@@ -91,9 +152,24 @@ function formatMonthLabel(ym) {
   return d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
 }
 
-function getFilteredSales() {
-  if (currentTimeframe === "all") return sales;
+function getWeekKey(d) {
+  if (!d) return "";
+  const dt = new Date(d);
+  dt.setHours(0, 0, 0, 0);
+  // Set to nearest Thursday: current date + 4 - current day number
+  // Make Sunday's day number 7
+  dt.setDate(dt.getDate() + 4 - (dt.getDay() || 7));
+  const yearStart = new Date(dt.getFullYear(), 0, 1);
+  const weekNo = Math.ceil(((dt - yearStart) / 86400000 + 1) / 7);
+  return `${dt.getFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
 
+function formatWeekLabel(wKey) {
+  if (!wKey) return "";
+  return `Wk ${wKey.replace(/^[0-9]+-W0?/, "")}`;
+}
+
+function getFilteredSales() {
   const now = new Date();
   const todayStr = toLocalYMD(now);
   const currentMonthStr = todayStr.slice(0, 7);
@@ -105,16 +181,10 @@ function getFilteredSales() {
     });
   }
 
-  if (currentTimeframe === "month") {
-    return sales.filter((s) => {
-      const d = saleDate(s);
-      return d && toLocalYMD(d).startsWith(currentMonthStr);
-    });
-  }
-
   if (currentTimeframe === "7d") {
     const cut = new Date();
     cut.setDate(cut.getDate() - 7);
+    cut.setHours(0, 0, 0, 0);
     return sales.filter((s) => {
       const d = saleDate(s);
       return d && d >= cut;
@@ -124,9 +194,39 @@ function getFilteredSales() {
   if (currentTimeframe === "30d") {
     const cut = new Date();
     cut.setDate(cut.getDate() - 30);
+    cut.setHours(0, 0, 0, 0);
     return sales.filter((s) => {
       const d = saleDate(s);
       return d && d >= cut;
+    });
+  }
+
+  if (currentTimeframe === "90d") {
+    const cut = new Date();
+    cut.setDate(cut.getDate() - 90);
+    cut.setHours(0, 0, 0, 0);
+    return sales.filter((s) => {
+      const d = saleDate(s);
+      return d && d >= cut;
+    });
+  }
+
+  if (currentTimeframe === "month") {
+    return sales.filter((s) => {
+      const d = saleDate(s);
+      return d && toLocalYMD(d).startsWith(currentMonthStr);
+    });
+  }
+
+  if (currentTimeframe === "custom") {
+    const startObj = customStartDate ? new Date(customStartDate + "T00:00:00") : null;
+    const endObj = customEndDate ? new Date(customEndDate + "T23:59:59") : null;
+    return sales.filter((s) => {
+      const d = saleDate(s);
+      if (!d) return false;
+      if (startObj && d < startObj) return false;
+      if (endObj && d > endObj) return false;
+      return true;
     });
   }
 
@@ -142,6 +242,7 @@ function getSaleProfit(sale) {
   ) {
     return Number(sale.profit);
   }
+
   const product = products.find(
     (p) =>
       p.id === sale.productId ||
@@ -149,14 +250,20 @@ function getSaleProfit(sale) {
         sale.productName &&
         p.name.trim().toLowerCase() === sale.productName.trim().toLowerCase()),
   );
-  const cost = Number(product?.costPrice || 0);
+
   const total = Number(sale.totalAmount || 0);
   const qty = Math.max(1, Number(sale.quantity || 1));
-  const unitPrice = Number(sale.unitPrice || total / qty);
+  const unitPrice = Number(sale.unitPrice || (qty > 0 ? total / qty : 0));
 
-  if (cost > 0) {
-    return (unitPrice - cost) * qty;
+  if (
+    product &&
+    product.costPrice !== undefined &&
+    product.costPrice !== null &&
+    !isNaN(Number(product.costPrice))
+  ) {
+    return (unitPrice - Number(product.costPrice)) * qty;
   }
+
   return total * 0.3; // Default estimated margin fallback
 }
 
@@ -199,7 +306,7 @@ function renderKpis(filteredSales) {
     <div class="glass stat-card glass-card-hover">
       <div class="stat-label">Total Revenue</div>
       <div class="stat-value text-sky-400 font-bold">${money(totalRevenue)}</div>
-      <div class="stat-hint">${filteredSales.length} orders in selected timeframe</div>
+      <div class="stat-hint">${filteredSales.length} orders in selected timeline</div>
     </div>
     <div class="glass stat-card glass-card-hover">
       <div class="stat-label">Estimated Gross Profit</div>
@@ -219,11 +326,15 @@ function renderKpis(filteredSales) {
   `;
 }
 
-// ── 6. Charts Rendering ────────────────────────────────────────────────────
+// ── 6. 10 Customizable Charts Rendering ────────────────────────────────────
 function renderCharts(filteredSales) {
+  // Timeline grouping key generator based on user granularity
   const dateKey = (sale) => {
     const d = saleDate(sale);
-    return d ? toLocalYMD(d) : null;
+    if (!d) return null;
+    if (timelineGranularity === "monthly") return toLocalYMD(d).slice(0, 7);
+    if (timelineGranularity === "weekly") return getWeekKey(d);
+    return toLocalYMD(d);
   };
 
   const monthKey = (sale) => {
@@ -231,20 +342,280 @@ function renderCharts(filteredSales) {
     return d ? toLocalYMD(d).slice(0, 7) : null;
   };
 
-  const daily = sumBy(filteredSales, dateKey, (sale) =>
-    Number(sale.totalAmount || 0),
-  );
-  const monthly = sumBy(filteredSales, monthKey, (sale) =>
-    Number(sale.totalAmount || 0),
-  );
-  const topProducts = sumBy(
-    filteredSales,
-    (sale) => sale.productName || "Unknown",
-    (sale) => Math.max(1, Number(sale.quantity || 1)),
-  );
-  const profit = sumBy(filteredSales, dateKey, (sale) => getSaleProfit(sale));
+  // Base Aggregations
+  const dailyRev = sumBy(filteredSales, dateKey, (s) => Number(s.totalAmount || 0));
+  const dailyOrders = sumBy(filteredSales, dateKey, () => 1);
+  const dailyUnits = sumBy(filteredSales, dateKey, (s) => Math.max(1, Number(s.quantity || 1)));
 
-  const categorySales = {};
+  const monthlyRev = sumBy(filteredSales, monthKey, (s) => Number(s.totalAmount || 0));
+  const monthlyOrders = sumBy(filteredSales, monthKey, () => 1);
+
+  const profitByDate = sumBy(filteredSales, dateKey, (s) => getSaleProfit(s));
+
+  // Determine timeline keys with continuous dates for daily view (if timeframe <= 90d)
+  let timelineLabels = sortObjectKeys(dailyRev);
+  if (
+    timelineGranularity === "daily" &&
+    (currentTimeframe === "7d" || currentTimeframe === "30d" || currentTimeframe === "custom")
+  ) {
+    // Generate gap-filled daily keys
+    const dates = [];
+    let startD = null;
+    let endD = null;
+
+    if (currentTimeframe === "7d") {
+      startD = new Date();
+      startD.setDate(startD.getDate() - 7);
+      endD = new Date();
+    } else if (currentTimeframe === "30d") {
+      startD = new Date();
+      startD.setDate(startD.getDate() - 30);
+      endD = new Date();
+    } else if (currentTimeframe === "custom" && customStartDate && customEndDate) {
+      startD = new Date(customStartDate + "T00:00:00");
+      endD = new Date(customEndDate + "T23:59:59");
+    }
+
+    if (startD && endD && !isNaN(startD.getTime()) && !isNaN(endD.getTime())) {
+      const cur = new Date(startD);
+      cur.setHours(0, 0, 0, 0);
+      const endLimit = new Date(endD);
+      while (cur <= endLimit && dates.length < 120) {
+        dates.push(toLocalYMD(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      if (dates.length > 0) {
+        timelineLabels = dates;
+      }
+    }
+  }
+
+  // ── 1. Daily / Timeline Sales Trend ──────────────────────────────────────
+  const dailyMetric = chartPrefs.dailySales.metric || "revenue";
+  const dailyType = chartPrefs.dailySales.type || "line";
+  const isDailyArea = dailyType === "area";
+  const actualDailyType = isDailyArea ? "line" : dailyType;
+
+  let dailyData = [];
+  let dailyLabelText = "Sales Revenue";
+
+  if (dailyMetric === "orders") {
+    dailyData = timelineLabels.map((k) => dailyOrders[k] || 0);
+    dailyLabelText = "Orders";
+  } else if (dailyMetric === "units") {
+    dailyData = timelineLabels.map((k) => dailyUnits[k] || 0);
+    dailyLabelText = "Units Sold";
+  } else {
+    dailyData = timelineLabels.map((k) => convertFromINR(dailyRev[k] || 0));
+    dailyLabelText = "Revenue";
+  }
+
+  const dBadge = $("#dailySalesBadge");
+  if (dBadge) {
+    const totalCount = Object.values(dailyOrders).reduce((a, b) => a + b, 0);
+    dBadge.textContent = `${timelineLabels.length} ${timelineGranularity === "monthly" ? "months" : timelineGranularity === "weekly" ? "weeks" : "days"} (${totalCount} orders)`;
+  }
+
+  const dTitle = $("#dailySalesTitle");
+  if (dTitle) {
+    dTitle.textContent = `${timelineGranularity === "monthly" ? "Monthly" : timelineGranularity === "weekly" ? "Weekly" : "Daily"} Sales Trend`;
+  }
+
+  makeChart(
+    $("#dailySalesChart"),
+    actualDailyType,
+    {
+      labels: timelineLabels.length
+        ? timelineLabels.map(timelineGranularity === "monthly" ? formatMonthLabel : timelineGranularity === "weekly" ? formatWeekLabel : formatShortDate)
+        : ["No data"],
+      datasets: [
+        {
+          label: dailyLabelText,
+          data: dailyData.length ? dailyData : [0],
+          tension: 0.35,
+          fill: isDailyArea || actualDailyType === "line",
+          borderColor: "#38bdf8",
+          backgroundColor: isDailyArea ? "rgba(56,189,248,.35)" : "rgba(56,189,248,.18)",
+          pointBackgroundColor: "#38bdf8",
+        },
+      ],
+    },
+    {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: (items) => timelineLabels[items[0]?.dataIndex] || "",
+            label: (item) =>
+              dailyMetric === "revenue"
+                ? ` Revenue: ${money(item.raw, getCurrency(), false)}`
+                : ` ${dailyLabelText}: ${item.raw}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: (val) =>
+              dailyMetric === "revenue"
+                ? money(val, getCurrency(), false)
+                : val,
+          },
+        },
+      },
+    },
+  );
+
+  // ── 2. Monthly Sales Comparison ──────────────────────────────────────────
+  const monthlyMetric = chartPrefs.monthlySales.metric || "revenue";
+  const monthlyType = chartPrefs.monthlySales.type || "bar";
+  const monthlyLabels = sortObjectKeys(monthlyRev);
+
+  const mData = monthlyLabels.map((k) =>
+    monthlyMetric === "orders" ? monthlyOrders[k] || 0 : convertFromINR(monthlyRev[k] || 0),
+  );
+
+  const mBadge = $("#monthlySalesBadge");
+  if (mBadge) mBadge.textContent = `${monthlyLabels.length} months`;
+
+  makeChart(
+    $("#monthlySalesChart"),
+    monthlyType,
+    {
+      labels: monthlyLabels.length
+        ? monthlyLabels.map(formatMonthLabel)
+        : ["No data"],
+      datasets: [
+        {
+          label: monthlyMetric === "orders" ? "Monthly Orders" : "Monthly Revenue",
+          data: mData.length ? mData : [0],
+          borderColor: "#c084fc",
+          backgroundColor: "rgba(192,132,252,.45)",
+          pointBackgroundColor: "#c084fc",
+          fill: monthlyType === "line",
+          tension: 0.35,
+        },
+      ],
+    },
+    {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (item) =>
+              monthlyMetric === "orders"
+                ? ` Orders: ${item.raw}`
+                : ` Revenue: ${money(item.raw, getCurrency(), false)}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: (val) =>
+              monthlyMetric === "orders"
+                ? val
+                : money(val, getCurrency(), false),
+          },
+        },
+      },
+    },
+  );
+
+  // ── 3. Top Products Performance ──────────────────────────────────────────
+  const topMetric = chartPrefs.topProducts.metric || "units";
+  const topTypePref = chartPrefs.topProducts.type || "bar";
+  const isHorizontalTop = topTypePref === "horizontal";
+  const actualTopType = isHorizontalTop ? "bar" : topTypePref;
+
+  const productAgg = {};
+  filteredSales.forEach((s) => {
+    const name = s.productName || "Unknown Product";
+    if (!productAgg[name]) {
+      productAgg[name] = { units: 0, revenue: 0, profit: 0 };
+    }
+    productAgg[name].units += Math.max(1, Number(s.quantity || 1));
+    productAgg[name].revenue += Number(s.totalAmount || 0);
+    productAgg[name].profit += getSaleProfit(s);
+  });
+
+  const sortedProducts = Object.entries(productAgg).sort((a, b) => {
+    if (topMetric === "revenue") return b[1].revenue - a[1].revenue;
+    if (topMetric === "profit") return b[1].profit - a[1].profit;
+    return b[1].units - a[1].units;
+  });
+
+  const top8 = sortedProducts.slice(0, 8);
+  const topLabels = top8.length ? top8.map((item) => item[0]) : ["No products sold"];
+  const topDataValues = top8.length
+    ? top8.map((item) =>
+        topMetric === "revenue"
+          ? convertFromINR(item[1].revenue)
+          : topMetric === "profit"
+            ? convertFromINR(item[1].profit)
+            : item[1].units,
+      )
+    : [0];
+
+  const tpBadge = $("#topProductsBadge");
+  if (tpBadge) tpBadge.textContent = `${sortedProducts.length} items sold`;
+
+  makeChart(
+    $("#topProductsChart"),
+    actualTopType,
+    {
+      labels: topLabels,
+      datasets: [
+        {
+          label:
+            topMetric === "revenue"
+              ? "Gross Revenue"
+              : topMetric === "profit"
+                ? "Gross Profit"
+                : "Units Sold",
+          data: topDataValues,
+          borderColor: "#34d399",
+          backgroundColor: actualTopType === "doughnut" ? undefined : "rgba(52,211,153,.45)",
+        },
+      ],
+    },
+    {
+      indexAxis: isHorizontalTop ? "y" : "x",
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (item) =>
+              topMetric === "units"
+                ? ` ${item.raw} units sold`
+                : ` ${money(item.raw, getCurrency(), false)}`,
+          },
+        },
+      },
+      scales: actualTopType === "doughnut"
+        ? {}
+        : isHorizontalTop
+          ? {
+              x: {
+                ticks: {
+                  callback: (val) =>
+                    topMetric === "units" ? val : money(val, getCurrency(), false),
+                },
+              },
+            }
+          : {
+              y: {
+                ticks: {
+                  callback: (val) =>
+                    topMetric === "units" ? val : money(val, getCurrency(), false),
+                },
+              },
+            },
+    },
+  );
+
+  // ── 4. Category-wise Sales ───────────────────────────────────────────────
+  const catMetric = chartPrefs.categorySales.metric || "revenue";
+  const catType = chartPrefs.categorySales.type || "doughnut";
+
+  const categoryAgg = {};
   filteredSales.forEach((sale) => {
     const product = products.find(
       (p) =>
@@ -254,156 +625,34 @@ function renderCharts(filteredSales) {
           p.name.trim().toLowerCase() === sale.productName.trim().toLowerCase()),
     );
     const category = product?.category || sale.category || "General";
-    categorySales[category] =
-      (categorySales[category] || 0) + Number(sale.totalAmount || 0);
+    if (!categoryAgg[category]) {
+      categoryAgg[category] = { revenue: 0, units: 0 };
+    }
+    categoryAgg[category].revenue += Number(sale.totalAmount || 0);
+    categoryAgg[category].units += Math.max(1, Number(sale.quantity || 1));
   });
 
-  const dailyLabels = sortObjectKeys(daily);
-  const monthlyLabels = sortObjectKeys(monthly);
-  const profitLabels = sortObjectKeys(profit);
-  const sortedTopProducts = Object.entries(topProducts).sort(
-    (a, b) => b[1] - a[1],
-  );
-
-  // Update chart header badges
-  const totalPeriodRevenue = Object.values(daily).reduce((a, b) => a + b, 0);
-  const totalPeriodProfit = Object.values(profit).reduce((a, b) => a + b, 0);
-
-  const dBadge = $("#dailySalesBadge");
-  if (dBadge) dBadge.textContent = `${dailyLabels.length} active days`;
-
-  const mBadge = $("#monthlySalesBadge");
-  if (mBadge) mBadge.textContent = `${monthlyLabels.length} months`;
-
-  const tpBadge = $("#topProductsBadge");
-  if (tpBadge) tpBadge.textContent = `${sortedTopProducts.length} items sold`;
+  const catKeys = Object.keys(categoryAgg);
+  const catDataValues = catKeys.length
+    ? catKeys.map((k) =>
+        catMetric === "units"
+          ? categoryAgg[k].units
+          : convertFromINR(categoryAgg[k].revenue),
+      )
+    : [1];
 
   const cBadge = $("#categoryBadge");
-  if (cBadge) cBadge.textContent = `${Object.keys(categorySales).length} categories`;
+  if (cBadge) cBadge.textContent = `${catKeys.length} categories`;
 
-  const gBadge = $("#growthBadge");
-  if (gBadge) gBadge.textContent = `${money(totalPeriodRevenue)} total`;
-
-  const pBadge = $("#profitBadge");
-  if (pBadge) pBadge.textContent = `${money(totalPeriodProfit)} net`;
-
-  // 1. Daily Sales Trend
-  makeChart(
-    $("#dailySalesChart"),
-    "line",
-    {
-      labels: dailyLabels.length ? dailyLabels.map(formatShortDate) : ["No data"],
-      datasets: [
-        {
-          label: "Daily Sales",
-          data: dailyLabels.length ? dailyLabels.map((k) => convertFromINR(daily[k])) : [0],
-          tension: 0.35,
-          fill: true,
-          borderColor: "#38bdf8",
-          backgroundColor: "rgba(56,189,248,.18)",
-          pointBackgroundColor: "#38bdf8",
-        },
-      ],
-    },
-    {
-      plugins: {
-        tooltip: {
-          callbacks: {
-            title: (items) => {
-              const idx = items[0]?.dataIndex;
-              return dailyLabels[idx] || "";
-            },
-            label: (item) => ` Sales: ${money(item.raw, getCurrency(), false)}`,
-          },
-        },
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: (val) => money(val, getCurrency(), false),
-          },
-        },
-      },
-    },
-  );
-
-  // 2. Monthly Sales
-  makeChart(
-    $("#monthlySalesChart"),
-    "bar",
-    {
-      labels: monthlyLabels.length
-        ? monthlyLabels.map(formatMonthLabel)
-        : ["No data"],
-      datasets: [
-        {
-          label: "Monthly Revenue",
-          data: monthlyLabels.length
-            ? monthlyLabels.map((k) => convertFromINR(monthly[k]))
-            : [0],
-          borderColor: "#c084fc",
-          backgroundColor: "rgba(192,132,252,.45)",
-        },
-      ],
-    },
-    {
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: (item) => ` Revenue: ${money(item.raw, getCurrency(), false)}`,
-          },
-        },
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: (val) => money(val, getCurrency(), false),
-          },
-        },
-      },
-    },
-  );
-
-  // 3. Top Selling Products
-  const top8 = sortedTopProducts.slice(0, 8);
-  makeChart(
-    $("#topProductsChart"),
-    "bar",
-    {
-      labels: top8.length ? top8.map((item) => item[0]) : ["No products sold"],
-      datasets: [
-        {
-          label: "Units Sold",
-          data: top8.length ? top8.map((item) => item[1]) : [0],
-          borderColor: "#34d399",
-          backgroundColor: "rgba(52,211,153,.45)",
-        },
-      ],
-    },
-    {
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: (item) => ` ${item.raw} units sold`,
-          },
-        },
-      },
-    },
-  );
-
-  // 4. Category-wise Sales
-  const catKeys = Object.keys(categorySales);
   makeChart(
     $("#categorySalesChart"),
-    "doughnut",
+    catType,
     {
       labels: catKeys.length ? catKeys : ["No sales"],
       datasets: [
         {
-          label: "Category Sales",
-          data: catKeys.length
-            ? Object.values(categorySales).map((v) => convertFromINR(v))
-            : [1],
+          label: catMetric === "units" ? "Units Sold" : "Revenue",
+          data: catDataValues,
         },
       ],
     },
@@ -412,36 +661,45 @@ function renderCharts(filteredSales) {
         tooltip: {
           callbacks: {
             label: (item) =>
-              ` ${item.label}: ${money(item.raw, getCurrency(), false)}`,
+              catMetric === "units"
+                ? ` ${item.label}: ${item.raw} units`
+                : ` ${item.label}: ${money(item.raw, getCurrency(), false)}`,
           },
         },
       },
     },
   );
 
-  // 5. Cumulative Revenue Growth
+  // ── 5. Cumulative Revenue Growth ─────────────────────────────────────────
+  const growthTypePref = chartPrefs.revenueGrowth.type || "area";
+  const actualGrowthType = growthTypePref === "area" ? "line" : growthTypePref;
+
   const cumulativeRevenue = [];
-  dailyLabels.forEach((key, index) => {
+  timelineLabels.forEach((key, index) => {
     cumulativeRevenue.push(
-      (cumulativeRevenue[index - 1] || 0) + convertFromINR(daily[key] || 0),
+      (cumulativeRevenue[index - 1] || 0) + convertFromINR(dailyRev[key] || 0),
     );
   });
 
+  const totalPeriodRevenue = Object.values(dailyRev).reduce((a, b) => a + b, 0);
+  const gBadge = $("#growthBadge");
+  if (gBadge) gBadge.textContent = `${money(totalPeriodRevenue)} total`;
+
   makeChart(
     $("#revenueChart"),
-    "line",
+    actualGrowthType,
     {
-      labels: dailyLabels.length
-        ? dailyLabels.map(formatShortDate)
+      labels: timelineLabels.length
+        ? timelineLabels.map(timelineGranularity === "monthly" ? formatMonthLabel : timelineGranularity === "weekly" ? formatWeekLabel : formatShortDate)
         : ["No data"],
       datasets: [
         {
           label: "Cumulative Revenue",
           data: cumulativeRevenue.length ? cumulativeRevenue : [0],
-          fill: true,
+          fill: growthTypePref === "area" || actualGrowthType === "line",
           tension: 0.35,
           borderColor: "#38bdf8",
-          backgroundColor: "rgba(56,189,248,.22)",
+          backgroundColor: growthTypePref === "area" ? "rgba(56,189,248,.25)" : "rgba(56,189,248,.12)",
         },
       ],
     },
@@ -449,12 +707,8 @@ function renderCharts(filteredSales) {
       plugins: {
         tooltip: {
           callbacks: {
-            title: (items) => {
-              const idx = items[0]?.dataIndex;
-              return dailyLabels[idx] || "";
-            },
-            label: (item) =>
-              ` Cumulative: ${money(item.raw, getCurrency(), false)}`,
+            title: (items) => timelineLabels[items[0]?.dataIndex] || "",
+            label: (item) => ` Cumulative: ${money(item.raw, getCurrency(), false)}`,
           },
         },
       },
@@ -468,24 +722,40 @@ function renderCharts(filteredSales) {
     },
   );
 
-  // 6. Gross Profit Trend
+  // ── 6. Gross Profit Trend & Margins ──────────────────────────────────────
+  const profitMetric = chartPrefs.profitTrend.metric || "profit";
+  const profitTypePref = chartPrefs.profitTrend.type || "line";
+  const isProfitArea = profitTypePref === "area";
+  const actualProfitType = isProfitArea ? "line" : profitTypePref;
+
+  const profitValues = timelineLabels.map((k) => {
+    if (profitMetric === "margin") {
+      const rev = dailyRev[k] || 0;
+      const prof = profitByDate[k] || 0;
+      return rev > 0 ? Number(((prof / rev) * 100).toFixed(1)) : 0;
+    }
+    return convertFromINR(profitByDate[k] || 0);
+  });
+
+  const totalPeriodProfit = Object.values(profitByDate).reduce((a, b) => a + b, 0);
+  const pBadge = $("#profitBadge");
+  if (pBadge) pBadge.textContent = `${money(totalPeriodProfit)} net`;
+
   makeChart(
     $("#profitChart"),
-    "line",
+    actualProfitType,
     {
-      labels: profitLabels.length
-        ? profitLabels.map(formatShortDate)
+      labels: timelineLabels.length
+        ? timelineLabels.map(timelineGranularity === "monthly" ? formatMonthLabel : timelineGranularity === "weekly" ? formatWeekLabel : formatShortDate)
         : ["No data"],
       datasets: [
         {
-          label: "Gross Profit",
-          data: profitLabels.length
-            ? profitLabels.map((k) => convertFromINR(profit[k]))
-            : [0],
-          fill: true,
+          label: profitMetric === "margin" ? "Profit Margin (%)" : "Gross Profit",
+          data: profitValues.length ? profitValues : [0],
+          fill: isProfitArea || actualProfitType === "line",
           tension: 0.35,
           borderColor: "#10b981",
-          backgroundColor: "rgba(16,185,129,.20)",
+          backgroundColor: isProfitArea ? "rgba(16,185,129,.30)" : "rgba(16,185,129,.18)",
           pointBackgroundColor: "#10b981",
         },
       ],
@@ -494,12 +764,196 @@ function renderCharts(filteredSales) {
       plugins: {
         tooltip: {
           callbacks: {
-            title: (items) => {
-              const idx = items[0]?.dataIndex;
-              return profitLabels[idx] || "";
-            },
+            title: (items) => timelineLabels[items[0]?.dataIndex] || "",
             label: (item) =>
-              ` Profit: ${money(item.raw, getCurrency(), false)}`,
+              profitMetric === "margin"
+                ? ` Margin: ${item.raw}%`
+                : ` Profit: ${money(item.raw, getCurrency(), false)}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: (val) =>
+              profitMetric === "margin" ? `${val}%` : money(val, getCurrency(), false),
+          },
+        },
+      },
+    },
+  );
+
+  // ── 7. NEW: Payment Method Distribution ──────────────────────────────────
+  const payMetric = chartPrefs.paymentMethod.metric || "revenue";
+  const payType = chartPrefs.paymentMethod.type || "doughnut";
+
+  const paymentAgg = {};
+  filteredSales.forEach((s) => {
+    const raw = (s.paymentMethod || "Cash").trim();
+    const mode = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+    if (!paymentAgg[mode]) paymentAgg[mode] = { revenue: 0, count: 0 };
+    paymentAgg[mode].revenue += Number(s.totalAmount || 0);
+    paymentAgg[mode].count += 1;
+  });
+
+  const payKeys = Object.keys(paymentAgg);
+  const payDataValues = payKeys.length
+    ? payKeys.map((k) =>
+        payMetric === "transactions"
+          ? paymentAgg[k].count
+          : convertFromINR(paymentAgg[k].revenue),
+      )
+    : [1];
+
+  const payBadge = $("#paymentMethodBadge");
+  if (payBadge) {
+    const topMode = Object.entries(paymentAgg).sort(
+      (a, b) => b[1].revenue - a[1].revenue,
+    )[0];
+    payBadge.textContent = topMode ? `Top: ${topMode[0]}` : "No data";
+  }
+
+  makeChart(
+    $("#paymentMethodChart"),
+    payType,
+    {
+      labels: payKeys.length ? payKeys : ["No data"],
+      datasets: [
+        {
+          label: payMetric === "transactions" ? "Transactions" : "Revenue",
+          data: payDataValues,
+        },
+      ],
+    },
+    {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (item) =>
+              payMetric === "transactions"
+                ? ` ${item.label}: ${item.raw} orders`
+                : ` ${item.label}: ${money(item.raw, getCurrency(), false)}`,
+          },
+        },
+      },
+    },
+  );
+
+  // ── 8. NEW: Sales by Day of Week ─────────────────────────────────────────
+  const dowMetric = chartPrefs.dayOfWeek.metric || "revenue";
+  const dowType = chartPrefs.dayOfWeek.type || "bar";
+  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const dowAgg = { 0: { rev: 0, count: 0 }, 1: { rev: 0, count: 0 }, 2: { rev: 0, count: 0 }, 3: { rev: 0, count: 0 }, 4: { rev: 0, count: 0 }, 5: { rev: 0, count: 0 }, 6: { rev: 0, count: 0 } };
+
+  filteredSales.forEach((s) => {
+    const d = saleDate(s);
+    if (!d) return;
+    const jsDay = d.getDay(); // 0 is Sunday
+    const mappedIndex = jsDay === 0 ? 6 : jsDay - 1; // 0=Mon ... 6=Sun
+    dowAgg[mappedIndex].rev += Number(s.totalAmount || 0);
+    dowAgg[mappedIndex].count += 1;
+  });
+
+  const dowData = daysOfWeek.map((_, i) =>
+    dowMetric === "orders" ? dowAgg[i].count : convertFromINR(dowAgg[i].rev),
+  );
+
+  const dowBadge = $("#dayOfWeekBadge");
+  if (dowBadge) {
+    let bestDayIdx = 0;
+    let maxVal = -1;
+    daysOfWeek.forEach((_, i) => {
+      if (dowAgg[i].rev > maxVal) {
+        maxVal = dowAgg[i].rev;
+        bestDayIdx = i;
+      }
+    });
+    dowBadge.textContent = maxVal > 0 ? `Peak: ${daysOfWeek[bestDayIdx]}` : "No data";
+  }
+
+  makeChart(
+    $("#dayOfWeekChart"),
+    dowType,
+    {
+      labels: daysOfWeek,
+      datasets: [
+        {
+          label: dowMetric === "orders" ? "Orders" : "Revenue",
+          data: dowData,
+          borderColor: "#06b6d4",
+          backgroundColor: dowType === "line" ? "rgba(6,182,212,.18)" : "rgba(6,182,212,.45)",
+          pointBackgroundColor: "#06b6d4",
+          fill: dowType === "line",
+          tension: 0.35,
+        },
+      ],
+    },
+    {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (item) =>
+              dowMetric === "orders"
+                ? ` ${item.label}: ${item.raw} orders`
+                : ` ${item.label}: ${money(item.raw, getCurrency(), false)}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: (val) =>
+              dowMetric === "orders" ? val : money(val, getCurrency(), false),
+          },
+        },
+      },
+    },
+  );
+
+  // ── 9. NEW: Average Order Value (AOV) Progression ────────────────────────
+  const aovTypePref = chartPrefs.aovTrend.type || "line";
+  const isAovArea = aovTypePref === "area";
+  const actualAovType = isAovArea ? "line" : aovTypePref;
+
+  const aovValues = timelineLabels.map((k) => {
+    const rev = convertFromINR(dailyRev[k] || 0);
+    const count = dailyOrders[k] || 0;
+    return count > 0 ? Number((rev / count).toFixed(2)) : 0;
+  });
+
+  const aovBadge = $("#aovBadge");
+  if (aovBadge) {
+    const nonZero = aovValues.filter((v) => v > 0);
+    const avgVal = nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0;
+    aovBadge.textContent = `Avg: ${money(avgVal, getCurrency(), false)}`;
+  }
+
+  makeChart(
+    $("#aovTrendChart"),
+    actualAovType,
+    {
+      labels: timelineLabels.length
+        ? timelineLabels.map(timelineGranularity === "monthly" ? formatMonthLabel : timelineGranularity === "weekly" ? formatWeekLabel : formatShortDate)
+        : ["No data"],
+      datasets: [
+        {
+          label: "AOV per Order",
+          data: aovValues.length ? aovValues : [0],
+          fill: isAovArea || actualAovType === "line",
+          tension: 0.35,
+          borderColor: "#ec4899",
+          backgroundColor: isAovArea ? "rgba(236,72,153,.3)" : "rgba(236,72,153,.15)",
+          pointBackgroundColor: "#ec4899",
+        },
+      ],
+    },
+    {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: (items) => timelineLabels[items[0]?.dataIndex] || "",
+            label: (item) => ` AOV: ${money(item.raw, getCurrency(), false)}`,
           },
         },
       },
@@ -512,9 +966,104 @@ function renderCharts(filteredSales) {
       },
     },
   );
+
+  // ── 10. NEW: Sales Staff Contribution ────────────────────────────────────
+  const staffMetric = chartPrefs.staffPerformance.metric || "revenue";
+  const staffTypePref = chartPrefs.staffPerformance.type || "bar";
+  const isHorizontalStaff = staffTypePref === "horizontal";
+  const actualStaffType = isHorizontalStaff ? "bar" : staffTypePref;
+
+  const staffAgg = {};
+  filteredSales.forEach((s) => {
+    const rep = s.salespersonName || s.salespersonRole || "Admin";
+    if (!staffAgg[rep]) staffAgg[rep] = { revenue: 0, orders: 0 };
+    staffAgg[rep].revenue += Number(s.totalAmount || 0);
+    staffAgg[rep].orders += 1;
+  });
+
+  const sortedStaff = Object.entries(staffAgg).sort((a, b) =>
+    staffMetric === "orders" ? b[1].orders - a[1].orders : b[1].revenue - a[1].revenue,
+  );
+
+  const staffLabels = sortedStaff.length ? sortedStaff.map((x) => x[0]) : ["No sales reps"];
+  const staffDataValues = sortedStaff.length
+    ? sortedStaff.map((x) =>
+        staffMetric === "orders" ? x[1].orders : convertFromINR(x[1].revenue),
+      )
+    : [0];
+
+  const staffBadge = $("#staffBadge");
+  if (staffBadge) {
+    staffBadge.textContent = sortedStaff[0] ? `Top: ${sortedStaff[0][0]}` : "No data";
+  }
+
+  makeChart(
+    $("#staffPerformanceChart"),
+    actualStaffType,
+    {
+      labels: staffLabels,
+      datasets: [
+        {
+          label: staffMetric === "orders" ? "Orders Closed" : "Revenue Contributed",
+          data: staffDataValues,
+          borderColor: "#f43f5e",
+          backgroundColor: actualStaffType === "doughnut" ? undefined : "rgba(244,63,94,.45)",
+        },
+      ],
+    },
+    {
+      indexAxis: isHorizontalStaff ? "y" : "x",
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (item) =>
+              staffMetric === "orders"
+                ? ` ${item.raw} orders`
+                : ` ${money(item.raw, getCurrency(), false)}`,
+          },
+        },
+      },
+      scales: actualStaffType === "doughnut"
+        ? {}
+        : isHorizontalStaff
+          ? {
+              x: {
+                ticks: {
+                  callback: (val) =>
+                    staffMetric === "orders" ? val : money(val, getCurrency(), false),
+                },
+              },
+            }
+          : {
+              y: {
+                ticks: {
+                  callback: (val) =>
+                    staffMetric === "orders" ? val : money(val, getCurrency(), false),
+                },
+              },
+            },
+    },
+  );
 }
 
 // ── 7. Least-Selling Products & Dead Stock Table ───────────────────────────
+function populateCategoryFilter() {
+  const select = $("#deadStockCategorySelect");
+  if (!select) return;
+  const cats = new Set(["all"]);
+  products.forEach((p) => {
+    if (p.category) cats.add(p.category.trim());
+  });
+
+  const curVal = select.value || "all";
+  select.innerHTML = Array.from(cats)
+    .map(
+      (c) =>
+        `<option value="${c}" ${c === curVal ? "selected" : ""}>${c === "all" ? "All Categories" : c}</option>`,
+    )
+    .join("");
+}
+
 function renderLeastProducts(filteredSales) {
   const container = $("#leastProducts");
   if (!container) return;
@@ -527,24 +1076,31 @@ function renderLeastProducts(filteredSales) {
     return;
   }
 
-  // Count units sold and revenue per product in filtered period
+  // Count units sold and revenue per product with canonical resolution
   const salesByProduct = new Map();
   filteredSales.forEach((s) => {
-    const key =
-      s.productId || (s.productName ? s.productName.trim().toLowerCase() : "");
+    const matched =
+      products.find((p) => p.id === s.productId) ||
+      products.find(
+        (p) =>
+          p.name &&
+          s.productName &&
+          p.name.trim().toLowerCase() === s.productName.trim().toLowerCase(),
+      );
+    const key = matched
+      ? matched.id
+      : (s.productId || s.productName || "").trim().toLowerCase();
     if (!key) return;
+
     const cur = salesByProduct.get(key) || { units: 0, revenue: 0 };
     cur.units += Math.max(1, Number(s.quantity || 1));
     cur.revenue += Number(s.totalAmount || 0);
     salesByProduct.set(key, cur);
   });
 
-  // Map ALL products in inventory (including 0-sales dead stock!)
-  const movementList = products.map((p) => {
-    const byId = salesByProduct.get(p.id);
-    const byName = p.name ? salesByProduct.get(p.name.trim().toLowerCase()) : null;
-    const stats = byId || byName || { units: 0, revenue: 0 };
-
+  // Map ALL products in inventory (including dead stock)
+  let movementList = products.map((p) => {
+    const stats = salesByProduct.get(p.id) || { units: 0, revenue: 0 };
     const stock = Number(p.stock || 0);
     const price = Number(p.price || 0);
     const lockedValue = stock * price;
@@ -558,6 +1114,7 @@ function renderLeastProducts(filteredSales) {
 
     return {
       product: p,
+      id: p.id,
       name: p.name || "Unnamed Product",
       category: p.category || "General",
       stock,
@@ -569,7 +1126,22 @@ function renderLeastProducts(filteredSales) {
     };
   });
 
-  // Sort: 0-sales dead stock first, then by highest locked stock value
+  // Filter by category
+  if (deadStockCategory && deadStockCategory !== "all") {
+    movementList = movementList.filter(
+      (m) => m.category.toLowerCase() === deadStockCategory.toLowerCase(),
+    );
+  }
+
+  // Filter by search query
+  if (deadStockSearchTerm) {
+    const q = deadStockSearchTerm.toLowerCase();
+    movementList = movementList.filter(
+      (m) => m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q),
+    );
+  }
+
+  // Sort: Dead stock first, then by locked value descending
   movementList.sort((a, b) => {
     if (a.unitsSold !== b.unitsSold) return a.unitsSold - b.unitsSold;
     return b.lockedValue - a.lockedValue;
@@ -583,7 +1155,15 @@ function renderLeastProducts(filteredSales) {
       deadCount > 0 ? "badge badge-warn text-xs" : "badge badge-ok text-xs";
   }
 
-  const displayList = movementList.slice(0, 15);
+  const displayList = movementList.slice(0, 25);
+
+  if (!displayList.length) {
+    container.innerHTML = emptyState(
+      "No matching inventory",
+      "No products match your search or category filter.",
+    );
+    return;
+  }
 
   container.innerHTML = `
     <div class="table-wrap">
@@ -594,8 +1174,9 @@ function renderLeastProducts(filteredSales) {
             <th>Category</th>
             <th>In Stock</th>
             <th>Units Sold</th>
-            <th>Locked Stock Value</th>
+            <th>Locked Shelf Value</th>
             <th>Movement Status</th>
+            <th class="text-right">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -620,12 +1201,18 @@ function renderLeastProducts(filteredSales) {
 
               return `
               <tr>
-                <td class="font-bold text-slate-100">${item.name}</td>
+                <td class="font-bold text-slate-100">
+                  <div>${item.name}</div>
+                  <div class="text-xs text-slate-500 font-mono">ID: ${item.id.slice(0, 8)}</div>
+                </td>
                 <td><span class="badge badge-info">${item.category}</span></td>
                 <td class="${stockColor}">${item.stock} units</td>
                 <td class="font-mono font-bold ${item.unitsSold === 0 ? "text-rose-400" : "text-emerald-400"}">${item.unitsSold}</td>
                 <td class="font-mono text-slate-300 font-semibold">${money(item.lockedValue)}</td>
                 <td>${badgeHtml}</td>
+                <td class="text-right">
+                  <a href="products.html" class="btn btn-xs btn-ghost text-sky-400 hover:text-white" title="Manage product in catalog">Manage</a>
+                </td>
               </tr>
             `;
             })
@@ -655,34 +1242,275 @@ function scheduleRenderCharts() {
   });
 }
 
-// ── 9. Timeframe Control Handlers ──────────────────────────────────────────
-function initTimeframeControls() {
+// ── 9. Timeline & Interactive Controls Initialization ──────────────────────
+function syncDateInputValues() {
+  const startEl = $("#analyticsStartDate");
+  const endEl = $("#analyticsEndDate");
+  if (!startEl || !endEl) return;
+
+  const now = new Date();
+  const todayStr = toLocalYMD(now);
+
+  if (currentTimeframe === "today") {
+    startEl.value = todayStr;
+    endEl.value = todayStr;
+  } else if (currentTimeframe === "7d") {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    startEl.value = toLocalYMD(d);
+    endEl.value = todayStr;
+  } else if (currentTimeframe === "30d") {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    startEl.value = toLocalYMD(d);
+    endEl.value = todayStr;
+  } else if (currentTimeframe === "90d") {
+    const d = new Date();
+    d.setDate(d.getDate() - 90);
+    startEl.value = toLocalYMD(d);
+    endEl.value = todayStr;
+  } else if (currentTimeframe === "month") {
+    startEl.value = `${todayStr.slice(0, 7)}-01`;
+    endEl.value = todayStr;
+  } else if (currentTimeframe === "all") {
+    startEl.value = "";
+    endEl.value = "";
+  }
+}
+
+function initTimelineControls() {
   const container = $("#timeframeFilterGroup");
-  if (!container) return;
+  const startEl = $("#analyticsStartDate");
+  const endEl = $("#analyticsEndDate");
+  const resetBtn = $("#resetAnalyticsDate");
+  const granEl = $("#timelineGranularity");
 
-  container.addEventListener("click", (e) => {
-    const btn = e.target.closest(".timeframe-tab");
-    if (!btn) return;
+  if (container) {
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".timeframe-tab");
+      if (!btn) return;
 
-    currentTimeframe = btn.dataset.timeframe || "all";
+      currentTimeframe = btn.dataset.timeframe || "all";
+      customStartDate = "";
+      customEndDate = "";
 
-    container.querySelectorAll(".timeframe-tab").forEach((b) => {
-      if (b === btn) {
+      container.querySelectorAll(".timeframe-tab").forEach((b) => {
+        if (b === btn) {
+          b.className =
+            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-primary font-medium";
+        } else {
+          b.className =
+            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white";
+        }
+      });
+
+      syncDateInputValues();
+      renderAnalytics();
+    });
+  }
+
+  const handleCustomDateChange = () => {
+    if (startEl?.value || endEl?.value) {
+      currentTimeframe = "custom";
+      customStartDate = startEl?.value || "";
+      customEndDate = endEl?.value || "";
+
+      // Clear active style from preset tabs
+      container?.querySelectorAll(".timeframe-tab")?.forEach((b) => {
         b.className =
-          "btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-primary font-medium";
-      } else {
-        b.className =
-          "btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white";
+          "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white";
+      });
+
+      renderAnalytics();
+    }
+  };
+
+  if (startEl) startEl.addEventListener("change", handleCustomDateChange);
+  if (endEl) endEl.addEventListener("change", handleCustomDateChange);
+
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      currentTimeframe = "all";
+      customStartDate = "";
+      customEndDate = "";
+      syncDateInputValues();
+
+      container?.querySelectorAll(".timeframe-tab")?.forEach((b) => {
+        if (b.dataset.timeframe === "all") {
+          b.className =
+            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-primary font-medium";
+        } else {
+          b.className =
+            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white";
+        }
+      });
+
+      renderAnalytics();
+      toast("Timeline reset to All Time", "ok");
+    });
+  }
+
+  if (granEl) {
+    granEl.addEventListener("change", () => {
+      timelineGranularity = granEl.value || "daily";
+      renderAnalytics();
+    });
+  }
+}
+
+// ── 10. Chart Toolbars & Preferences Listeners ─────────────────────────────
+function initChartControls() {
+  const bindSelect = (id, key, prop) => {
+    const el = $("#" + id);
+    if (!el) return;
+    if (chartPrefs[key] && chartPrefs[key][prop]) {
+      el.value = chartPrefs[key][prop];
+    }
+    el.addEventListener("change", () => {
+      if (!chartPrefs[key]) chartPrefs[key] = {};
+      chartPrefs[key][prop] = el.value;
+      saveChartPrefs();
+      renderCharts(getFilteredSales());
+    });
+  };
+
+  // 1. Daily Sales
+  bindSelect("ctrl_dailySales_metric", "dailySales", "metric");
+  bindSelect("ctrl_dailySales_type", "dailySales", "type");
+
+  // 2. Monthly Sales
+  bindSelect("ctrl_monthlySales_metric", "monthlySales", "metric");
+  bindSelect("ctrl_monthlySales_type", "monthlySales", "type");
+
+  // 3. Top Products
+  bindSelect("ctrl_topProducts_metric", "topProducts", "metric");
+  bindSelect("ctrl_topProducts_type", "topProducts", "type");
+
+  // 4. Category Sales
+  bindSelect("ctrl_categorySales_metric", "categorySales", "metric");
+  bindSelect("ctrl_categorySales_type", "categorySales", "type");
+
+  // 5. Revenue Growth
+  bindSelect("ctrl_revenue_type", "revenueGrowth", "type");
+
+  // 6. Profit Trend
+  bindSelect("ctrl_profit_metric", "profitTrend", "metric");
+  bindSelect("ctrl_profit_type", "profitTrend", "type");
+
+  // 7. Payment Method
+  bindSelect("ctrl_paymentMethod_metric", "paymentMethod", "metric");
+  bindSelect("ctrl_paymentMethod_type", "paymentMethod", "type");
+
+  // 8. Day of Week
+  bindSelect("ctrl_dayOfWeek_metric", "dayOfWeek", "metric");
+  bindSelect("ctrl_dayOfWeek_type", "dayOfWeek", "type");
+
+  // 9. AOV Trend
+  bindSelect("ctrl_aovTrend_type", "aovTrend", "type");
+
+  // 10. Staff Performance
+  bindSelect("ctrl_staffPerformance_metric", "staffPerformance", "metric");
+  bindSelect("ctrl_staffPerformance_type", "staffPerformance", "type");
+
+  // Reset all preferences
+  $("#resetChartPrefsBtn")?.addEventListener("click", () => {
+    chartPrefs = { ...DEFAULT_CHART_PREFS };
+    saveChartPrefs();
+    document.querySelectorAll(".chart-ctrl-select").forEach((sel) => {
+      const match = sel.id.match(/^ctrl_([^_]+)_([^_]+)$/);
+      if (match && chartPrefs[match[1]] && chartPrefs[match[1]][match[2]]) {
+        sel.value = chartPrefs[match[1]][match[2]];
       }
     });
-
-    renderAnalytics();
+    renderCharts(getFilteredSales());
+    toast("Graph views reset to default", "ok");
   });
 }
 
-initTimeframeControls();
+// ── 11. Search, Filter & CSV Export Handlers ───────────────────────────────
+function initDeadStockFilters() {
+  const searchInput = $("#deadStockSearch");
+  const catSelect = $("#deadStockCategorySelect");
 
-// ── 10. Realtime Firestore Watchers ────────────────────────────────────────
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      deadStockSearchTerm = searchInput.value.trim();
+      renderLeastProducts(getFilteredSales());
+    });
+  }
+
+  if (catSelect) {
+    catSelect.addEventListener("change", () => {
+      deadStockCategory = catSelect.value;
+      renderLeastProducts(getFilteredSales());
+    });
+  }
+
+  // Export Dead Stock CSV
+  $("#exportDeadStockBtn")?.addEventListener("click", () => {
+    const filtered = getFilteredSales();
+    const salesByProduct = new Map();
+    filtered.forEach((s) => {
+      const k = (s.productId || s.productName || "").trim().toLowerCase();
+      if (!k) return;
+      const cur = salesByProduct.get(k) || 0;
+      salesByProduct.set(k, cur + Math.max(1, Number(s.quantity || 1)));
+    });
+
+    const exportRows = products.map((p) => {
+      const sold = salesByProduct.get(p.id) || salesByProduct.get((p.name || "").toLowerCase()) || 0;
+      const stock = Number(p.stock || 0);
+      const price = Number(p.price || 0);
+      return {
+        "Product Name": p.name || "",
+        Category: p.category || "",
+        "In Stock": stock,
+        "Units Sold in Period": sold,
+        "Selling Price": price,
+        "Locked Stock Value": stock * price,
+        Status: sold === 0 ? "Dead Stock" : sold <= 3 ? "Slow Mover" : "Steady",
+      };
+    });
+
+    toCSV(exportRows, `salesiq-dead-stock-${new Date().toISOString().slice(0, 10)}.csv`);
+    toast("Exported Dead Stock report to CSV", "ok");
+  });
+
+  // Export Complete Analytics CSV
+  $("#exportAnalyticsBtn")?.addEventListener("click", () => {
+    const filtered = getFilteredSales();
+    if (!filtered.length) {
+      toast("No sales data to export in selected timeline", "warn");
+      return;
+    }
+
+    const exportRows = filtered.map((s) => {
+      const d = saleDate(s);
+      return {
+        "Order Date": d ? toLocalYMD(d) : "",
+        "Product Name": s.productName || "",
+        Category: s.category || "",
+        Quantity: Number(s.quantity || 1),
+        "Unit Price": Number(s.price || s.unitPrice || 0),
+        "Total Revenue": Number(s.totalAmount || 0),
+        "Gross Profit": getSaleProfit(s),
+        "Customer Name": s.customerName || "Walk-in",
+        "Payment Method": s.paymentMethod || "Cash",
+        Salesperson: s.salespersonName || "Admin",
+      };
+    });
+
+    toCSV(exportRows, `salesiq-analytics-report-${currentTimeframe}-${new Date().toISOString().slice(0, 10)}.csv`);
+    toast("Exported Analytics Report to CSV", "ok");
+  });
+}
+
+// Initialize all controls
+initTimelineControls();
+initChartControls();
+initDeadStockFilters();
+
+// ── 12. Realtime Firestore Watchers ────────────────────────────────────────
 const unsubs = [
   watchCollection(
     "sales",
@@ -697,6 +1525,7 @@ const unsubs = [
     "products",
     (rows) => {
       products = rows;
+      populateCategoryFilter();
       scheduleRenderCharts();
     },
     false,
@@ -710,6 +1539,7 @@ window.addEventListener("salesiq:cache-updated", (e) => {
     scheduleRenderCharts();
   } else if (e.detail?.name === "products" && Array.isArray(e.detail.data)) {
     products = e.detail.data;
+    populateCategoryFilter();
     scheduleRenderCharts();
   }
 });

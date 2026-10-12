@@ -1139,3 +1139,103 @@ body.is-row-resizing * {
   cursor: row-resize !important;
   user-select: none !important;
 }
+
+/* ============================================================
+   Analytics Page: Enhanced Chart Controls & Timeline Command Bar
+   ============================================================ */
+.analytics-timeline-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chart-ctrl-select {
+  background: rgba(15, 23, 42, 0.85);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 7px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chart-ctrl-select:hover,
+.chart-ctrl-select:focus {
+  border-color: #38bdf8;
+  color: #f1f5f9;
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
+
+.chart-ctrl-select option {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+.chart-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.chart-icon-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.chart-icon-btn:active {
+  transform: translateY(0);
+}
+
+.light .chart-ctrl-select {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.light .chart-ctrl-select:hover,
+.light .chart-ctrl-select:focus {
+  border-color: #0284c7;
+  color: #0f172a;
+}
+
+.light .chart-ctrl-select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.light .chart-icon-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.light .chart-icon-btn:hover {
+  background: #f0f9ff;
+  border-color: #0284c7;
+  color: #0284c7;
+}
+

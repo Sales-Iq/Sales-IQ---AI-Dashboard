@@ -27,103 +27,336 @@
     <div class="app-main">
       <header id="appHeader" class="app-header"></header>
       <main class="page-container animate-slideUp">
-        <!-- Header & Timeframe Filter -->
-        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <!-- Header & Timeframe Command Center -->
+        <div class="mb-5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
-            <h2 class="page-title">Analytics</h2>
-            <p class="page-subtitle">Real-time financial performance, profitability curves, and stock movement analysis.</p>
-          </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <div id="timeframeFilterGroup" class="flex items-center gap-1.5 p-1 bg-slate-900/80 border border-slate-800 rounded-xl">
-              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-primary font-medium" data-timeframe="all">All Time</button>
-              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="30d">Last 30 Days</button>
-              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="month">This Month</button>
-              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="7d">Last 7 Days</button>
-              <button type="button" class="btn btn-xs px-3 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="today">Today</button>
+            <div class="flex items-center gap-2">
+              <h2 class="page-title mb-0">Analytics & Financial Intelligence</h2>
+              <span class="badge badge-info text-xs">Live & Interactive</span>
             </div>
-            <a href="ai-insights.html" class="btn btn-ghost" title="Explore AI-driven revenue & inventory insights">
+            <p class="page-subtitle mt-1">Real-time financial performance, profitability curves, customizable graphs, and stock movement analysis.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button id="exportAnalyticsBtn" class="btn btn-sm btn-primary gap-1.5 font-bold shadow-lg shadow-sky-500/10" title="Export complete analytics data to CSV">
+              <span>📥</span> Export CSV
+            </button>
+            <button id="resetChartPrefsBtn" class="btn btn-sm btn-ghost text-slate-300 hover:text-white" title="Reset all graph customizations to default">
+              🔄 Reset Views
+            </button>
+            <a href="ai-insights.html" class="btn btn-sm btn-ghost border border-slate-800" title="Explore AI-driven revenue & inventory insights">
               🤖 AI Insights
             </a>
+          </div>
+        </div>
+
+        <!-- Editable Timeline Control Command Bar -->
+        <div class="glass p-3.5 mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3 rounded-2xl border border-slate-800/80">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider select-none mr-1">Timeline:</span>
+            <div id="timeframeFilterGroup" class="flex flex-wrap items-center gap-1 p-1 bg-slate-900/90 border border-slate-800 rounded-xl">
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-primary font-medium" data-timeframe="all">All Time</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="90d">90 Days</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="30d">30 Days</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="month">This Month</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="7d">7 Days</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="today">Today</button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Custom Date Range Picker (From - To) -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="chart-date-group flex items-center gap-1.5 text-xs text-slate-300">
+                <label for="analyticsStartDate" class="chart-date-label text-slate-400 font-bold">From</label>
+                <input type="date" id="analyticsStartDate" class="chart-date-input" title="Custom timeline start date" />
+              </div>
+              <div class="chart-date-group flex items-center gap-1.5 text-xs text-slate-300">
+                <label for="analyticsEndDate" class="chart-date-label text-slate-400 font-bold">To</label>
+                <input type="date" id="analyticsEndDate" class="chart-date-input" title="Custom timeline end date" />
+              </div>
+              <button id="resetAnalyticsDate" class="btn btn-xs btn-ghost chart-reset-btn" title="Reset custom dates">Reset</button>
+            </div>
+
+            <!-- Granularity / Grouping -->
+            <div class="flex items-center gap-1.5 pl-2 border-l border-slate-800">
+              <span class="text-xs text-slate-400 font-medium select-none">Group:</span>
+              <select id="timelineGranularity" class="chart-ctrl-select py-1 px-2 text-xs" title="Select timeline interval">
+                <option value="daily" selected>Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <!-- Top KPI Stats Grid -->
         <div id="analyticsStats" class="stats-grid mb-6"></div>
 
-        <!-- Charts Grid -->
+        <!-- Charts Grid (10 Interactive & Editable Visualizations) -->
         <div class="grid xl:grid-cols-2 gap-6 mb-6">
+          <!-- 1. Daily / Timeline Sales Trend -->
           <div class="glass chart-box">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-black text-slate-100 flex items-center gap-2">
-                <span>📈</span> Daily Sales Trend
-              </h3>
-              <span id="dailySalesBadge" class="text-xs text-sky-400 font-bold"></span>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>📈</span> <span id="dailySalesTitle">Sales Trend</span>
+                </h3>
+                <span id="dailySalesBadge" class="text-xs text-sky-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_dailySales_metric" class="chart-ctrl-select" title="Switch metric">
+                  <option value="revenue">Revenue ($)</option>
+                  <option value="orders">Orders (#)</option>
+                  <option value="units">Units Sold</option>
+                </select>
+                <select id="ctrl_dailySales_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="line">Line 📈</option>
+                  <option value="bar">Bar 📊</option>
+                  <option value="area">Area 🌊</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('dailySalesChart','Sales-Trend')" title="Download chart PNG">📷</button>
+              </div>
             </div>
             <div class="chart-wrap"><canvas id="dailySalesChart"></canvas></div>
           </div>
 
+          <!-- 2. Monthly Sales Comparison -->
           <div class="glass chart-box">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-black text-slate-100 flex items-center gap-2">
-                <span>📊</span> Monthly Sales
-              </h3>
-              <span id="monthlySalesBadge" class="text-xs text-purple-400 font-bold"></span>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>📊</span> Monthly Sales
+                </h3>
+                <span id="monthlySalesBadge" class="text-xs text-purple-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_monthlySales_metric" class="chart-ctrl-select" title="Switch metric">
+                  <option value="revenue">Revenue ($)</option>
+                  <option value="orders">Orders (#)</option>
+                </select>
+                <select id="ctrl_monthlySales_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="bar" selected>Bar 📊</option>
+                  <option value="line">Line 📈</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('monthlySalesChart','Monthly-Sales')" title="Download chart PNG">📷</button>
+              </div>
             </div>
             <div class="chart-wrap"><canvas id="monthlySalesChart"></canvas></div>
           </div>
 
+          <!-- 3. Top Performing Products -->
           <div class="glass chart-box">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-black text-slate-100 flex items-center gap-2">
-                <span>🏆</span> Top Selling Products
-              </h3>
-              <span id="topProductsBadge" class="text-xs text-emerald-400 font-bold"></span>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>🏆</span> Top Products
+                </h3>
+                <span id="topProductsBadge" class="text-xs text-emerald-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_topProducts_metric" class="chart-ctrl-select" title="Rank by metric">
+                  <option value="units" selected>By Units Sold</option>
+                  <option value="revenue">By Revenue ($)</option>
+                  <option value="profit">By Gross Profit ($)</option>
+                </select>
+                <select id="ctrl_topProducts_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="bar" selected>Bar 📊</option>
+                  <option value="horizontal">Horizontal 📉</option>
+                  <option value="doughnut">Doughnut 🍩</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('topProductsChart','Top-Products')" title="Download chart PNG">📷</button>
+              </div>
             </div>
             <div class="chart-wrap"><canvas id="topProductsChart"></canvas></div>
           </div>
 
+          <!-- 4. Category-wise Sales Distribution -->
           <div class="glass chart-box">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-black text-slate-100 flex items-center gap-2">
-                <span>🏷️</span> Category-wise Sales
-              </h3>
-              <span id="categoryBadge" class="text-xs text-amber-400 font-bold"></span>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>🏷️</span> Category Sales
+                </h3>
+                <span id="categoryBadge" class="text-xs text-amber-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_categorySales_metric" class="chart-ctrl-select" title="Switch metric">
+                  <option value="revenue" selected>Revenue ($)</option>
+                  <option value="units">Units Sold</option>
+                </select>
+                <select id="ctrl_categorySales_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="doughnut" selected>Doughnut 🍩</option>
+                  <option value="pie">Pie 🥧</option>
+                  <option value="bar">Bar 📊</option>
+                  <option value="polarArea">Polar ❄️</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('categorySalesChart','Category-Sales')" title="Download chart PNG">📷</button>
+              </div>
             </div>
             <div class="chart-wrap"><canvas id="categorySalesChart"></canvas></div>
           </div>
 
+          <!-- 5. Cumulative Revenue Growth -->
           <div class="glass chart-box">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-black text-slate-100 flex items-center gap-2">
-                <span>🚀</span> Revenue Growth Area
-              </h3>
-              <span id="growthBadge" class="text-xs text-sky-400 font-bold"></span>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>🚀</span> Revenue Growth
+                </h3>
+                <span id="growthBadge" class="text-xs text-sky-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_revenue_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="area" selected>Area Fill 🌊</option>
+                  <option value="line">Line 📈</option>
+                  <option value="bar">Bar 📊</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('revenueChart','Revenue-Growth')" title="Download chart PNG">📷</button>
+              </div>
             </div>
             <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
           </div>
 
+          <!-- 6. Gross Profit Trend & Margins -->
           <div class="glass chart-box">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-black text-slate-100 flex items-center gap-2">
-                <span>💰</span> Gross Profit Trend
-              </h3>
-              <span id="profitBadge" class="text-xs text-emerald-400 font-bold"></span>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>💰</span> Gross Profit Trend
+                </h3>
+                <span id="profitBadge" class="text-xs text-emerald-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_profit_metric" class="chart-ctrl-select" title="Switch metric">
+                  <option value="profit" selected>Profit ($)</option>
+                  <option value="margin">Margin (%)</option>
+                </select>
+                <select id="ctrl_profit_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="line" selected>Line 📈</option>
+                  <option value="bar">Bar 📊</option>
+                  <option value="area">Area 🌊</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('profitChart','Gross-Profit-Trend')" title="Download chart PNG">📷</button>
+              </div>
             </div>
             <div class="chart-wrap"><canvas id="profitChart"></canvas></div>
           </div>
+
+          <!-- 7. NEW: Payment Method Distribution -->
+          <div class="glass chart-box">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>💳</span> Payment Methods
+                </h3>
+                <span id="paymentMethodBadge" class="text-xs text-indigo-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_paymentMethod_metric" class="chart-ctrl-select" title="Switch metric">
+                  <option value="revenue" selected>Revenue ($)</option>
+                  <option value="transactions">Orders (#)</option>
+                </select>
+                <select id="ctrl_paymentMethod_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="doughnut" selected>Doughnut 🍩</option>
+                  <option value="pie">Pie 🥧</option>
+                  <option value="bar">Bar 📊</option>
+                  <option value="polarArea">Polar ❄️</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('paymentMethodChart','Payment-Methods')" title="Download chart PNG">📷</button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="paymentMethodChart"></canvas></div>
+          </div>
+
+          <!-- 8. NEW: Sales by Day of Week -->
+          <div class="glass chart-box">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>📅</span> Sales by Day of Week
+                </h3>
+                <span id="dayOfWeekBadge" class="text-xs text-cyan-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_dayOfWeek_metric" class="chart-ctrl-select" title="Switch metric">
+                  <option value="revenue" selected>Revenue ($)</option>
+                  <option value="orders">Orders (#)</option>
+                </select>
+                <select id="ctrl_dayOfWeek_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="bar" selected>Bar 📊</option>
+                  <option value="line">Line 📈</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('dayOfWeekChart','Day-Of-Week-Sales')" title="Download chart PNG">📷</button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="dayOfWeekChart"></canvas></div>
+          </div>
+
+          <!-- 9. NEW: Average Order Value (AOV) Progression -->
+          <div class="glass chart-box">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>🛍️</span> Average Order Value
+                </h3>
+                <span id="aovBadge" class="text-xs text-pink-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_aovTrend_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="line" selected>Line 📈</option>
+                  <option value="bar">Bar 📊</option>
+                  <option value="area">Area 🌊</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('aovTrendChart','AOV-Trend')" title="Download chart PNG">📷</button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="aovTrendChart"></canvas></div>
+          </div>
+
+          <!-- 10. NEW: Sales Staff Contribution -->
+          <div class="glass chart-box">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
+                  <span>🧑‍💼</span> Staff Contribution
+                </h3>
+                <span id="staffBadge" class="text-xs text-rose-400 font-bold"></span>
+              </div>
+              <div class="chart-header-controls">
+                <select id="ctrl_staffPerformance_metric" class="chart-ctrl-select" title="Switch metric">
+                  <option value="revenue" selected>Revenue ($)</option>
+                  <option value="orders">Orders (#)</option>
+                </select>
+                <select id="ctrl_staffPerformance_type" class="chart-ctrl-select" title="Switch chart type">
+                  <option value="bar" selected>Bar 📊</option>
+                  <option value="horizontal">Horizontal 📉</option>
+                  <option value="doughnut">Doughnut 🍩</option>
+                </select>
+                <button class="chart-icon-btn" onclick="window.salesiqChartExport('staffPerformanceChart','Staff-Performance')" title="Download chart PNG">📷</button>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="staffPerformanceChart"></canvas></div>
+          </div>
         </div>
 
-        <!-- Least-Selling Products & Inventory Movement -->
+        <!-- Least-Selling Products & Inventory Movement (Dead Stock Diagnostic) -->
         <div class="glass p-5">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h3 class="font-black text-lg text-slate-100 flex items-center gap-2">
                 <span>📦</span> Least-selling Products & Stock Movement
               </h3>
               <p class="text-xs text-slate-400 mt-0.5">Identifies zero-sales dead inventory, slow movers, and capital locked up in warehouse shelves.</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+              <input type="text" id="deadStockSearch" class="input input-sm text-xs bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 w-44 md:w-56" placeholder="🔍 Search product or category..." />
+              <select id="deadStockCategorySelect" class="chart-ctrl-select py-1.5 px-2.5 text-xs">
+                <option value="all">All Categories</option>
+              </select>
               <span id="deadStockCountBadge" class="badge badge-warn text-xs"></span>
+              <button id="exportDeadStockBtn" class="btn btn-xs btn-ghost border border-slate-800" title="Export dead stock to CSV">
+                📥 Export Table
+              </button>
             </div>
           </div>
           <div id="leastProducts"></div>
