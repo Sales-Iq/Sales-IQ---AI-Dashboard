@@ -1239,3 +1239,82 @@ body.is-row-resizing * {
   color: #0284c7;
 }
 
+/* ============================================================
+   Analytics Dead Stock Table & Badges in Light Theme
+   ============================================================ */
+.light #leastProducts table th {
+  background: #f1f5f9 !important;
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.light #leastProducts table td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.light #leastProducts table tr:hover td {
+  background: #f0f9ff !important;
+}
+
+.light #leastProducts .font-bold.text-slate-100,
+.light #leastProducts td.font-bold {
+  color: #0f172a !important;
+}
+
+.light #leastProducts .text-slate-500 {
+  color: #64748b !important;
+}
+
+.light #leastProducts .text-slate-300 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.light #leastProducts .text-slate-200 {
+  color: #334155 !important;
+}
+
+.light #leastProducts .text-rose-400 {
+  color: #e11d48 !important;
+}
+
+.light #leastProducts .text-emerald-400 {
+  color: #059669 !important;
+}
+
+.light #leastProducts .text-amber-400 {
+  color: #d97706 !important;
+}
+
+.light #deadStockSearch {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.light #deadStockSearch:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+.light #deadStockCategorySelect {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.light #exportDeadStockBtn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.light #exportDeadStockBtn:hover {
+  background: #f0f9ff !important;
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+}
+
+

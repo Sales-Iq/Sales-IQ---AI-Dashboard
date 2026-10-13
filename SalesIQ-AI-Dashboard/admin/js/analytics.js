@@ -16,6 +16,7 @@ import {
   getCurrency,
   toCSV,
   toast,
+  getTheme,
 } from "../../js/shared.js";
 
 const { profile } = await requireAuth(["Admin"]);
@@ -328,6 +329,9 @@ function renderKpis(filteredSales) {
 
 // ── 6. 10 Customizable Charts Rendering ────────────────────────────────────
 function renderCharts(filteredSales) {
+  const isLight =
+    document.body.classList.contains("light") || getTheme() === "light";
+
   // Timeline grouping key generator based on user granularity
   const dateKey = (sale) => {
     const d = saleDate(sale);
@@ -434,9 +438,11 @@ function renderCharts(filteredSales) {
           data: dailyData.length ? dailyData : [0],
           tension: 0.35,
           fill: isDailyArea || actualDailyType === "line",
-          borderColor: "#38bdf8",
-          backgroundColor: isDailyArea ? "rgba(56,189,248,.35)" : "rgba(56,189,248,.18)",
-          pointBackgroundColor: "#38bdf8",
+          borderColor: isLight ? "#0284c7" : "#38bdf8",
+          backgroundColor: isDailyArea
+            ? (isLight ? "rgba(2,132,199,.28)" : "rgba(56,189,248,.35)")
+            : (isLight ? "rgba(2,132,199,.15)" : "rgba(56,189,248,.18)"),
+          pointBackgroundColor: isLight ? "#0284c7" : "#38bdf8",
         },
       ],
     },
@@ -488,9 +494,9 @@ function renderCharts(filteredSales) {
         {
           label: monthlyMetric === "orders" ? "Monthly Orders" : "Monthly Revenue",
           data: mData.length ? mData : [0],
-          borderColor: "#c084fc",
-          backgroundColor: "rgba(192,132,252,.45)",
-          pointBackgroundColor: "#c084fc",
+          borderColor: isLight ? "#7c3aed" : "#c084fc",
+          backgroundColor: isLight ? "rgba(124,58,237,.35)" : "rgba(192,132,252,.45)",
+          pointBackgroundColor: isLight ? "#7c3aed" : "#c084fc",
           fill: monthlyType === "line",
           tension: 0.35,
         },
@@ -572,8 +578,13 @@ function renderCharts(filteredSales) {
                 ? "Gross Profit"
                 : "Units Sold",
           data: topDataValues,
-          borderColor: "#34d399",
-          backgroundColor: actualTopType === "doughnut" ? undefined : "rgba(52,211,153,.45)",
+          borderColor: isLight ? "#059669" : "#34d399",
+          backgroundColor:
+            actualTopType === "doughnut"
+              ? undefined
+              : isLight
+                ? "rgba(5,150,105,.35)"
+                : "rgba(52,211,153,.45)",
         },
       ],
     },
@@ -698,8 +709,15 @@ function renderCharts(filteredSales) {
           data: cumulativeRevenue.length ? cumulativeRevenue : [0],
           fill: growthTypePref === "area" || actualGrowthType === "line",
           tension: 0.35,
-          borderColor: "#38bdf8",
-          backgroundColor: growthTypePref === "area" ? "rgba(56,189,248,.25)" : "rgba(56,189,248,.12)",
+          borderColor: isLight ? "#0284c7" : "#38bdf8",
+          backgroundColor:
+            growthTypePref === "area"
+              ? isLight
+                ? "rgba(2,132,199,.25)"
+                : "rgba(56,189,248,.25)"
+              : isLight
+                ? "rgba(2,132,199,.12)"
+                : "rgba(56,189,248,.12)",
         },
       ],
     },
@@ -754,9 +772,15 @@ function renderCharts(filteredSales) {
           data: profitValues.length ? profitValues : [0],
           fill: isProfitArea || actualProfitType === "line",
           tension: 0.35,
-          borderColor: "#10b981",
-          backgroundColor: isProfitArea ? "rgba(16,185,129,.30)" : "rgba(16,185,129,.18)",
-          pointBackgroundColor: "#10b981",
+          borderColor: isLight ? "#059669" : "#10b981",
+          backgroundColor: isProfitArea
+            ? isLight
+              ? "rgba(5,150,105,.28)"
+              : "rgba(16,185,129,.30)"
+            : isLight
+              ? "rgba(5,150,105,.14)"
+              : "rgba(16,185,129,.18)",
+          pointBackgroundColor: isLight ? "#059669" : "#10b981",
         },
       ],
     },
@@ -881,9 +905,16 @@ function renderCharts(filteredSales) {
         {
           label: dowMetric === "orders" ? "Orders" : "Revenue",
           data: dowData,
-          borderColor: "#06b6d4",
-          backgroundColor: dowType === "line" ? "rgba(6,182,212,.18)" : "rgba(6,182,212,.45)",
-          pointBackgroundColor: "#06b6d4",
+          borderColor: isLight ? "#0891b2" : "#06b6d4",
+          backgroundColor:
+            dowType === "line"
+              ? isLight
+                ? "rgba(8,145,178,.15)"
+                : "rgba(6,182,212,.18)"
+              : isLight
+                ? "rgba(8,145,178,.35)"
+                : "rgba(6,182,212,.45)",
+          pointBackgroundColor: isLight ? "#0891b2" : "#06b6d4",
           fill: dowType === "line",
           tension: 0.35,
         },
@@ -942,9 +973,16 @@ function renderCharts(filteredSales) {
           data: aovValues.length ? aovValues : [0],
           fill: isAovArea || actualAovType === "line",
           tension: 0.35,
-          borderColor: "#ec4899",
-          backgroundColor: isAovArea ? "rgba(236,72,153,.3)" : "rgba(236,72,153,.15)",
-          pointBackgroundColor: "#ec4899",
+          borderColor: isLight ? "#db2777" : "#ec4899",
+          backgroundColor:
+            isAovArea
+              ? isLight
+                ? "rgba(219,39,119,.25)"
+                : "rgba(236,72,153,.3)"
+              : isLight
+                ? "rgba(219,39,119,.12)"
+                : "rgba(236,72,153,.15)",
+          pointBackgroundColor: isLight ? "#db2777" : "#ec4899",
         },
       ],
     },
@@ -1006,8 +1044,13 @@ function renderCharts(filteredSales) {
         {
           label: staffMetric === "orders" ? "Orders Closed" : "Revenue Contributed",
           data: staffDataValues,
-          borderColor: "#f43f5e",
-          backgroundColor: actualStaffType === "doughnut" ? undefined : "rgba(244,63,94,.45)",
+          borderColor: isLight ? "#e11d48" : "#f43f5e",
+          backgroundColor:
+            actualStaffType === "doughnut"
+              ? undefined
+              : isLight
+                ? "rgba(225,29,72,.35)"
+                : "rgba(244,63,94,.45)",
         },
       ],
     },
@@ -1544,6 +1587,17 @@ window.addEventListener("salesiq:cache-updated", (e) => {
   }
 });
 
+window.addEventListener("salesiq:theme-changed", () => {
+  scheduleRenderCharts();
+});
+
+window.addEventListener("storage", (e) => {
+  if (e.key === "salesiq_theme") {
+    scheduleRenderCharts();
+  }
+});
+
 window.addEventListener("beforeunload", () => {
   unsubs.forEach((unsub) => unsub?.());
 });
+

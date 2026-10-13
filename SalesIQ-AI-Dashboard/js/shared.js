@@ -328,6 +328,9 @@ export function applyTheme(theme = getTheme()) {
   document.body.classList.toggle("light", theme === "light");
   document.documentElement.classList.toggle("light", theme === "light");
   localStorage.setItem("salesiq_theme", theme);
+  window.dispatchEvent(
+    new CustomEvent("salesiq:theme-changed", { detail: { theme } }),
+  );
 }
 
 export function initSplash() {
@@ -468,24 +471,30 @@ export function initClickSpark() {
       }
 
       const eased = p * (2 - p);
-      const dist = eased * 24;
-      const len = 12 * (1 - eased);
+      const dist = eased * (s.distance || 32);
+      const len = (s.length || 14) * (1 - eased);
       const x1 = s.x + dist * Math.cos(s.angle);
-      const y1 = s.y + dist * Math.sin(s.angle);
+      const y1 = s.y + dist * Math.sin(s.angle) + p * 6; // subtle gravity
       const x2 = s.x + (dist + len) * Math.cos(s.angle);
-      const y2 = s.y + (dist + len) * Math.sin(s.angle);
+      const y2 = s.y + (dist + len) * Math.sin(s.angle) + p * 6;
 
       ctx.save();
-      ctx.globalAlpha = Math.max(0, Math.min(1 - p, 1));
-      ctx.strokeStyle = document.body.classList.contains("light")
-        ? "#0ea5e9"
-        : "#ffffff";
-      ctx.lineWidth = 2;
+      ctx.globalAlpha = Math.max(0, Math.min((1 - p) * 1.2, 1));
+      ctx.strokeStyle = s.color;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 7;
+      ctx.lineWidth = s.width || 2.2;
       ctx.lineCap = "round";
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.stroke();
+
+      // Glowing ember particle head
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.arc(x2, y2, Math.max(0.5, (1 - p) * 1.8), 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
 
@@ -496,18 +505,28 @@ export function initClickSpark() {
     }
   }
 
+  const darkPalette = ["#38bdf8", "#a78bfa", "#34d399", "#f59e0b", "#f472b6", "#60a5fa"];
+  const lightPalette = ["#0284c7", "#7c3aed", "#059669", "#d97706", "#db2777", "#2563eb"];
+
   // Passive: click sparks never call preventDefault.
   document.addEventListener(
     "click",
     (e) => {
-      const count = 10;
+      const isLight = document.body.classList.contains("light");
+      const palette = isLight ? lightPalette : darkPalette;
+      const count = 12;
       const now = performance.now();
 
       for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
         sparks.push({
           x: e.clientX,
           y: e.clientY,
-          angle: (Math.PI * 2 * i) / count,
+          angle,
+          color: palette[i % palette.length],
+          distance: 26 + Math.random() * 20,
+          length: 10 + Math.random() * 8,
+          width: 1.8 + Math.random() * 1.2,
           start: now,
         });
       }
@@ -519,6 +538,7 @@ export function initClickSpark() {
     { passive: true },
   );
 }
+
 
 const adminLinks = [
   ["dashboard", "Dashboard", "dashboard.html", "📊"],
@@ -1752,14 +1772,26 @@ function mergeChartOptions(type, options = {}) {
 }
 
 function normalizeDatasets(datasets = []) {
-  const palette = [
-    { border: "#38bdf8", bg: "rgba(56,189,248,.22)" },
-    { border: "#a78bfa", bg: "rgba(167,139,250,.22)" },
-    { border: "#22c55e", bg: "rgba(34,197,94,.22)" },
-    { border: "#f59e0b", bg: "rgba(245,158,11,.22)" },
-    { border: "#f472b6", bg: "rgba(244,114,182,.22)" },
-    { border: "#2dd4bf", bg: "rgba(45,212,191,.22)" },
-  ];
+  const isLight =
+    (typeof document !== "undefined" && document.body?.classList.contains("light")) ||
+    getTheme() === "light";
+  const palette = isLight
+    ? [
+        { border: "#0284c7", bg: "rgba(2,132,199,.22)" },
+        { border: "#7c3aed", bg: "rgba(124,58,237,.22)" },
+        { border: "#059669", bg: "rgba(5,150,105,.22)" },
+        { border: "#d97706", bg: "rgba(217,119,6,.22)" },
+        { border: "#db2777", bg: "rgba(219,39,119,.22)" },
+        { border: "#0891b2", bg: "rgba(8,145,178,.22)" },
+      ]
+    : [
+        { border: "#38bdf8", bg: "rgba(56,189,248,.22)" },
+        { border: "#a78bfa", bg: "rgba(167,139,250,.22)" },
+        { border: "#22c55e", bg: "rgba(34,197,94,.22)" },
+        { border: "#f59e0b", bg: "rgba(245,158,11,.22)" },
+        { border: "#f472b6", bg: "rgba(244,114,182,.22)" },
+        { border: "#2dd4bf", bg: "rgba(45,212,191,.22)" },
+      ];
   return datasets.map((dataset, i) => {
     const c = palette[i % palette.length];
     return {
@@ -1791,26 +1823,51 @@ export function makeChart(canvas, type, data, options = {}) {
   };
   // Pie/doughnut need one color per slice; expand the palette automatically.
   if (type === "pie" || type === "doughnut") {
-    const sliceBg = [
-      "rgba(56,189,248,.75)",
-      "rgba(167,139,250,.75)",
-      "rgba(34,197,94,.75)",
-      "rgba(245,158,11,.75)",
-      "rgba(244,114,182,.75)",
-      "rgba(45,212,191,.75)",
-      "rgba(96,165,250,.75)",
-      "rgba(251,113,133,.75)",
-    ];
-    const sliceBorder = [
-      "#38bdf8",
-      "#a78bfa",
-      "#22c55e",
-      "#f59e0b",
-      "#f472b6",
-      "#2dd4bf",
-      "#60a5fa",
-      "#fb7185",
-    ];
+    const isLight =
+      (typeof document !== "undefined" && document.body?.classList.contains("light")) ||
+      getTheme() === "light";
+    const sliceBg = isLight
+      ? [
+          "rgba(2,132,199,.85)",
+          "rgba(124,58,237,.85)",
+          "rgba(5,150,105,.85)",
+          "rgba(217,119,6,.85)",
+          "rgba(219,39,119,.85)",
+          "rgba(8,145,178,.85)",
+          "rgba(79,70,229,.85)",
+          "rgba(225,29,72,.85)",
+        ]
+      : [
+          "rgba(56,189,248,.75)",
+          "rgba(167,139,250,.75)",
+          "rgba(34,197,94,.75)",
+          "rgba(245,158,11,.75)",
+          "rgba(244,114,182,.75)",
+          "rgba(45,212,191,.75)",
+          "rgba(96,165,250,.75)",
+          "rgba(251,113,133,.75)",
+        ];
+    const sliceBorder = isLight
+      ? [
+          "#0284c7",
+          "#7c3aed",
+          "#059669",
+          "#d97706",
+          "#db2777",
+          "#0891b2",
+          "#4f46e5",
+          "#e11d48",
+        ]
+      : [
+          "#38bdf8",
+          "#a78bfa",
+          "#22c55e",
+          "#f59e0b",
+          "#f472b6",
+          "#2dd4bf",
+          "#60a5fa",
+          "#fb7185",
+        ];
     nextData.datasets = nextData.datasets.map((ds) => {
       const n = ds.data?.length || 0;
       if (n > 1 && !Array.isArray(ds.backgroundColor)) {

@@ -16,6 +16,7 @@ import {
   hideSkeletonLoader,
   convertFromINR,
   getCurrency,
+  getTheme,
 } from "../../js/shared.js";
 import {
   db,
@@ -553,6 +554,9 @@ function renderSalesChart() {
     rangeTextEl.innerHTML = `${labelPrefix}: <b>${startTxt}</b> to <b>${endTxt}</b> • Total: <b class="text-sky-400">${money(totalPeriodSales, getCurrency(), false)}</b> (${totalPeriodOrders} ${totalPeriodOrders === 1 ? "order" : "orders"})`;
   }
 
+  const isLight =
+    document.body.classList.contains("light") || getTheme() === "light";
+
   makeChart(
     $("#salesTrendChart"),
     "line",
@@ -564,9 +568,9 @@ function renderSalesChart() {
           data: chartData,
           tension: 0.35,
           fill: true,
-          borderColor: "#38bdf8",
-          backgroundColor: "rgba(56,189,248,.20)",
-          pointBackgroundColor: "#38bdf8",
+          borderColor: isLight ? "#0284c7" : "#38bdf8",
+          backgroundColor: isLight ? "rgba(2,132,199,.20)" : "rgba(56,189,248,.20)",
+          pointBackgroundColor: isLight ? "#0284c7" : "#38bdf8",
         },
       ],
     },
@@ -601,6 +605,8 @@ function renderSalesChart() {
 }
 
 function renderInventoryChart() {
+  const isLight =
+    document.body.classList.contains("light") || getTheme() === "light";
   const topInventory = [...products]
     .sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0))
     .slice(0, 10);
@@ -618,8 +624,8 @@ function renderInventoryChart() {
       {
         label: "Stock",
         data: invData,
-        borderColor: "#a78bfa",
-        backgroundColor: "rgba(167,139,250,.55)",
+        borderColor: isLight ? "#7c3aed" : "#a78bfa",
+        backgroundColor: isLight ? "rgba(124,58,237,.45)" : "rgba(167,139,250,.55)",
       },
     ],
   });
@@ -1973,12 +1979,17 @@ initDashboardEditMode();
 renderDemoControls();
 startRunnerIfNeeded();
 
-window.addEventListener("themechanged", () => {
+const onThemeRefresh = () => {
   try {
     renderCharts();
   } catch (err) {
     console.warn("Theme chart refresh error:", err);
   }
+};
+window.addEventListener("themechanged", onThemeRefresh);
+window.addEventListener("salesiq:theme-changed", onThemeRefresh);
+window.addEventListener("storage", (e) => {
+  if (e.key === "salesiq_theme") onThemeRefresh();
 });
 
 window.addEventListener("beforeunload", () => {
