@@ -396,7 +396,7 @@ export function tableSkeleton(cols = 8, rows = 5) {
       <table>
         <thead>
           <tr>
-            ${Array.from({ length: cols }, () => `<th><div class="h-3.5 bg-slate-700/60 rounded w-20"></div></th>`).join("")}
+            ${Array.from({ length: cols }, () => `<th><div class="h-3.5 bg-sky-500/20 rounded w-20"></div></th>`).join("")}
           </tr>
         </thead>
         <tbody>
@@ -404,7 +404,7 @@ export function tableSkeleton(cols = 8, rows = 5) {
             { length: rows },
             () => `
             <tr>
-              ${Array.from({ length: cols }, () => `<td><div class="h-4 bg-slate-800/80 rounded w-full max-w-[130px]"></div></td>`).join("")}
+              ${Array.from({ length: cols }, () => `<td><div class="h-4 bg-sky-500/10 rounded w-full max-w-[130px]"></div></td>`).join("")}
             </tr>
           `,
           ).join("")}

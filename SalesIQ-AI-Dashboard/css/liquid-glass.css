@@ -1,10 +1,10 @@
 /* SalesIQ Liquid Glass + 3D Animation & Dynamic Mouse Glow Layer
    Applied across landing, auth, admin, sales, and superadmin pages. */
 :root {
-  --liq-border: rgba(255, 255, 255, 0.18);
-  --liq-border-hover: rgba(56, 189, 248, 0.38);
-  --liq-highlight: rgba(255, 255, 255, 0.22);
-  --liq-shadow: rgba(0, 0, 0, 0.38);
+  --liq-border: rgba(56, 189, 248, 0.2);
+  --liq-border-hover: rgba(56, 189, 248, 0.45);
+  --liq-highlight: rgba(255, 255, 255, 0.15);
+  --liq-shadow: rgba(0, 0, 0, 0.4);
   --liq-cyan: rgba(56, 189, 248, 0.32);
   --liq-purple: rgba(168, 85, 247, 0.3);
   --liq-emerald: rgba(16, 185, 129, 0.22);
@@ -121,17 +121,17 @@ body.light::before {
     ),
     linear-gradient(
       120deg,
-      rgba(255, 255, 255, 0.22),
+      rgba(56, 189, 248, 0.15),
       transparent 28%,
-      transparent 72%,
-      rgba(255, 255, 255, 0.08)
+      transparent 70%,
+      rgba(139, 92, 246, 0.1)
     ),
     radial-gradient(
       circle at 25% 10%,
-      rgba(255, 255, 255, 0.16),
-      transparent 28%
+      rgba(56, 189, 248, 0.18),
+      transparent 30%
     );
-  opacity: 0.85;
+  opacity: 0.3;
   mix-blend-mode: screen;
   z-index: 0;
   transition: opacity 0.3s ease;
@@ -191,8 +191,8 @@ body.light::before {
   border-radius: 999px;
   background: radial-gradient(
     circle,
-    rgba(56, 189, 248, 0.22),
-    transparent 68%
+    rgba(14, 165, 233, 0.25),
+    transparent 66%
   );
   pointer-events: none;
   animation: glassOrb 6s ease-in-out infinite alternate;
@@ -231,13 +231,14 @@ body.light::before {
 .app-sidebar,
 .auth-card,
 .liquid-panel {
+  background: rgba(11, 20, 39, 0.72) !important;
   border: 1px solid var(--liq-border) !important;
-  backdrop-filter: blur(28px) saturate(1.8) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(1.8) brightness(1.08) !important;
+  backdrop-filter: blur(24px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
   box-shadow:
-    0 24px 75px var(--liq-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05) !important;
+    0 24px 70px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(14, 165, 233, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   transition:
     transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.25s ease,

@@ -7,10 +7,10 @@
   padding:24px;
   overflow:hidden;
   background:
-    radial-gradient(circle at 18% 18%, rgba(34,211,238,.34), transparent 30%),
-    radial-gradient(circle at 82% 18%, rgba(139,92,246,.34), transparent 34%),
-    radial-gradient(circle at 50% 90%, rgba(249,115,22,.20), transparent 36%),
-    linear-gradient(135deg,#020617,#0f172a 52%,#111827);
+    radial-gradient(circle at 18% 18%, rgba(56,189,248,.30), transparent 32%),
+    radial-gradient(circle at 82% 18%, rgba(139,92,246,.28), transparent 34%),
+    radial-gradient(circle at 50% 90%, rgba(34,197,94,.16), transparent 36%),
+    linear-gradient(135deg, #020617, #070e20 40%, #0c1630 65%, #020617);
 }
 .auth-grid-bg { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px); background-size:48px 48px; mask-image:linear-gradient(to bottom, transparent, black 14%, black 82%, transparent); animation:moveAuthGrid 16s linear infinite; }
 @keyframes moveAuthGrid { from{transform:translateY(0)} to{transform:translateY(48px)} }
@@ -22,7 +22,7 @@
 .auth-cube { position:absolute; width:120px; height:120px; border-radius:28px; border:1px solid rgba(255,255,255,.16); background:linear-gradient(135deg, rgba(56,189,248,.16), rgba(139,92,246,.16)); box-shadow:0 30px 70px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.18); transform-style:preserve-3d; animation:authCubeFloat 8s ease-in-out infinite alternate; }
 .auth-cube.one { left:8%; top:18%; } .auth-cube.two { right:9%; bottom:16%; animation-delay:1.2s; }
 @keyframes authCubeFloat { from{transform:rotateX(18deg) rotateY(22deg) translateY(0)} to{transform:rotateX(42deg) rotateY(66deg) translateY(-42px)} }
-.auth-card { width:min(480px,100%); padding:34px; border-radius:32px; background:linear-gradient(145deg,rgba(15,23,42,.84),rgba(30,41,59,.55)); animation:authCardIn .85s cubic-bezier(.2,.8,.2,1) both; }
+.auth-card { width:min(480px,100%); padding:34px; border-radius:32px; background:rgba(11,20,39,0.82); border:1px solid rgba(56,189,248,0.22); backdrop-filter:blur(24px) saturate(1.8); -webkit-backdrop-filter:blur(24px) saturate(1.8); box-shadow:0 24px 70px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1); animation:authCardIn .85s cubic-bezier(.2,.8,.2,1) both; }
 .auth-card.large { width:min(520px,100%); }
 @keyframes authCardIn { from{opacity:0; transform:perspective(1000px) rotateX(18deg) translateY(55px) scale(.94)} to{opacity:1; transform:perspective(1000px) rotateX(0) translateY(0) scale(1)} }
 .auth-brand { display:flex; align-items:center; gap:13px; color:white; text-decoration:none; font-weight:950; font-size:1.45rem; margin-bottom:22px; }
@@ -33,8 +33,8 @@
 .auth-form { display:grid; gap:18px; }
 .auth-form-row { display:grid; gap:8px; }
 .auth-form-row label { color:#cbd5e1; font-size:14px; font-weight:850; }
-.auth-form-row .input,.auth-form-row .select { padding:15px 16px; border-radius:18px; background:rgba(15,23,42,.78); font-weight:750; box-shadow:inset 0 0 22px rgba(0,0,0,.25); }
-.auth-form-row .input:focus,.auth-form-row .select:focus { border-color:rgba(34,211,238,.85); box-shadow:0 0 0 4px rgba(34,211,238,.12),0 0 28px rgba(34,211,238,.16),inset 0 0 22px rgba(0,0,0,.22); }
+.auth-form-row .input,.auth-form-row .select { padding:15px 16px; border-radius:18px; background:rgba(11,20,39,0.65); border:1px solid rgba(56,189,248,0.2); color:#f1f5f9; font-weight:750; box-shadow:inset 0 0 22px rgba(0,0,0,.25); }
+.auth-form-row .input:focus,.auth-form-row .select:focus { border-color:rgba(56,189,248,0.65); box-shadow:0 0 0 4px rgba(56,189,248,0.14),0 0 28px rgba(56,189,248,0.16),inset 0 0 22px rgba(0,0,0,.22); }
 .auth-main-btn { width:100%; border-radius:18px; padding:15px 18px; font-size:16px; font-weight:950; }
 .auth-divider { display:flex; align-items:center; gap:12px; margin:24px 0; }
 .auth-divider span { height:1px; flex:1; background:rgba(255,255,255,.12); }

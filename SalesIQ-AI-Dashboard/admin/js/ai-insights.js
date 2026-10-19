@@ -377,7 +377,7 @@ function formatMarkdown(text = "") {
   // Monospace code
   html = html.replace(
     /`(.*?)`/gim,
-    '<code class="bg-slate-800/90 text-sky-300 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>',
+    '<code class="bg-sky-500/15 text-sky-300 border border-sky-500/30 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>',
   );
 
   // Numbered list items
@@ -612,7 +612,7 @@ async function askCopilot(question, triggerBtn = null) {
         <div class="font-bold text-base text-white">SalesIQ Copilot is synthesizing your data...</div>
         <div class="text-xs text-slate-400 mt-1">Cross-referencing revenue, stock health, and margins across Gemini models.</div>
       </div>
-      <div class="w-48 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+      <div class="w-48 h-1.5 bg-sky-500/20 rounded-full overflow-hidden">
         <div class="h-full bg-gradient-to-r from-sky-400 to-indigo-500 rounded-full animate-pulse" style="width: 70%"></div>
       </div>
     </div>
@@ -757,7 +757,7 @@ function renderSessionHistory() {
   container.innerHTML = sessionHistory
     .map(
       (item, idx) => `
-      <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all cursor-pointer group" data-history-idx="${idx}">
+      <div class="p-2.5 rounded-xl bg-sky-500/5 border border-sky-500/20 hover:border-sky-500/40 hover:bg-sky-500/10 transition-all cursor-pointer group" data-history-idx="${idx}">
         <div class="flex items-center justify-between gap-1 text-[11px] text-slate-400 mb-1">
           <span class="font-bold text-sky-400 truncate">${item.model}</span>
           <span class="text-slate-500 shrink-0">${item.time}</span>

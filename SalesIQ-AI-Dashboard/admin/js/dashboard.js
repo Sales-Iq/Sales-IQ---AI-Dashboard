@@ -809,7 +809,7 @@ function renderAiSummary({ low, out }) {
     connectedAdminCount
       ? `
       Your dashboard has <b>${products.length}</b> products and <b>${sales.length}</b> sales records${staffText}.<br><br>
-      <span class="badge ${connectedStaffCount > 0 ? "badge-ok" : "bg-slate-800 text-slate-400 border border-slate-700"}" title="Sales staff connected to this admin">${connectedStaffCount} connected staff</span>
+      <span class="badge ${connectedStaffCount > 0 ? "badge-ok" : "badge-info opacity-75"}" title="Sales staff connected to this admin">${connectedStaffCount} connected staff</span>
       ${connectedAdminCount > 0 ? `<span class="badge badge-purple" title="Admins connected to this admin">${connectedAdminCount} connected admin${connectedAdminCount === 1 ? "" : "s"}</span>` : ""}
       ${dummyCount > 0 ? `<span class="badge badge-warn">${dummyCount} dummy sales</span>` : ""}
       ${low ? `<br><br><span class="badge badge-warn">${low} products are low stock</span>` : ""}

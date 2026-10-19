@@ -312,7 +312,7 @@ function renderStaffSearchResults(matches, q) {
 
   if (!matches.length) {
     resultsContainer.innerHTML = `
-      <div class="p-3 bg-slate-900/60 rounded-lg border border-slate-800 text-slate-400 text-sm flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+      <div class="p-3 glass rounded-lg border border-sky-500/20 text-slate-300 text-sm flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
         <span>No staff accounts found matching "<b>${q}</b>".</span>
         <button class="btn btn-primary btn-sm whitespace-nowrap" onclick="$('#openUserModal').click()">+ Create Staff Account</button>
       </div>
@@ -338,7 +338,7 @@ function renderStaffSearchResults(matches, q) {
          </div>
        `;
       } else if (u.adminId) {
-        actionBtn = `<span class="badge bg-slate-700">Connected to Other Admin</span>`;
+        actionBtn = `<span class="badge badge-info opacity-75">Connected to Other Admin</span>`;
       }
 
       const displayName =
@@ -348,7 +348,7 @@ function renderStaffSearchResults(matches, q) {
         : "";
 
       return `
-      <div class="flex items-center justify-between bg-slate-900/90 p-3 rounded-lg border border-slate-700/60">
+      <div class="flex items-center justify-between glass p-3 rounded-lg border border-sky-500/20">
         <div>
           <div class="flex items-center gap-2">
             <p class="font-bold text-slate-100">${displayName}</p>

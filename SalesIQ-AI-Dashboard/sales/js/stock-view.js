@@ -273,7 +273,7 @@ function renderTable() {
                   ${p.sku ? `<div class="text-xs text-slate-400 font-mono">SKU: ${p.sku}</div>` : ""}
                 </td>
                 <td>
-                  <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700/60 font-semibold inline-block">
+                  <span class="badge badge-info text-xs font-semibold">
                     ${p.category || "General"}
                   </span>
                 </td>

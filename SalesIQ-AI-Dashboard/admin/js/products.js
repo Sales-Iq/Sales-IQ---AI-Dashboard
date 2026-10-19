@@ -432,7 +432,7 @@ function render() {
                     stockStatus !== "Available" ? "warning-row" : ""
                   }">
                     <td>
-                      <div class="w-12 h-12 rounded-xl bg-slate-900/60 border border-slate-700/50 flex items-center justify-center overflow-hidden text-xl">
+                      <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center overflow-hidden text-xl">
                         ${
                           product.imageUrl
                             ? `

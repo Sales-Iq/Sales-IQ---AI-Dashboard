@@ -190,16 +190,23 @@ body[data-active="products"] #productsTable td {
 }
 
 /* =========================================
-   Sales records page layout & background
-   Matches the deep cyber-navy glass aesthetic
-   of the Inventory page (eliminating the grayish cast)
+   Unified Cyber-Navy Glass Aesthetic across ALL Pages
+   Eliminates grayish/cloudy cast consistently everywhere
 ========================================= */
 
-body[data-active="sales"] {
+body.app-body,
+body[data-role="admin"],
+body[data-role="sales"],
+body[data-role="superadmin"],
+body[data-active] {
   background-color: #020617 !important;
 }
 
-body[data-active="sales"] .animated-bg {
+body.app-body .animated-bg,
+body[data-role="admin"] .animated-bg,
+body[data-role="sales"] .animated-bg,
+body[data-role="superadmin"] .animated-bg,
+body[data-active] .animated-bg {
   background:
     radial-gradient(
       circle at 20% 30%,
@@ -224,21 +231,35 @@ body[data-active="sales"] .animated-bg {
     linear-gradient(135deg, #020617, #070e20 40%, #0c1630 65%, #020617) !important;
 }
 
-body[data-active="sales"] .animated-bg:before {
+body.app-body .animated-bg:before,
+body[data-role="admin"] .animated-bg:before,
+body[data-role="sales"] .animated-bg:before,
+body[data-role="superadmin"] .animated-bg:before,
+body[data-active] .animated-bg:before {
   background: #0ea5e9;
   left: -8%;
   top: 15%;
   opacity: 0.65;
 }
 
-body[data-active="sales"] .animated-bg:after {
+body.app-body .animated-bg:after,
+body[data-role="admin"] .animated-bg:after,
+body[data-role="sales"] .animated-bg:after,
+body[data-role="superadmin"] .animated-bg:after,
+body[data-active] .animated-bg:after {
   background: #8b5cf6;
   right: -10%;
   bottom: 10%;
   opacity: 0.55;
 }
 
-body[data-active="sales"] .glass {
+body.app-body .glass,
+body[data-role="admin"] .glass,
+body[data-role="sales"] .glass,
+body[data-role="superadmin"] .glass,
+body[data-active] .glass,
+.stat-card,
+.chart-box {
   background: rgba(11, 20, 39, 0.72) !important;
   border: 1px solid rgba(56, 189, 248, 0.2) !important;
   box-shadow:
@@ -249,7 +270,13 @@ body[data-active="sales"] .glass {
   -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
 }
 
-body[data-active="sales"] .glass::before {
+body.app-body .glass::before,
+body[data-role="admin"] .glass::before,
+body[data-role="sales"] .glass::before,
+body[data-role="superadmin"] .glass::before,
+body[data-active] .glass::before,
+.stat-card::before,
+.chart-box::before {
   opacity: 0.3 !important;
   background:
     linear-gradient(
@@ -266,7 +293,13 @@ body[data-active="sales"] .glass::before {
     ) !important;
 }
 
-body[data-active="sales"] .glass::after {
+body.app-body .glass::after,
+body[data-role="admin"] .glass::after,
+body[data-role="sales"] .glass::after,
+body[data-role="superadmin"] .glass::after,
+body[data-active] .glass::after,
+.stat-card::after,
+.chart-box::after {
   background: radial-gradient(
     circle,
     rgba(14, 165, 233, 0.25),
@@ -274,29 +307,86 @@ body[data-active="sales"] .glass::after {
   ) !important;
 }
 
-body[data-active="sales"] .input,
-body[data-active="sales"] .select {
+body.app-body .input,
+body.app-body .select,
+body.app-body .textarea,
+body[data-role="admin"] .input,
+body[data-role="admin"] .select,
+body[data-role="admin"] .textarea,
+body[data-role="sales"] .input,
+body[data-role="sales"] .select,
+body[data-role="sales"] .textarea,
+body[data-active] .input,
+body[data-active] .select,
+body[data-active] .textarea {
   background: rgba(11, 20, 39, 0.65) !important;
   border: 1px solid rgba(56, 189, 248, 0.2) !important;
   color: #f1f5f9 !important;
 }
 
-body[data-active="sales"] .input:focus,
-body[data-active="sales"] .select:focus {
+body.app-body .input:focus,
+body.app-body .select:focus,
+body.app-body .textarea:focus,
+body[data-role="admin"] .input:focus,
+body[data-role="admin"] .select:focus,
+body[data-role="admin"] .textarea:focus,
+body[data-role="sales"] .input:focus,
+body[data-role="sales"] .select:focus,
+body[data-role="sales"] .textarea:focus,
+body[data-active] .input:focus,
+body[data-active] .select:focus,
+body[data-active] .textarea:focus {
   border-color: rgba(56, 189, 248, 0.65) !important;
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.14) !important;
 }
 
-body[data-active="sales"] .input::placeholder {
+body.app-body .input::placeholder,
+body.app-body .textarea::placeholder,
+body[data-role="admin"] .input::placeholder,
+body[data-role="admin"] .textarea::placeholder,
+body[data-active] .input::placeholder,
+body[data-active] .textarea::placeholder {
   color: #64748b;
 }
 
-body[data-active="sales"] #salesTable {
-  min-width: 0;
-  width: 100%;
+/* Filter and timeframe tab styling across all pages */
+.filter-tab.btn-ghost,
+.timeframe-tab.btn-ghost,
+.recent-sales-tab.btn-ghost {
+  background: rgba(11, 20, 39, 0.65) !important;
+  border: 1px solid rgba(56, 189, 248, 0.18) !important;
+  color: #94a3b8 !important;
 }
 
-body[data-active="sales"] #salesTable .table-wrap {
+.filter-tab.btn-ghost:hover,
+.timeframe-tab.btn-ghost:hover,
+.recent-sales-tab.btn-ghost:hover {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.38) !important;
+  color: #f1f5f9 !important;
+}
+
+.filter-tab.btn-primary,
+.timeframe-tab.btn-primary,
+.recent-sales-tab.btn-primary {
+  background: linear-gradient(135deg, #0ea5e9, #8b5cf6) !important;
+  border: 1px solid rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 4px 18px rgba(14, 165, 233, 0.35) !important;
+  color: #ffffff !important;
+}
+
+/* Notifications Table Custom Highlights */
+#notificationsTable tr.is-unread td,
+#notificationsList tr.is-unread td {
+  background: rgba(14, 165, 233, 0.05);
+}
+#notificationsTable tr.is-unread:hover td,
+#notificationsList tr.is-unread:hover td {
+  background: rgba(56, 189, 248, 0.12) !important;
+}
+
+/* Consistent Table Styling across ALL admin and sales tables */
+.table-wrap {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
@@ -304,13 +394,40 @@ body[data-active="sales"] #salesTable .table-wrap {
   background: transparent !important;
 }
 
-body[data-active="sales"] #salesTable table {
+.table-wrap table,
+.app-main table,
+#productsTable table,
+#inventoryTable table,
+#suppliersTable table,
+#salesTable table,
+#customersTable table,
+#purchasesTable table,
+#usersTable table,
+#notificationsTable table,
+#notificationsList table,
+#recentSales table,
+#leastProducts table,
+#mySalesTable table,
+#stockTable table {
   width: 100%;
-  min-width: 950px;
   background: transparent !important;
 }
 
-body[data-active="sales"] #salesTable th {
+.table-wrap th,
+.app-main th,
+#productsTable th,
+#inventoryTable th,
+#suppliersTable th,
+#salesTable th,
+#customersTable th,
+#purchasesTable th,
+#usersTable th,
+#notificationsTable th,
+#notificationsList th,
+#recentSales th,
+#leastProducts th,
+#mySalesTable th,
+#stockTable th {
   background: rgba(11, 20, 39, 0.75) !important;
   color: #93c5fd !important;
   font-size: 0.78rem !important;
@@ -321,20 +438,54 @@ body[data-active="sales"] #salesTable th {
   white-space: nowrap !important;
 }
 
-body[data-active="sales"] #salesTable td {
+.table-wrap td,
+.app-main td,
+#productsTable td,
+#inventoryTable td,
+#suppliersTable td,
+#salesTable td,
+#customersTable td,
+#purchasesTable td,
+#usersTable td,
+#notificationsTable td,
+#notificationsList td,
+#recentSales td,
+#leastProducts td,
+#mySalesTable td,
+#stockTable td {
   border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
   padding: 1rem !important;
   white-space: nowrap !important;
   vertical-align: middle !important;
 }
 
-body[data-active="sales"] #salesTable tr:hover td {
+.table-wrap tr:hover td,
+.app-main tr:hover td,
+#productsTable tr:hover td,
+#inventoryTable tr:hover td,
+#suppliersTable tr:hover td,
+#salesTable tr:hover td,
+#customersTable tr:hover td,
+#purchasesTable tr:hover td,
+#usersTable tr:hover td,
+#notificationsTable tr:hover td,
+#notificationsList tr:hover td,
+#recentSales tr:hover td,
+#leastProducts tr:hover td,
+#mySalesTable tr:hover td,
+#stockTable tr:hover td {
   background: rgba(56, 189, 248, 0.06) !important;
 }
 
-/* Light mode overrides for sales page */
-.light body[data-active="sales"] .animated-bg,
-body[data-active="sales"].light .animated-bg {
+/* Light mode overrides for all pages */
+.light body.app-body .animated-bg,
+body.app-body.light .animated-bg,
+.light body[data-role="admin"] .animated-bg,
+body[data-role="admin"].light .animated-bg,
+.light body[data-role="sales"] .animated-bg,
+body[data-role="sales"].light .animated-bg,
+.light body[data-active] .animated-bg,
+body[data-active].light .animated-bg {
   background:
     radial-gradient(
       circle at 15% 20%,
@@ -350,8 +501,16 @@ body[data-active="sales"].light .animated-bg {
     linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
 }
 
-.light body[data-active="sales"] .glass,
-body[data-active="sales"].light .glass {
+.light body.app-body .glass,
+body.app-body.light .glass,
+.light body[data-role="admin"] .glass,
+body[data-role="admin"].light .glass,
+.light body[data-role="sales"] .glass,
+body[data-role="sales"].light .glass,
+.light body[data-active] .glass,
+body[data-active].light .glass,
+.light .stat-card,
+.light .chart-box {
   background: rgba(255, 255, 255, 0.88) !important;
   border-color: rgba(15, 23, 42, 0.11) !important;
   box-shadow:
@@ -359,8 +518,16 @@ body[data-active="sales"].light .glass {
     0 1px 3px rgba(15, 23, 42, 0.03) !important;
 }
 
-.light body[data-active="sales"] .glass::before,
-body[data-active="sales"].light .glass::before {
+.light body.app-body .glass::before,
+body.app-body.light .glass::before,
+.light body[data-role="admin"] .glass::before,
+body[data-role="admin"].light .glass::before,
+.light body[data-role="sales"] .glass::before,
+body[data-role="sales"].light .glass::before,
+.light body[data-active] .glass::before,
+body[data-active].light .glass::before,
+.light .stat-card::before,
+.light .chart-box::before {
   opacity: 0.72 !important;
   background:
     linear-gradient(
@@ -372,30 +539,98 @@ body[data-active="sales"].light .glass::before {
     ) !important;
 }
 
-.light body[data-active="sales"] .input,
-.light body[data-active="sales"] .select,
-body[data-active="sales"].light .input,
-body[data-active="sales"].light .select {
+.light body.app-body .input,
+.light body.app-body .select,
+.light body.app-body .textarea,
+body.app-body.light .input,
+body.app-body.light .select,
+body.app-body.light .textarea,
+.light body[data-role="admin"] .input,
+.light body[data-role="admin"] .select,
+.light body[data-role="admin"] .textarea,
+body[data-role="admin"].light .input,
+body[data-role="admin"].light .select,
+body[data-role="admin"].light .textarea,
+.light body[data-role="sales"] .input,
+.light body[data-role="sales"] .select,
+.light body[data-role="sales"] .textarea,
+body[data-role="sales"].light .input,
+body[data-role="sales"].light .select,
+body[data-role="sales"].light .textarea,
+.light body[data-active] .input,
+.light body[data-active] .select,
+.light body[data-active] .textarea,
+body[data-active].light .input,
+body[data-active].light .select,
+body[data-active].light .textarea {
   background: rgba(255, 255, 255, 0.74) !important;
   border-color: rgba(15, 23, 42, 0.15) !important;
   color: #0f172a !important;
 }
 
-.light body[data-active="sales"] #salesTable th,
-body[data-active="sales"].light #salesTable th {
+.light #notificationsTable tr.is-unread td,
+.light #notificationsList tr.is-unread td {
+  background: rgba(14, 165, 233, 0.05);
+}
+.light #notificationsTable tr.is-unread:hover td,
+.light #notificationsList tr.is-unread:hover td {
+  background: rgba(14, 165, 233, 0.12) !important;
+}
+
+.light .table-wrap th,
+.light .app-main th,
+.light #productsTable th,
+.light #inventoryTable th,
+.light #suppliersTable th,
+.light #salesTable th,
+.light #customersTable th,
+.light #purchasesTable th,
+.light #usersTable th,
+.light #notificationsTable th,
+.light #notificationsList th,
+.light #recentSales th,
+.light #leastProducts th,
+.light #mySalesTable th,
+.light #stockTable th {
   background: rgba(241, 245, 249, 0.85) !important;
   color: #2563eb !important;
   border-bottom-color: rgba(15, 23, 42, 0.08) !important;
 }
 
-.light body[data-active="sales"] #salesTable td,
-body[data-active="sales"].light #salesTable td {
+.light .table-wrap td,
+.light .app-main td,
+.light #productsTable td,
+.light #inventoryTable td,
+.light #suppliersTable td,
+.light #salesTable td,
+.light #customersTable td,
+.light #purchasesTable td,
+.light #usersTable td,
+.light #notificationsTable td,
+.light #notificationsList td,
+.light #recentSales td,
+.light #leastProducts td,
+.light #mySalesTable td,
+.light #stockTable td {
   color: #1e293b !important;
   border-bottom-color: rgba(15, 23, 42, 0.08) !important;
 }
 
-.light body[data-active="sales"] #salesTable tr:hover td,
-body[data-active="sales"].light #salesTable tr:hover td {
+.light .table-wrap tr:hover td,
+.light .app-main tr:hover td,
+.light #productsTable tr:hover td,
+.light #inventoryTable tr:hover td,
+.light #suppliersTable tr:hover td,
+.light #salesTable tr:hover td,
+.light #customersTable tr:hover td,
+.light #purchasesTable tr:hover td,
+.light #usersTable tr:hover td,
+.light #notificationsTable tr:hover td,
+.light #notificationsList tr:hover td,
+.light #recentSales tr:hover td,
+.light #leastProducts tr:hover td,
+.light #mySalesTable tr:hover td,
+.light #stockTable tr:hover td {
   background: rgba(14, 165, 233, 0.06) !important;
 }
 
@@ -443,9 +678,9 @@ body[data-active="sales"].light #salesTable tr:hover td {
 }
 
 .chart-date-input {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(11, 20, 39, 0.75);
   color: #f1f5f9;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: 8px;
   padding: 0.3rem 0.5rem;
   font-size: 0.75rem;
@@ -630,7 +865,7 @@ body.dashboard-edit-mode .dashboard-col.tile-drop-target {
   width: 22px;
   height: 38px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(11, 20, 39, 0.95);
   border: 1px solid rgba(56, 189, 248, 0.6);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   display: flex;
@@ -742,7 +977,7 @@ body.dashboard-edit-mode .dashboard-col.tile-drop-target {
   align-items: center;
   gap: 5px;
   padding: 2.5px 8px;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(11, 20, 39, 0.9);
   border: 1px solid rgba(56, 189, 248, 0.5);
   border-radius: 6px;
   color: #38bdf8;
@@ -783,9 +1018,9 @@ body.dashboard-edit-mode .dashboard-col.tile-drop-target {
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(11, 20, 39, 0.85);
   color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   cursor: pointer;
   transition: all 0.18s ease;
 }
@@ -1158,9 +1393,9 @@ body.is-row-resizing * {
 }
 
 .chart-ctrl-select {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(11, 20, 39, 0.85);
   color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: 7px;
   padding: 3px 8px;
   font-size: 0.72rem;
@@ -1174,12 +1409,12 @@ body.is-row-resizing * {
 .chart-ctrl-select:focus {
   border-color: #38bdf8;
   color: #f1f5f9;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(11, 20, 39, 0.95);
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
 }
 
 .chart-ctrl-select option {
-  background: #0f172a;
+  background: #0b1427;
   color: #f1f5f9;
 }
 
@@ -1190,8 +1425,8 @@ body.is-row-resizing * {
   width: 26px;
   height: 26px;
   border-radius: 7px;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(11, 20, 39, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   color: #94a3b8;
   cursor: pointer;
   font-size: 0.75rem;

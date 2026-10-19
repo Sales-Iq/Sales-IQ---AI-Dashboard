@@ -743,7 +743,7 @@ async function loadSavedForecasts() {
                 const outDate = f.expectedOutOfStockDate || "N/A";
 
                 return `
-                <tr class="hover:bg-slate-800/40 transition-colors">
+                <tr class="transition-colors">
                   <td class="font-bold text-slate-100">${f.productName || "Product"}</td>
                   <td class="text-xs text-slate-400">${dateSaved}</td>
                   <td><span class="badge badge-purple text-xs">${f.timeHorizonDays || 30} Days</span></td>

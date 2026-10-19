@@ -76,7 +76,7 @@ function sourceBadge(source, sale) {
   if ((sale && isStaffSale(sale)) || source === "staff") {
     return '<span class="badge badge-ok font-semibold">Staff</span>';
   }
-  return '<span class="badge bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold">Admin</span>';
+  return '<span class="badge badge-purple font-semibold">Admin</span>';
 }
 
 function sourceLabel(source, sale) {
@@ -239,7 +239,7 @@ function render() {
                     <td>${dateText(s.createdAt)}</td>
                     <td>${salespersonCell}</td>
                     <td>${sourceBadge(s.source, s)}</td>
-                    <td><span class="badge bg-slate-800 text-slate-300 border border-slate-700/60">${s.paymentMethod || "Cash"}</span></td>
+                    <td><span class="badge badge-info">${s.paymentMethod || "Cash"}</span></td>
                     <td class="text-right">
                       <button
                         class="btn btn-ghost btn-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 px-2 py-1 rounded-lg"

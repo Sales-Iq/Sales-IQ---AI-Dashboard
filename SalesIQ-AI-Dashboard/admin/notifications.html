@@ -43,50 +43,34 @@
         </div>
 
         <!-- Notification KPI Stat Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="glass p-4 rounded-2xl flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-xl flex-shrink-0">
-              🔔
-            </div>
-            <div>
-              <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Alerts</div>
-              <div id="statTotalCount" class="text-2xl font-black text-slate-100">0</div>
-            </div>
+        <div class="stats-grid mb-6" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <div class="glass stat-card">
+            <div class="stat-label">Total Alerts</div>
+            <div id="statTotalCount" class="stat-value text-sky-400">0</div>
+            <div class="stat-hint">All logged notifications</div>
           </div>
 
-          <div class="glass p-4 rounded-2xl flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl flex-shrink-0">
-              ✉️
-            </div>
-            <div>
-              <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Unread</div>
-              <div id="statUnreadCount" class="text-2xl font-black text-amber-400">0</div>
-            </div>
+          <div class="glass stat-card">
+            <div class="stat-label">Unread Alerts</div>
+            <div id="statUnreadCount" class="stat-value text-amber-400">0</div>
+            <div class="stat-hint">Requires attention</div>
           </div>
 
-          <div class="glass p-4 rounded-2xl flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-xl flex-shrink-0">
-              ⚠️
-            </div>
-            <div>
-              <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Stock Alerts</div>
-              <div id="statStockCount" class="text-2xl font-black text-rose-400">0</div>
-            </div>
+          <div class="glass stat-card">
+            <div class="stat-label">Stock Alerts</div>
+            <div id="statStockCount" class="stat-value text-rose-400">0</div>
+            <div class="stat-hint">Low & out of stock</div>
           </div>
 
-          <div class="glass p-4 rounded-2xl flex items-center gap-3">
-            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-xl flex-shrink-0">
-              📅
-            </div>
-            <div>
-              <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Today's Activity</div>
-              <div id="statTodayCount" class="text-2xl font-black text-emerald-400">0</div>
-            </div>
+          <div class="glass stat-card">
+            <div class="stat-label">Today's Activity</div>
+            <div id="statTodayCount" class="stat-value text-emerald-400">0</div>
+            <div class="stat-hint">Logged today</div>
           </div>
         </div>
 
         <!-- Controls: Filter Tabs & Live Search -->
-        <div class="glass p-4 rounded-2xl mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="glass p-5 mb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <!-- Filter Tabs -->
           <div id="filterTabs" class="flex flex-wrap gap-2">
             <button data-filter="all" class="btn btn-sm btn-primary filter-tab active">
@@ -107,7 +91,7 @@
           </div>
 
           <!-- Live Search Input -->
-          <div class="relative w-full md:w-72">
+          <div class="relative w-full md:w-80">
             <input
               id="searchAlerts"
               class="input w-full text-sm pl-9"
@@ -117,9 +101,9 @@
           </div>
         </div>
 
-        <!-- Notifications List Container -->
-        <div class="glass p-6 rounded-2xl">
-          <div id="notificationsList" class="space-y-3"></div>
+        <!-- Notifications Table Container -->
+        <div class="glass p-5 mb-6">
+          <div id="notificationsList"></div>
         </div>
 
       </main>

@@ -38,4 +38,8 @@ npm-debug.log*
 # Misc unwanted
 done.txt
 
+# Python
+__pycache__/
+*.pyc
+
 # Keep everything else (html, css, js, txt rules, md, json config)

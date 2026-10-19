@@ -75,8 +75,11 @@ function getTypeConfig(n) {
         ? "badge badge-danger text-xs font-bold"
         : "badge badge-warn text-xs font-bold",
       cardBorder: isOutOfStock
-        ? "border-l-4 border-l-rose-500 bg-rose-500/5"
-        : "border-l-4 border-l-amber-500 bg-amber-500/5",
+        ? "border-l-4 border-l-rose-500"
+        : "border-l-4 border-l-amber-500",
+      iconBg: isOutOfStock
+        ? "bg-rose-500/15 border-rose-500/30 text-rose-400"
+        : "bg-amber-500/15 border-amber-500/30 text-amber-400",
     };
   }
 
@@ -85,7 +88,8 @@ function getTypeConfig(n) {
       icon: "🧾",
       badgeLabel: "Sale Recorded",
       badgeClass: "badge badge-ok text-xs font-bold",
-      cardBorder: "border-l-4 border-l-emerald-500 bg-emerald-500/5",
+      cardBorder: "border-l-4 border-l-emerald-500",
+      iconBg: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
     };
   }
 
@@ -98,7 +102,8 @@ function getTypeConfig(n) {
       icon: "➕",
       badgeLabel: "Inventory Restock",
       badgeClass: "badge badge-purple text-xs font-bold",
-      cardBorder: "border-l-4 border-l-purple-500 bg-purple-500/5",
+      cardBorder: "border-l-4 border-l-purple-500",
+      iconBg: "bg-purple-500/15 border-purple-500/30 text-purple-400",
     };
   }
 
@@ -106,7 +111,8 @@ function getTypeConfig(n) {
     icon: "🔔",
     badgeLabel: "System Alert",
     badgeClass: "badge badge-info text-xs font-bold",
-    cardBorder: "border-l-4 border-l-sky-500 bg-sky-500/5",
+    cardBorder: "border-l-4 border-l-sky-500",
+    iconBg: "bg-sky-500/15 border-sky-500/30 text-sky-400",
   };
 }
 
@@ -226,66 +232,93 @@ function render() {
     return;
   }
 
-  container.innerHTML = filtered
-    .map((n) => {
-      const cfg = getTypeConfig(n);
-      const isUnread = !n.read;
-      const timeStr = formatRelativeTime(n.createdAt);
-      const fullDateStr = dateText(n.createdAt);
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table id="notificationsTable">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Alert & Details</th>
+            <th>Category</th>
+            <th>Date & Time</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered
+            .map((n) => {
+              const cfg = getTypeConfig(n);
+              const isUnread = !n.read;
+              const timeStr = formatRelativeTime(n.createdAt);
+              const fullDateStr = dateText(n.createdAt);
 
-      return `
-        <div class="glass p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-200 ${
-          cfg.cardBorder
-        } ${isUnread ? "ring-1 ring-sky-400/40 shadow-lg shadow-sky-500/5" : "opacity-85 hover:opacity-100"}">
-          
-          <div class="flex items-start gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-700/60 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
-              ${cfg.icon}
-            </div>
-            
-            <div class="space-y-1.5 min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="${cfg.badgeClass}">${cfg.badgeLabel}</span>
-                ${
-                  isUnread
-                    ? '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-sky-400"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span> Unread</span>'
-                    : '<span class="text-[11px] text-slate-500 font-medium">Read</span>'
-                }
-              </div>
-              
-              <div class="font-bold text-slate-100 text-sm md:text-base leading-snug break-words">
-                ${n.message || "-"}
-              </div>
-              
-              <div class="text-xs text-slate-400 flex items-center gap-2">
-                <span title="${fullDateStr}">🕒 ${timeStr}</span>
-                <span>•</span>
-                <span class="text-slate-500">${fullDateStr}</span>
-              </div>
-            </div>
-          </div>
+              let categoryBadge = '<span class="badge badge-info">System</span>';
+              const t = String(n.type || "").toLowerCase();
+              const msg = String(n.message || "").toLowerCase();
+              if (t === "stock" || msg.includes("stock")) {
+                categoryBadge = '<span class="badge badge-warn">Inventory</span>';
+              } else if (t === "sale" || msg.includes("sale") || msg.includes("invoice")) {
+                categoryBadge = '<span class="badge badge-ok">Sales</span>';
+              } else if (t === "purchase" || msg.includes("restock") || msg.includes("purchase")) {
+                categoryBadge = '<span class="badge badge-purple">Restock</span>';
+              }
 
-          <div class="flex items-center gap-2 self-end md:self-center flex-shrink-0">
-            <button
-              class="btn btn-sm ${isUnread ? "btn-ghost text-sky-400 hover:text-sky-300" : "btn-ghost text-slate-400 hover:text-slate-300"}"
-              onclick="toggleRead('${n.id}')"
-              title="${isUnread ? "Mark as Read" : "Mark as Unread"}"
-            >
-              ${isUnread ? "✓ Mark Read" : "↩ Mark Unread"}
-            </button>
-            
-            <button
-              class="btn btn-sm btn-ghost text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-2"
-              onclick="deleteNotice('${n.id}')"
-              title="Delete Notification"
-            >
-              🗑️
-            </button>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+              return `
+                <tr class="${isUnread ? "is-unread" : "opacity-90"}">
+                  <td>
+                    <div class="flex items-center gap-2">
+                      <span class="text-lg">${cfg.icon}</span>
+                      <span class="${cfg.badgeClass}">${cfg.badgeLabel}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="font-medium text-slate-100 ${isUnread ? "font-bold text-white" : ""}">
+                      ${n.message || "-"}
+                    </div>
+                  </td>
+                  <td>
+                    ${categoryBadge}
+                  </td>
+                  <td>
+                    <div>
+                      <div class="font-medium text-slate-200" title="${fullDateStr}">🕒 ${timeStr}</div>
+                      <div class="text-xs text-slate-400 font-mono">${fullDateStr}</div>
+                    </div>
+                  </td>
+                  <td>
+                    ${
+                      isUnread
+                        ? '<span class="badge badge-info"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping mr-1"></span>Unread</span>'
+                        : '<span class="badge badge-ghost text-slate-400">Read</span>'
+                    }
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <button
+                        class="btn btn-ghost btn-sm ${isUnread ? "text-sky-400 hover:text-sky-300" : "text-slate-400 hover:text-slate-300"}"
+                        onclick="toggleRead('${n.id}')"
+                        title="${isUnread ? "Mark as Read" : "Mark as Unread"}"
+                      >
+                        ${isUnread ? "✓ Mark Read" : "↩ Unread"}
+                      </button>
+                      <button
+                        class="btn btn-ghost btn-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 px-2 py-1 rounded-lg"
+                        onclick="deleteNotice('${n.id}')"
+                        title="Delete Notification"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 // ── 6. Optimistic Toggle Read / Unread ──────────────────────────────────────

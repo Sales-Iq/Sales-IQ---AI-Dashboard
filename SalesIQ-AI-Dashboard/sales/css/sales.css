@@ -49,9 +49,9 @@ body[data-role="sales"] .btn-primary { background:linear-gradient(135deg,#22c55e
 }
 
 .chart-date-input {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(11, 20, 39, 0.75);
   color: #f1f5f9;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: 8px;
   padding: 0.3rem 0.5rem;
   font-size: 0.75rem;
@@ -248,7 +248,7 @@ body.dashboard-edit-mode .dashboard-col.tile-drop-target {
   width: 22px;
   height: 38px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(11, 20, 39, 0.95);
   border: 1px solid rgba(56, 189, 248, 0.6);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
   display: flex;
@@ -360,7 +360,7 @@ body.dashboard-edit-mode .dashboard-col.tile-drop-target {
   align-items: center;
   gap: 5px;
   padding: 2.5px 8px;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(11, 20, 39, 0.9);
   border: 1px solid rgba(56, 189, 248, 0.5);
   border-radius: 6px;
   color: #38bdf8;
@@ -401,9 +401,9 @@ body.dashboard-edit-mode .dashboard-col.tile-drop-target {
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 6px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(11, 20, 39, 0.85);
   color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   cursor: pointer;
   transition: all 0.18s ease;
 }
