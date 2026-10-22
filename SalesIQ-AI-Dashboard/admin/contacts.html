@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>SalesIQ - Contacts &amp; Directory</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="SalesIQ — AI powered sales, inventory and forecasting dashboard."
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="stylesheet" href="../css/tailwind.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/shared.css" />
+    <link rel="stylesheet" href="../css/liquid-glass.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+  </head>
+  <body
+    class="font-inter bg-slate-950 text-slate-100 app-body"
+    data-role="admin"
+    data-active="contacts"
+  >
+    <div id="animatedBg" class="animated-bg"></div>
+    <div id="splashScreen" class="splash-screen hidden"></div>
+    <div class="app-shell">
+      <aside id="appSidebar" class="app-sidebar"></aside>
+      <div class="app-main">
+        <header id="appHeader" class="app-header"></header>
+        <main class="page-container animate-slideUp">
+          <!-- Top Header & Primary Action -->
+          <div
+            class="mb-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
+          >
+            <div>
+              <h2 class="page-title">Contacts &amp; Directory</h2>
+              <p class="page-subtitle">
+                Unified directory for customer profiles, spending history, supplier contacts, and order balances.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button id="openModalBtn" class="btn btn-primary flex items-center gap-2">
+                <span id="openModalIcon">➕</span>
+                <span id="openModalLabel">Add Customer</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Summary Cards -->
+          <div
+            class="stats-grid mb-6"
+            style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));"
+          >
+            <div class="glass stat-card">
+              <div class="stat-label">Total Customers</div>
+              <div id="kpiTotalCustomers" class="stat-value text-sky-400">0</div>
+              <div class="stat-hint">Active retail &amp; wholesale buyers</div>
+            </div>
+
+            <div class="glass stat-card">
+              <div class="stat-label">VIP / High Value</div>
+              <div id="kpiVipCustomers" class="stat-value text-purple-400">0</div>
+              <div class="stat-hint">&ge; ₹10,000 lifetime spend</div>
+            </div>
+
+            <div class="glass stat-card">
+              <div class="stat-label">Total Suppliers</div>
+              <div id="kpiTotalSuppliers" class="stat-value text-emerald-400">0</div>
+              <div class="stat-hint">Registered inventory vendors</div>
+            </div>
+
+            <div class="glass stat-card">
+              <div class="stat-label">Pending Supplier Dues</div>
+              <div id="kpiPendingSuppliers" class="stat-value text-amber-400">0</div>
+              <div class="stat-hint">Invoices with pending balance</div>
+            </div>
+          </div>
+
+          <!-- Segmented Filter Tabs & Live Search Bar -->
+          <div
+            class="glass p-5 mb-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
+          >
+            <!-- Tab Switcher -->
+            <div id="directoryTabs" class="flex flex-wrap gap-2">
+              <button
+                data-tab="customers"
+                class="btn btn-sm btn-primary filter-tab active"
+              >
+                👥 Customers (<span id="tabCountCustomers">0</span>)
+              </button>
+              <button
+                data-tab="suppliers"
+                class="btn btn-sm btn-ghost filter-tab"
+              >
+                🚚 Suppliers (<span id="tabCountSuppliers">0</span>)
+              </button>
+            </div>
+
+            <!-- Live Search Input -->
+            <div class="relative w-full md:w-80 flex items-center">
+              <span class="search-input-icon text-slate-400 text-sm pointer-events-none">🔍</span>
+              <input
+                id="contactSearch"
+                class="input w-full text-sm pl-9"
+                placeholder="Search customers..."
+              />
+            </div>
+          </div>
+
+          <!-- Directory Table Container -->
+          <div class="glass p-5 mb-6">
+            <div id="contactsTableContainer"></div>
+          </div>
+
+          <!-- Customer Modal -->
+          <div id="customerModal" class="modal-backdrop">
+            <div class="modal-card glass-strong p-6">
+              <div class="flex justify-between items-center mb-5">
+                <h3 class="text-2xl font-black" id="customerTitle">Add Customer</h3>
+                <button class="btn btn-ghost btn-sm" data-close-modal>✕</button>
+              </div>
+              <form id="customerForm" class="form-grid">
+                <input type="hidden" id="customerId" />
+                <div>
+                  <label class="label">Name</label>
+                  <input id="custName" class="input" required placeholder="Full Name" />
+                </div>
+                <div>
+                  <label class="label">Phone</label>
+                  <input id="custPhone" class="input" placeholder="e.g. +91 98765 43210" />
+                </div>
+                <div>
+                  <label class="label">Email</label>
+                  <input id="custEmail" class="input" type="email" placeholder="customer@example.com" />
+                </div>
+                <div>
+                  <label class="label">Total Amount Spent</label>
+                  <input id="custSpent" class="input" type="number" min="0" step="0.01" placeholder="0.00" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="label">Last Purchase Date</label>
+                  <input id="custLast" class="input" type="date" />
+                </div>
+                <div class="md:col-span-2">
+                  <button class="btn btn-primary w-full">Save Customer</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Supplier Modal -->
+          <div id="supplierModal" class="modal-backdrop">
+            <div class="modal-card glass-strong p-6">
+              <div class="flex justify-between items-center mb-5">
+                <h3 class="text-2xl font-black" id="supplierTitle">Add Supplier</h3>
+                <button class="btn btn-ghost btn-sm" data-close-modal>✕</button>
+              </div>
+              <form id="supplierForm" class="form-grid">
+                <input type="hidden" id="supplierId" />
+                <div>
+                  <label class="label">Supplier / Vendor Name</label>
+                  <input id="supName" class="input" required placeholder="Company or Supplier Name" />
+                </div>
+                <div>
+                  <label class="label">Contact Number</label>
+                  <input id="supContact" class="input" placeholder="e.g. +91 98765 43210" />
+                </div>
+                <div>
+                  <label class="label">Email</label>
+                  <input id="supEmail" class="input" type="email" placeholder="vendor@example.com" />
+                </div>
+                <div>
+                  <label class="label">Products Supplied</label>
+                  <input id="supProducts" class="input" placeholder="e.g. Electronics, Accessories" />
+                </div>
+                <div>
+                  <label class="label">Last Order Date</label>
+                  <input id="supLast" class="input" type="date" />
+                </div>
+                <div>
+                  <label class="label">Payment Status</label>
+                  <select id="supPayment" class="select">
+                    <option value="Paid">Paid</option>
+                    <option value="Pending" selected>Pending</option>
+                    <option value="Partial">Partial</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="label">Address / Notes</label>
+                  <textarea id="supAddress" class="textarea" rows="2" placeholder="Warehouse address, GST number, terms..."></textarea>
+                </div>
+                <div class="md:col-span-2">
+                  <button class="btn btn-primary w-full">Save Supplier</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
+    <div id="toastRoot" class="toast-root"></div>
+    <script src="../js/fallback-ui.js" defer></script>
+    <script src="../js/liquid-glass.js" defer></script>
+    <script type="module" src="../js/shared.js"></script>
+    <script type="module" src="js/contacts.js"></script>
+  </body>
+</html>

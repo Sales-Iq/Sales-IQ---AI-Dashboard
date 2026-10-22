@@ -548,8 +548,7 @@ const adminLinks = [
   ["forecasting", "Forecasting", "forecasting.html", "🔮"],
   ["ai-insights", "AI Insights", "ai-insights.html", "🤖"],
   ["analytics", "Analytics", "analytics.html", "📈"],
-  ["customers", "Customers", "customers.html", "👥"],
-  ["suppliers", "Suppliers", "suppliers.html", "🚚"],
+  ["contacts", "Contacts & Directory", "contacts.html", "👥"],
   ["purchases", "Restock", "purchases.html", "➕"],
   ["reports", "Reports", "reports.html", "📄"],
   ["users", "Admin & Staff", "users.html", "🛡️"],
@@ -919,11 +918,9 @@ export async function requireAuth(allowed = ["Admin", "Sales Staff"]) {
         if (!allowed.includes(profile.role)) {
           cleanup();
           location.href =
-            profile.role === "Super Admin"
-              ? "../superadmin/dashboard.html"
-              : profile.role === "Sales Staff"
-                ? "../sales/dashboard.html"
-                : "../admin/dashboard.html";
+            profile.role === "Sales Staff"
+              ? "../sales/dashboard.html"
+              : "../admin/dashboard.html";
           return;
         }
 

@@ -1,47 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <title>SalesIQ - Customers</title>
-
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="SalesIQ — AI powered sales, inventory and forecasting dashboard." />
-<meta name="theme-color" content="#0f172a" />
-    <link rel="stylesheet" href="../css/tailwind.css" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://firestore.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/shared.css" />
-<link rel="stylesheet" href="../css/liquid-glass.css" />
-<link rel="stylesheet" href="css/admin.css" />
-
-
-</head>
-<body class="font-inter bg-slate-950 text-slate-100 app-body" data-role="admin" data-active="customers">
-  <div id="animatedBg" class="animated-bg"></div>
-  <div id="splashScreen" class="splash-screen hidden"></div>
-  <div class="app-shell">
-    <aside id="appSidebar" class="app-sidebar"></aside>
-    <div class="app-main">
-      <header id="appHeader" class="app-header"></header>
-      <main class="page-container animate-slideUp">
-        <div class="mb-7 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"><div><h2 class="page-title">Customer Management</h2><p class="page-subtitle">Store customers, purchase history, spent amount and valuable customer badges.</p></div><div class="flex flex-wrap gap-3"><button id="openCustomerModal" class="btn btn-primary">+ Add Customer</button></div></div>
-<div class="glass p-5 mb-5"><input id="customerSearch" class="input" placeholder="Search customer..."></div><div class="glass p-5"><div id="customersTable"></div></div>
-<div id="customerModal" class="modal-backdrop"><div class="modal-card glass-strong p-6"><div class="flex justify-between items-center mb-5"><h3 class="text-2xl font-black" id="customerTitle">Add Customer</h3><button class="btn btn-ghost btn-sm" data-close-modal>✕</button></div><form id="customerForm" class="form-grid"><input type="hidden" id="customerId"><div><label class="label">Name</label><input id="custName" class="input" required></div><div><label class="label">Phone</label><input id="custPhone" class="input"></div><div><label class="label">Email</label><input id="custEmail" class="input" type="email"></div><div><label class="label">Total Amount Spent</label><input id="custSpent" class="input" type="number" min="0" step="0.01"></div><div><label class="label">Last Purchase Date</label><input id="custLast" class="input" type="date"></div><div class="md:col-span-2"><button class="btn btn-primary w-full">Save Customer</button></div></form></div></div>
-
-      </main>
-    </div>
-  </div>
-  <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
-  <div id="toastRoot" class="toast-root"></div>
-  <script src="../js/fallback-ui.js" defer></script>
-  <script src="../js/liquid-glass.js" defer></script>
-<script type="module" src="../js/shared.js"></script>
-  <script type="module" src="js/customers.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content="0; url=contacts.html?tab=customers" />
+    <title>Redirecting to Contacts &amp; Directory...</title>
+    <script>
+      location.replace("contacts.html?tab=customers");
+    </script>
+  </head>
+  <body style="background: #020617; color: #94a3b8; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+    <p>Redirecting to <a href="contacts.html?tab=customers" style="color: #38bdf8; font-weight: bold; text-decoration: underline;">Contacts &amp; Directory</a>...</p>
+  </body>
 </html>
-
-
-
-

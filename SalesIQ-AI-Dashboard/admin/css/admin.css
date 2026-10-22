@@ -2190,6 +2190,48 @@ body.light[data-active="notifications"] {
   color: #e11d48 !important;
 }
 
+/* ── Contacts & Directory Page (Light & Dark Mode) ────────────────────────── */
+.light body[data-active="contacts"],
+body.light[data-active="contacts"] {
+  color: #0f172a !important;
+}
+
+.light body[data-active="contacts"] .glass {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light #contactSearch,
+.light body[data-active="contacts"] #contactSearch {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light #contactSearch:focus,
+.light body[data-active="contacts"] #contactSearch:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+.light body[data-active="contacts"] table th {
+  background: #f1f5f9 !important;
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.light body[data-active="contacts"] table td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.light body[data-active="contacts"] table tr:hover td {
+  background: #f8fafc !important;
+}
+
+
 
 
 

@@ -36,7 +36,6 @@
       try {
         const cached = JSON.parse(localStorage.getItem("salesiq_user") || "null");
         if (cached?.role) {
-          if (cached.role === "Super Admin") return location.href = "superadmin/dashboard.html";
           if (cached.role === "Sales Staff") return location.href = "sales/dashboard.html";
           return location.href = "admin/dashboard.html";
         }
@@ -48,8 +47,7 @@
         if (!u) return (location.href = "login.html");
         const p = await getAccountProfile(u).catch(() => null);
         const r = p?.role || "Sales Staff";
-        if (r === "Super Admin") location.href = "superadmin/dashboard.html";
-        else if (r === "Sales Staff") location.href = "sales/dashboard.html";
+        if (r === "Sales Staff") location.href = "sales/dashboard.html";
         else location.href = "admin/dashboard.html";
       });
     };

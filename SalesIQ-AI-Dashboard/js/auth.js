@@ -82,11 +82,9 @@ async function redirectByRole(user) {
   }
 
   location.href =
-    data.role === "Super Admin"
-      ? "superadmin/dashboard.html"
-      : data.role === "Sales Staff"
-        ? "sales/dashboard.html"
-        : "admin/dashboard.html";
+    data.role === "Sales Staff"
+      ? "sales/dashboard.html"
+      : "admin/dashboard.html";
 }
 
 $("#loginForm")?.addEventListener("submit", async (e) => {
