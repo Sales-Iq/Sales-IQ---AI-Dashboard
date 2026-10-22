@@ -273,7 +273,7 @@ function render() {
                     </div>
                   </td>
                   <td>
-                    <div class="font-medium text-slate-100 ${isUnread ? "font-bold text-white" : ""}">
+                    <div class="font-medium text-slate-100 notice-message-text ${isUnread ? "font-bold text-white is-unread-title" : ""}">
                       ${n.message || "-"}
                     </div>
                   </td>
@@ -282,8 +282,8 @@ function render() {
                   </td>
                   <td>
                     <div>
-                      <div class="font-medium text-slate-200" title="${fullDateStr}">🕒 ${timeStr}</div>
-                      <div class="text-xs text-slate-400 font-mono">${fullDateStr}</div>
+                      <div class="font-medium text-slate-200 notice-time-text" title="${fullDateStr}">🕒 ${timeStr}</div>
+                      <div class="text-xs text-slate-400 font-mono notice-date-text">${fullDateStr}</div>
                     </div>
                   </td>
                   <td>

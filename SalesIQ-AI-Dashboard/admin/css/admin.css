@@ -1552,4 +1552,645 @@ body.is-row-resizing * {
   color: #0284c7 !important;
 }
 
+/* ── Reports Page Modern Styling & Print Layout ───────────────────────────── */
+body[data-active="reports"] .report-card {
+  transition: all 0.22s ease-in-out;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+body[data-active="reports"] .report-card h4 {
+  color: #f1f5f9;
+}
+
+body[data-active="reports"] .report-card p {
+  color: #94a3b8;
+}
+
+body[data-active="reports"] .report-card .btn-ghost {
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  color: #cbd5e1;
+}
+
+body[data-active="reports"] .report-card .btn-ghost:hover {
+  background: rgba(30, 41, 59, 0.6);
+  color: #ffffff;
+}
+
+body[data-active="reports"] .report-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(15, 23, 42, 0.88);
+}
+
+body[data-active="reports"] .report-card-active {
+  border: 1.5px solid #38bdf8 !important;
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.12), rgba(15, 23, 42, 0.95)) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.25) !important;
+}
+
+body[data-active="reports"] .report-card-active h4 {
+  color: #ffffff;
+}
+
+body[data-active="reports"] .report-card-active p {
+  color: #e2e8f0;
+}
+
+/* Prevent bright glowing orbs & pseudo lines from washing out text on active card */
+body[data-active="reports"] .report-card-active::after,
+body[data-active="reports"] .report-card-active::before {
+  display: none !important;
+}
+
+
+/* ── Reports Page Light Mode Full Harmony ─────────────────────────────────── */
+.light body[data-active="reports"],
+body.light[data-active="reports"] {
+  color: #0f172a !important;
+}
+
+/* Header Action Buttons in Light Mode */
+.light #printActiveBtn,
+.light #downloadCsvBtn,
+.light #exportAllJson {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+.light #printActiveBtn:hover,
+.light #downloadCsvBtn:hover,
+.light #exportAllJson:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+/* Top KPI Cards in Light Mode */
+.light #reportsKpiGrid .glass {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+.light #reportsKpiGrid .text-slate-400 {
+  color: #64748b !important;
+}
+.light #reportsKpiGrid .text-slate-100 {
+  color: #0f172a !important;
+}
+
+/* Timeline Filter Bar in Light Mode */
+.light .report-filter-bar {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+.light #reportsTimeframeGroup {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.light #reportsTimeframeGroup .timeframe-tab.btn-ghost {
+  color: #475569 !important;
+  background: transparent !important;
+}
+.light #reportsTimeframeGroup .timeframe-tab.btn-ghost:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+.light #reportsTimeframeGroup .timeframe-tab.btn-primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+.light #reportStartDate,
+.light #reportEndDate {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+.light #resetReportDates {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+.light #resetReportDates:hover {
+  background: #f1f5f9 !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+/* Catalog Section Labels in Light Mode */
+.light .report-section-label {
+  color: #475569 !important;
+}
+.light .report-section-hint {
+  color: #64748b !important;
+}
+
+/* Report Cards in Light Mode */
+.light body[data-active="reports"] .report-card,
+body.light[data-active="reports"] .report-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+.light body[data-active="reports"] .report-card:hover,
+body.light[data-active="reports"] .report-card:hover {
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.14) !important;
+  transform: translateY(-2px);
+}
+.light body[data-active="reports"] .report-card h4 {
+  color: #0f172a !important;
+}
+.light body[data-active="reports"] .report-card p {
+  color: #475569 !important;
+}
+.light body[data-active="reports"] .report-card .badge-ghost {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.light body[data-active="reports"] .report-card .btn-ghost {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.light body[data-active="reports"] .report-card .btn-ghost:hover {
+  background: #f0f9ff !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+/* Active Report Card in Light Mode */
+.light body[data-active="reports"] .report-card-active,
+body.light[data-active="reports"] .report-card-active {
+  background: #f0f9ff !important;
+  border: 2px solid #0284c7 !important;
+  box-shadow: 0 6px 20px -2px rgba(2, 132, 199, 0.22) !important;
+}
+.light body[data-active="reports"] .report-card-active h4 {
+  color: #0369a1 !important;
+  font-weight: 900 !important;
+}
+.light body[data-active="reports"] .report-card-active p {
+  color: #1e293b !important;
+  font-weight: 500 !important;
+}
+.light body[data-active="reports"] .report-card-active .badge-primary {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 800 !important;
+}
+.light body[data-active="reports"] .report-card-active .btn-primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+}
+.light body[data-active="reports"] .report-card-active .btn-ghost {
+  background: #ffffff !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+.light body[data-active="reports"] .report-card-active .btn-ghost:hover {
+  background: #e0f2fe !important;
+  border-color: #0284c7 !important;
+}
+
+/* Live Table Section in Light Mode */
+.light #reportPreviewSection {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05) !important;
+}
+.light #reportPreviewSection .report-table-actions {
+  border-bottom-color: #e2e8f0 !important;
+}
+.light #activeReportTitle {
+  color: #0f172a !important;
+}
+.light #activeReportDesc {
+  color: #64748b !important;
+}
+.light #activeReportTag {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+.light #reportTableSearch {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+.light #reportTableSearch:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+.light #reportRecordCountBadge {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.light #reportTableWrap .table-wrap {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.light #reportTableWrap table thead {
+  background: #f8fafc !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+.light #reportTableWrap table th {
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  background: #f8fafc !important;
+}
+.light #reportTableWrap table tbody tr {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+.light #reportTableWrap table tbody tr:hover td {
+  background: #f0f9ff !important;
+}
+.light #reportTableWrap table tbody td {
+  color: #1e293b !important;
+  border-top-color: #f1f5f9 !important;
+}
+.light #reportTableWrap table tfoot {
+  background: #f8fafc !important;
+  border-top: 2px solid #cbd5e1 !important;
+}
+.light #reportTableWrap table tfoot td {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  background: #f8fafc !important;
+}
+
+.light #reportPagination {
+  border-top-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+.light #paginationInfo {
+  color: #64748b !important;
+}
+.light #paginationControls button {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+.light #paginationControls button:hover:not(:disabled) {
+  background: #f0f9ff !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+.light #paginationControls span {
+  color: #334155 !important;
+}
+
+
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  }
+
+  .app-sidebar,
+  .app-header,
+  .animated-bg,
+  .click-spark-canvas,
+  .toast-root,
+  #reportsKpiGrid,
+  .report-filter-bar,
+  #reportCards,
+  #reportPreviewSection,
+  .report-table-actions,
+  #reportPagination,
+  .no-print {
+    display: none !important;
+  }
+
+  .app-shell,
+  .app-main,
+  .page-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  #reportPrintArea {
+    display: block !important;
+    padding: 24px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  #reportPrintArea table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+    margin-top: 16px !important;
+  }
+
+  #reportPrintArea th,
+  #reportPrintArea td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 10px !important;
+    text-align: left !important;
+  }
+
+  #reportPrintArea th {
+    background-color: #f1f5f9 !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    text-transform: uppercase !important;
+    font-size: 10px !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  #reportPrintArea tr {
+    page-break-inside: avoid !important;
+  }
+
+  #reportPrintArea tfoot td {
+    background-color: #f8fafc !important;
+    font-weight: 800 !important;
+  }
+}
+
+/* ── Analytics Page Timeline & Header (Dark & Light Mode) ─────────────────── */
+body[data-active="analytics"] #timeframeFilterGroup {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+body[data-active="analytics"] #timeframeFilterGroup .timeframe-tab.btn-ghost {
+  color: #cbd5e1;
+}
+
+body[data-active="analytics"] #timeframeFilterGroup .timeframe-tab.btn-ghost:hover {
+  color: #ffffff;
+  background: rgba(30, 41, 59, 0.6);
+}
+
+/* Light Mode Overrides for Analytics Page */
+.light body[data-active="analytics"],
+body.light[data-active="analytics"] {
+  color: #0f172a !important;
+}
+
+.light body[data-active="analytics"] .analytics-command-bar {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light body[data-active="analytics"] #timeframeFilterGroup,
+.light #timeframeFilterGroup {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.light #timeframeFilterGroup .timeframe-tab.btn-ghost {
+  color: #475569 !important;
+  background: transparent !important;
+}
+
+.light #timeframeFilterGroup .timeframe-tab.btn-ghost:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.light #timeframeFilterGroup .timeframe-tab.btn-primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.light body[data-active="analytics"] #analyticsStartDate,
+.light body[data-active="analytics"] #analyticsEndDate {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light body[data-active="analytics"] #resetAnalyticsDate {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.light body[data-active="analytics"] #resetAnalyticsDate:hover {
+  background: #f1f5f9 !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+.light body[data-active="analytics"] #resetChartPrefsBtn,
+.light body[data-active="analytics"] a[href="ai-insights.html"] {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+.light body[data-active="analytics"] #resetChartPrefsBtn:hover,
+.light body[data-active="analytics"] a[href="ai-insights.html"]:hover {
+  background: #f1f5f9 !important;
+  color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+
+.light body[data-active="analytics"] .analytics-granularity-wrap {
+  border-left-color: #cbd5e1 !important;
+}
+
+.light body[data-active="analytics"] #timelineGranularity {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light body[data-active="analytics"] .chart-date-label {
+  color: #475569 !important;
+}
+
+/* ── Notifications Page & Global Filter Tabs (Light & Dark Mode) ─────────── */
+.search-input-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.light body[data-active="notifications"],
+body.light[data-active="notifications"] {
+  color: #0f172a !important;
+}
+
+/* Filter tabs in light mode */
+.light .filter-tab.btn-ghost,
+.light .recent-sales-tab.btn-ghost,
+.light body[data-active="notifications"] .filter-tab.btn-ghost {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+.light .filter-tab.btn-ghost:hover,
+.light .recent-sales-tab.btn-ghost:hover,
+.light body[data-active="notifications"] .filter-tab.btn-ghost:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+.light .filter-tab.btn-primary,
+.light .recent-sales-tab.btn-primary,
+.light body[data-active="notifications"] .filter-tab.btn-primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  border: 1px solid rgba(2, 132, 199, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Light mode search input on notifications page */
+.light #searchAlerts,
+.light body[data-active="notifications"] #searchAlerts {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.light #searchAlerts:focus,
+.light body[data-active="notifications"] #searchAlerts:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15) !important;
+}
+
+.light #searchAlerts::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Light mode table & card styles on notifications page */
+.light body[data-active="notifications"] .glass {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light body[data-active="notifications"] #notificationsTable,
+.light body[data-active="notifications"] #notificationsList {
+  color: #0f172a !important;
+}
+
+.light #notificationsTable th {
+  background: #f1f5f9 !important;
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.light #notificationsTable td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.light #notificationsTable tr:hover td {
+  background: #f8fafc !important;
+}
+
+.light #notificationsTable tr.is-unread td,
+.light #notificationsList tr.is-unread td {
+  background: rgba(2, 132, 199, 0.06) !important;
+}
+
+.light #notificationsTable tr.is-unread:hover td,
+.light #notificationsList tr.is-unread:hover td {
+  background: rgba(2, 132, 199, 0.12) !important;
+}
+
+.light #notificationsTable .notice-message-text,
+.light #notificationsTable .text-slate-100,
+.light #notificationsTable .text-white {
+  color: #0f172a !important;
+}
+
+.light #notificationsTable .notice-time-text,
+.light #notificationsTable .text-slate-200 {
+  color: #334155 !important;
+}
+
+.light #notificationsTable .notice-date-text,
+.light #notificationsTable .text-slate-400 {
+  color: #64748b !important;
+}
+
+.light #notificationsTable button.btn-ghost {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 600 !important;
+}
+
+.light #notificationsTable button.btn-ghost:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+}
+
+.light #notificationsTable button.text-sky-400 {
+  color: #0284c7 !important;
+}
+
+.light #notificationsTable button.text-sky-400:hover {
+  color: #0369a1 !important;
+}
+
+.light #notificationsTable button.text-rose-400 {
+  color: #e11d48 !important;
+}
+
+.light #notificationsTable button.text-rose-400:hover {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
+}
+
+.light #notificationsTable button.text-slate-400 {
+  color: #475569 !important;
+}
+
+.light #notificationsTable button.text-slate-400:hover {
+  color: #0f172a !important;
+}
+
+/* Light mode badge-ghost */
+.light .badge-ghost {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+/* Rose KPI stat card value in light mode */
+.light .stat-card .stat-value.text-rose-400,
+.light .stat-card .text-rose-400 {
+  color: #e11d48 !important;
+}
+
+
+
+
 

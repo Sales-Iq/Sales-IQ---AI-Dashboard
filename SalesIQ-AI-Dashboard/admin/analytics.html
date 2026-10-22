@@ -40,46 +40,46 @@
             <button id="exportAnalyticsBtn" class="btn btn-sm btn-primary gap-1.5 font-bold shadow-lg shadow-sky-500/10" title="Export complete analytics data to CSV">
               <span>📥</span> Export CSV
             </button>
-            <button id="resetChartPrefsBtn" class="btn btn-sm btn-ghost text-slate-300 hover:text-white" title="Reset all graph customizations to default">
+            <button id="resetChartPrefsBtn" class="btn btn-sm btn-ghost" title="Reset all graph customizations to default">
               🔄 Reset Views
             </button>
-            <a href="ai-insights.html" class="btn btn-sm btn-ghost border border-slate-800" title="Explore AI-driven revenue & inventory insights">
+            <a href="ai-insights.html" class="btn btn-sm btn-ghost" title="Explore AI-driven revenue & inventory insights">
               🤖 AI Insights
             </a>
           </div>
         </div>
 
         <!-- Editable Timeline Control Command Bar -->
-        <div class="glass p-3.5 mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3 rounded-2xl border border-slate-800/80">
+        <div class="glass p-3.5 mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3 rounded-2xl analytics-command-bar">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider select-none mr-1">Timeline:</span>
-            <div id="timeframeFilterGroup" class="flex flex-wrap items-center gap-1 p-1 bg-slate-900/90 border border-slate-800 rounded-xl">
+            <span class="text-xs font-bold uppercase tracking-wider select-none mr-1 opacity-70">Timeline:</span>
+            <div id="timeframeFilterGroup" class="flex flex-wrap items-center gap-1 p-1 rounded-xl">
               <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-primary font-medium" data-timeframe="all">All Time</button>
-              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="90d">90 Days</button>
-              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="30d">30 Days</button>
-              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="month">This Month</button>
-              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="7d">7 Days</button>
-              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white" data-timeframe="today">Today</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost" data-timeframe="90d">90 Days</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost" data-timeframe="30d">30 Days</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost" data-timeframe="month">This Month</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost" data-timeframe="7d">7 Days</button>
+              <button type="button" class="btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost" data-timeframe="today">Today</button>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
             <!-- Custom Date Range Picker (From - To) -->
             <div class="flex items-center gap-2 flex-wrap">
-              <div class="chart-date-group flex items-center gap-1.5 text-xs text-slate-300">
-                <label for="analyticsStartDate" class="chart-date-label text-slate-400 font-bold">From</label>
+              <div class="chart-date-group flex items-center gap-1.5 text-xs">
+                <label for="analyticsStartDate" class="chart-date-label font-bold opacity-70">From</label>
                 <input type="date" id="analyticsStartDate" class="chart-date-input" title="Custom timeline start date" />
               </div>
-              <div class="chart-date-group flex items-center gap-1.5 text-xs text-slate-300">
-                <label for="analyticsEndDate" class="chart-date-label text-slate-400 font-bold">To</label>
+              <div class="chart-date-group flex items-center gap-1.5 text-xs">
+                <label for="analyticsEndDate" class="chart-date-label font-bold opacity-70">To</label>
                 <input type="date" id="analyticsEndDate" class="chart-date-input" title="Custom timeline end date" />
               </div>
               <button id="resetAnalyticsDate" class="btn btn-xs btn-ghost chart-reset-btn" title="Reset custom dates">Reset</button>
             </div>
 
             <!-- Granularity / Grouping -->
-            <div class="flex items-center gap-1.5 pl-2 border-l border-slate-800">
-              <span class="text-xs text-slate-400 font-medium select-none">Group:</span>
+            <div class="flex items-center gap-1.5 pl-2 border-l border-slate-700/50 analytics-granularity-wrap">
+              <span class="text-xs font-medium select-none opacity-70">Group:</span>
               <select id="timelineGranularity" class="chart-ctrl-select py-1 px-2 text-xs" title="Select timeline interval">
                 <option value="daily" selected>Daily</option>
                 <option value="weekly">Weekly</option>

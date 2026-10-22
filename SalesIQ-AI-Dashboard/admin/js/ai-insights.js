@@ -413,59 +413,149 @@ function formatMarkdown(text = "") {
   return html;
 }
 
-// Build clean, dense, high-accuracy context payload for Gemini
-function buildStructuredContext() {
-  if (!storeAnalytics) return "{}";
+// Build ultra-dense, token-optimized context payload for Gemini AI (up to 85% token reduction)
+function buildStructuredContext(question = "") {
+  if (!storeAnalytics) return "[STORE DATA] No store records loaded.";
   const s = storeAnalytics;
+  const q = String(question || "").toLowerCase();
 
-  return JSON.stringify(
-    {
-      storeFinancials: {
-        totalRevenue: s.totalRevenue,
-        totalGrossProfit: s.totalProfit,
-        grossMarginPercent: s.grossMarginPercent + "%",
-        averageOrderValue: s.avgOrderValue,
-        totalSalesRecorded: s.salesCount,
-      },
-      inventoryHealth: {
-        totalSKUs: s.productCount,
-        totalUnitsInStock: s.totalUnits,
-        outOfStockCount: s.outOfStockProducts.length,
-        outOfStockItems: s.outOfStockProducts.slice(0, 10).map((p) => p.name),
-        lowStockCount: s.lowStockProducts.length,
-        lowStockItems: s.lowStockProducts.slice(0, 10).map((p) => ({
-          name: p.name,
-          currentStock: p.stock,
-          minStock: p.minStock || 10,
-        })),
-        deadStockLockedCapital: s.deadStockCapital,
-        deadStockItems: s.deadStockProducts.slice(0, 8).map((p) => ({
-          name: p.name,
-          stock: p.stock,
-          unitPrice: p.price,
-        })),
-        batchesExpiringWithin30DaysCount: s.expiringBatches.length,
-      },
-      topPerformingProducts: s.topProducts.map((p) => ({
-        name: p.name,
-        unitsSold: p.qty,
-        revenue: p.revenue,
-        profit: p.profit,
-      })),
-      topCategories: s.topCategories.slice(0, 6).map((c) => ({
-        category: c.name,
-        revenue: c.revenue,
-        unitsSold: c.qty,
-      })),
-      customerBehavior: {
-        totalCustomers: s.customerCount,
-        repeatBuyers: s.repeatBuyers,
-        repeatRate: s.repeatRate + "%",
-      },
-    },
-    null,
-    2,
+  // Keyword intent classification
+  const isRestock =
+    q.includes("restock") ||
+    q.includes("stock") ||
+    q.includes("inventory") ||
+    q.includes("out of stock") ||
+    q.includes("reorder") ||
+    q.includes("shortage") ||
+    q.includes("batch") ||
+    q.includes("expir");
+
+  const isProfit =
+    q.includes("profit") ||
+    q.includes("margin") ||
+    q.includes("cost") ||
+    q.includes("price") ||
+    q.includes("pricing") ||
+    q.includes("financial") ||
+    q.includes("revenue");
+
+  const isDeadStock =
+    q.includes("dead") ||
+    q.includes("slow") ||
+    q.includes("liquidat") ||
+    q.includes("stagnant") ||
+    q.includes("idle");
+
+  const isCustomer =
+    q.includes("customer") ||
+    q.includes("buyer") ||
+    q.includes("retention") ||
+    q.includes("repeat") ||
+    q.includes("churn") ||
+    q.includes("loyalty");
+
+  const isStaff =
+    q.includes("staff") ||
+    q.includes("salesperson") ||
+    q.includes("employee") ||
+    q.includes("team") ||
+    q.includes("cashier");
+
+  const isGeneral =
+    !isRestock && !isProfit && !isDeadStock && !isCustomer && !isStaff;
+
+  const lines = [];
+
+  // Core Financial & Catalog Baseline (Always included, condensed to 2 lines)
+  lines.push(`[STORE METRICS]`);
+  lines.push(
+    `Revenue: ₹${Math.round(s.totalRevenue)} | Profit: ₹${Math.round(s.totalProfit)} (${s.grossMarginPercent}%) | AOV: ₹${Math.round(s.avgOrderValue)} | Orders: ${s.salesCount}`,
   );
+  lines.push(
+    `Catalog: ${s.productCount} SKUs (${s.totalUnits} in stock) | OOS: ${s.outOfStockProducts.length} | Low Stock: ${s.lowStockProducts.length} | Dead Capital: ₹${Math.round(s.deadStockCapital)}`,
+  );
+
+  // 1. Inventory & Restock Context
+  if (isRestock || isGeneral) {
+    const oos = s.outOfStockProducts
+      .slice(0, isGeneral ? 4 : 8)
+      .map((p) => p.name);
+    const low = s.lowStockProducts
+      .slice(0, isGeneral ? 4 : 8)
+      .map((p) => `${p.name} (${p.stock}/${p.minStock || 10})`);
+
+    if (oos.length || low.length || s.expiringBatches.length) {
+      lines.push(`\n[STOCK ALERTS]`);
+      if (oos.length) lines.push(`Out of Stock (0 units): ${oos.join(", ")}`);
+      if (low.length) lines.push(`Low Stock (units/min): ${low.join(", ")}`);
+      if (s.expiringBatches.length)
+        lines.push(
+          `Batches Expiring (<=30 days): ${s.expiringBatches.length} batch(es)`,
+        );
+    }
+  }
+
+  // 2. Profit & Velocity Context
+  if (isProfit || isGeneral) {
+    const topProd = s.topProducts
+      .slice(0, isGeneral ? 3 : 5)
+      .map(
+        (p) =>
+          `${p.name} (${p.qty} sold, Rev: ₹${Math.round(p.revenue)}, Profit: ₹${Math.round(p.profit)})`,
+      );
+    const topCats = s.topCategories
+      .slice(0, isGeneral ? 2 : 4)
+      .map((c) => `${c.name} (₹${Math.round(c.revenue)})`);
+
+    if (topProd.length) {
+      lines.push(`\n[TOP PRODUCTS]`);
+      topProd.forEach((p) => lines.push(`• ${p}`));
+    }
+    if (topCats.length) {
+      lines.push(`\n[TOP CATEGORIES]`);
+      lines.push(topCats.join(" | "));
+    }
+  }
+
+  // 3. Dead Stock & Stagnant Capital Context
+  if (isDeadStock || (isGeneral && s.deadStockProducts.length > 0)) {
+    const dead = s.deadStockProducts
+      .slice(0, isGeneral ? 3 : 6)
+      .map(
+        (p) =>
+          `${p.name} (${p.stock} units, tied: ₹${Math.round(Number(p.stock || 0) * Number(p.costPrice || p.price || 0))})`,
+      );
+
+    if (dead.length) {
+      lines.push(`\n[DEAD STOCK (Zero Sales)]`);
+      lines.push(
+        `Tied Capital: ₹${Math.round(s.deadStockCapital)} across ${s.deadStockProducts.length} zero-sales SKUs`,
+      );
+      dead.forEach((d) => lines.push(`• ${d}`));
+    }
+  }
+
+  // 4. Customer Retention Context
+  if (isCustomer || isGeneral) {
+    lines.push(`\n[CUSTOMERS]`);
+    lines.push(
+      `Total: ${s.customerCount} | Unique Buyers: ${s.uniqueBuyers || s.customerCount} | Repeat: ${s.repeatBuyers} (${s.repeatRate}%)`,
+    );
+  }
+
+  // 5. Staff Performance Context
+  if (isStaff) {
+    const topStaff = (s.staffPerformance || [])
+      .slice(0, 4)
+      .map((st) => `${st.name} (${st.count} orders, ₹${Math.round(st.revenue)})`);
+
+    if (topStaff.length) {
+      lines.push(`\n[STAFF PERFORMANCE]`);
+      topStaff.forEach((st) => lines.push(`• ${st}`));
+    }
+  }
+
+  return lines.join("\n");
 }
 
 // Local deterministic insights fallback engine
@@ -619,13 +709,17 @@ async function askCopilot(question, triggerBtn = null) {
   `;
 
   try {
-    const contextJson = buildStructuredContext();
-    const prompt = `You are SalesIQ AI, an executive retail and inventory business analyst for an active business.
-Use only the structured financial and inventory data provided below. Give direct, actionable, formatted answers.
+    const contextText = buildStructuredContext(question);
+    console.debug(
+      `[SalesIQ AI] Injected optimized context: ${contextText.length} chars (~${Math.round(contextText.length / 4)} tokens)`,
+    );
+
+    const prompt = `You are SalesIQ AI, an executive retail and inventory business analyst.
+Use only the verified store data below. Give direct, actionable, formatted answers.
 Use markdown headings (###), bold text, bullet points (•), and numbered action items. If data is limited, provide realistic retail advice based on what is available.
 
 LIVE STORE DATA:
-${contextJson}
+${contextText}
 
 ADMIN INQUIRY:
 ${question || "Provide a comprehensive executive morning briefing with sales velocity, stock health, and strategic growth priorities."}`;

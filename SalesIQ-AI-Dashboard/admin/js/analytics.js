@@ -1343,7 +1343,7 @@ function initTimelineControls() {
             "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-primary font-medium";
         } else {
           b.className =
-            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white";
+            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost font-medium";
         }
       });
 
@@ -1361,7 +1361,7 @@ function initTimelineControls() {
       // Clear active style from preset tabs
       container?.querySelectorAll(".timeframe-tab")?.forEach((b) => {
         b.className =
-          "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white";
+          "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost font-medium";
       });
 
       renderAnalytics();
@@ -1384,7 +1384,7 @@ function initTimelineControls() {
             "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-primary font-medium";
         } else {
           b.className =
-            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost text-slate-300 hover:text-white";
+            "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost font-medium";
         }
       });
 
