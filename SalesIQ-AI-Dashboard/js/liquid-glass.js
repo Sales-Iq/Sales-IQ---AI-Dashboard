@@ -12,7 +12,6 @@
   let targetY = window.innerHeight / 2;
   let currentX = targetX;
   let currentY = targetY;
-  let isMoving = false;
   let lerpRaf = null;
 
   function updateLerpLoop() {
@@ -29,6 +28,14 @@
       "--mouse-lerp-y",
       `${((currentY / window.innerHeight) * 100).toFixed(2)}%`,
     );
+    document.documentElement.style.setProperty(
+      "--mouse-x",
+      `${((targetX / window.innerWidth) * 100).toFixed(2)}%`,
+    );
+    document.documentElement.style.setProperty(
+      "--mouse-y",
+      `${((targetY / window.innerHeight) * 100).toFixed(2)}%`,
+    );
 
     if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
       lerpRaf = requestAnimationFrame(updateLerpLoop);
@@ -42,15 +49,6 @@
     (event) => {
       targetX = event.clientX;
       targetY = event.clientY;
-
-      document.documentElement.style.setProperty(
-        "--mouse-x",
-        `${((targetX / window.innerWidth) * 100).toFixed(2)}%`,
-      );
-      document.documentElement.style.setProperty(
-        "--mouse-y",
-        `${((targetY / window.innerHeight) * 100).toFixed(2)}%`,
-      );
 
       if (!lerpRaf) {
         lerpRaf = requestAnimationFrame(updateLerpLoop);
@@ -167,7 +165,7 @@
     let enhanceTimer = 0;
     new MutationObserver(() => {
       clearTimeout(enhanceTimer);
-      enhanceTimer = setTimeout(enhance, 120);
+      enhanceTimer = setTimeout(enhance, 250);
     }).observe(document.body, {
       childList: true,
       subtree: true,

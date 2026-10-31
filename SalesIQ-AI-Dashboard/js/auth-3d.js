@@ -1,7 +1,8 @@
 (function () {
   const card = document.querySelector(".auth-card");
-  if (card) {
+  if (card && !card.classList.contains("liquid-tilt")) {
     card.addEventListener("mousemove", (e) => {
+      if (card.classList.contains("liquid-tilt")) return;
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -9,6 +10,8 @@
       const rotateX = -(y / rect.height - 0.5) * 10;
       card.style.transform = `perspective(1100px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     });
-    card.addEventListener("mouseleave", () => (card.style.transform = ""));
+    card.addEventListener("mouseleave", () => {
+      if (!card.classList.contains("liquid-tilt")) card.style.transform = "";
+    });
   }
 })();

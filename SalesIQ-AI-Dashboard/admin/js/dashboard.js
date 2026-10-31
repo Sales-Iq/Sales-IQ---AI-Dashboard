@@ -1,7 +1,6 @@
 import {
   requireAuth,
   initAppShell,
-  fetchAll,
   $,
   money,
   dateText,
@@ -91,30 +90,7 @@ try {
   console.warn("Cached dashboard restore:", e);
 }
 
-try {
-  const [pRows, sRows, cRows, stRows, admRows] = await Promise.all([
-    fetchAll("products", false, profile.id).catch(() => []),
-    fetchAll("sales", true, profile.id).catch(() => []),
-    fetchAll("customers", false, profile.id).catch(() => []),
-    fetchAll("staff", false).catch(() => []),
-    fetchAll("admins", false).catch(() => []),
-  ]);
-  products = pRows || [];
-  sales = sRows || [];
-  customers = cRows || [];
-  staffUsers = (stRows || []).filter(
-    (u) =>
-      u.adminId === profile.id ||
-      u.createdBy === profile.id ||
-      u.pendingRequest?.adminId === profile.id,
-  );
-  adminUsers = (admRows || []).filter(
-    (u) => u.createdBy === profile.id && u.id !== profile.id,
-  );
-  renderDashboard();
-} catch (err) {
-  console.warn("Initial dashboard fetch fallback:", err);
-}
+
 
 let stopDemoRunner = null;
 let chartStartDate = localStorage.getItem("salesiq_chart_start") || "";

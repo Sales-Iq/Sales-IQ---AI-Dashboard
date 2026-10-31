@@ -11,7 +11,6 @@ import {
   emptyState,
   watchCollection,
   hideSkeletonLoader,
-  fetchAll,
   convertFromINR,
   getCurrency,
   toCSV,
@@ -104,21 +103,7 @@ try {
   console.warn("Cached analytics restore:", e);
 }
 
-// ── 2. Network Fetch ───────────────────────────────────────────────────────
-try {
-  const [sRows, pRows] = await Promise.all([
-    fetchAll("sales", true, profile.id).catch(() => []),
-    fetchAll("products", false, profile.id).catch(() => []),
-  ]);
-  if (sRows) sales = sRows;
-  if (pRows) products = pRows;
-  populateCategoryFilter();
-  renderAnalytics();
-} catch (err) {
-  console.warn("Initial analytics fetch error:", err);
-} finally {
-  hideSkeletonLoader();
-}
+// ── 2. Live Data streamed via watchCollection below ────────────────────────
 
 // ── 3. Date & Timeframe Helpers ────────────────────────────────────────────
 function saleDate(sale) {

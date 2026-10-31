@@ -196,10 +196,29 @@ export function money(n, currency = getCurrency(), convert = true) {
   return `${sign}${cfg.symbol}${formatted}`;
 }
 
-export async function syncTenantCurrency(tenantId = null) {
+export async function syncTenantCurrency(tenantId = null, force = false) {
   try {
     const tid = tenantId || getActiveTenantId();
     if (!tid || tid === "__ALL__") return;
+
+    if (!force) {
+      const rawStored = localStorage.getItem(
+        `salesiq_business_settings_${tid}`,
+      );
+      if (rawStored) {
+        try {
+          const cached = JSON.parse(rawStored);
+          const age = Date.now() - (cached._cachedAt || 0);
+          if (age < 300000) {
+            if (cached.currency) {
+              getCurrency._cached = cached.currency;
+              getCurrency._ts = Date.now();
+            }
+            return;
+          }
+        } catch (_) {}
+      }
+    }
 
     let sSnap = await getDoc(doc(db, "businessSettings", tid));
     if (!sSnap.exists()) {
@@ -214,11 +233,18 @@ export async function syncTenantCurrency(tenantId = null) {
         getCurrency._cached = currency;
         getCurrency._ts = Date.now();
       }
-      if (data.businessName) localStorage.setItem("salesiq_business_name", data.businessName);
-      if (data.logoUrl) localStorage.setItem("salesiq_business_logo", data.logoUrl);
-      if (data.taxPercent !== undefined) localStorage.setItem("salesiq_tax_percent", data.taxPercent);
-      if (data.invoicePrefix) localStorage.setItem("salesiq_invoice_prefix", data.invoicePrefix);
-      localStorage.setItem(`salesiq_business_settings_${tid}`, JSON.stringify(data));
+      if (data.businessName)
+        localStorage.setItem("salesiq_business_name", data.businessName);
+      if (data.logoUrl)
+        localStorage.setItem("salesiq_business_logo", data.logoUrl);
+      if (data.taxPercent !== undefined)
+        localStorage.setItem("salesiq_tax_percent", data.taxPercent);
+      if (data.invoicePrefix)
+        localStorage.setItem("salesiq_invoice_prefix", data.invoicePrefix);
+      localStorage.setItem(
+        `salesiq_business_settings_${tid}`,
+        JSON.stringify({ ...data, _cachedAt: Date.now() }),
+      );
     }
   } catch (err) {
     console.warn("Could not sync tenant currency:", err);
@@ -605,6 +631,7 @@ export function initAppShell(
         : "Admin";
 
   if (sidebar) {
+    sidebar.dataset.mounted = "true";
     sidebar.innerHTML = `
       <div class="sidebar-logo">
         <div class="logo-mark">SIQ</div>
@@ -640,6 +667,7 @@ export function initAppShell(
 
   const header = $("#appHeader");
   if (header) {
+    header.dataset.mounted = "true";
     header.innerHTML = `
       <div class="header-inner">
         <div class="flex items-center gap-3">
@@ -1500,7 +1528,15 @@ export function watchCollection(
     };
     refreshStaffIds();
 
-    if (staffIds.size === 0 && tenantId && tenantId !== "__ALL__") {
+    const isAdminUser = (() => {
+      try {
+        const raw = localStorage.getItem("salesiq_user");
+        if (raw) return JSON.parse(raw).role === "Admin";
+      } catch (_) {}
+      return false;
+    })();
+
+    if (isAdminUser && staffIds.size === 0 && tenantId && tenantId !== "__ALL__") {
       Promise.all([
         getDocs(query(collection(db, "staff"), where("adminId", "==", tenantId))),
         getDocs(query(collection(db, "staff"), where("createdBy", "==", tenantId))),

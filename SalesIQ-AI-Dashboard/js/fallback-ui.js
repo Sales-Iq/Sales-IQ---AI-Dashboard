@@ -85,30 +85,46 @@
     return `<img class="profile-avatar" src="${safe}" alt="${label}" referrerpolicy="no-referrer" onerror="this.outerHTML='<span class=&quot;profile-avatar&quot;>${label}</span>'" />`;
   }
   function initShell() {
+    if (document.querySelector("#appSidebar")?.dataset.mounted) return;
     applyTheme();
     const role =
       document.body.dataset.role ||
       (location.pathname.includes("/sales/") ? "sales" : "admin");
     const active = document.body.dataset.active || "dashboard";
     const links = role === "sales" ? staffLinks : adminLinks;
-    const profile = JSON.parse(localStorage.getItem("salesiq_user") || "{}");
+    let profile = null;
+    try {
+      profile = JSON.parse(localStorage.getItem("salesiq_user") || "null");
+    } catch (_) {}
+    const isSubDir =
+      location.pathname.includes("/admin/") ||
+      location.pathname.includes("/sales/");
+    const prefix = isSubDir ? "../" : "";
+    const isLoggedIn = Boolean(profile && (profile.name || profile.email));
+
     const sidebar = $("#appSidebar");
-    if (sidebar && !sidebar.innerHTML.trim()) {
-      sidebar.innerHTML = `<div class="sidebar-logo"><div class="logo-mark">SIQ</div><div><div class="font-black text-xl tracking-tight">SalesIQ</div><div class="text-xs text-slate-400 font-bold">${role === "sales" ? "Sales Staff" : "Admin"} Workspace</div></div></div><nav>${links.map(([key, label, href, icon]) => `<a class="nav-link ${active === key ? "active" : ""}" href="${href}"><span>${icon}</span><span>${label}</span></a>`).join("")}</nav><div class="mt-4 p-3 glass rounded-2xl"><div class="text-xs text-slate-400 font-bold">Logged in</div><div class="flex items-center gap-2 mt-1">${avatarHTML(profile)}<div class="font-black truncate">${profile.name || profile.email || "Waiting for Firebase..."}</div></div><a href="../profile.html" class="text-sky-300 text-sm font-bold hover:underline">Open Profile</a></div>`;
+    if (sidebar && !sidebar.innerHTML.trim() && !sidebar.dataset.mounted) {
+      sidebar.innerHTML = `<div class="sidebar-logo"><div class="logo-mark">SIQ</div><div><div class="font-black text-xl tracking-tight">SalesIQ</div><div class="text-xs text-slate-400 font-bold">${role === "sales" ? "Sales Staff" : "Admin"} Workspace</div></div></div><nav>${links.map(([key, label, href, icon]) => `<a class="nav-link ${active === key ? "active" : ""}" href="${href}"><span>${icon}</span><span>${label}</span></a>`).join("")}</nav><div class="mt-4 p-3 glass rounded-2xl"><div class="text-xs text-slate-400 font-bold">Logged in</div><div class="flex items-center gap-2 mt-1">${avatarHTML(profile)}<div class="font-black truncate">${profile?.name || profile?.email || "Waiting for Firebase..."}</div></div><a href="${prefix}profile.html" class="text-sky-300 text-sm font-bold hover:underline">Open Profile</a></div>`;
     }
     const header = $("#appHeader");
-    if (header && !header.innerHTML.trim()) {
-      header.innerHTML = `<div class="header-inner"><div class="flex items-center gap-3"><button id="fallbackSidebarToggle" class="mobile-menu-btn btn btn-ghost btn-sm">☰</button><div><div class="text-sm text-slate-400 font-bold">${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div><h1 class="text-xl md:text-2xl font-black tracking-tight">${document.title.replace("SalesIQ - ", "")}</h1></div></div><div class="flex items-center gap-2"><button id="fallbackThemeToggle" class="btn btn-ghost btn-sm">${theme() === "light" ? "🌙 Dark" : "☀️ Light"}</button><a class="btn btn-ghost btn-sm hide-mobile" href="../profile.html">${avatarHTML(profile)}Profile</a><a class="btn btn-danger btn-sm" href="../login.html">Login</a></div></div>`;
+    if (header && !header.innerHTML.trim() && !header.dataset.mounted) {
+      const authAction = isLoggedIn
+        ? `<button id="fallbackLogoutBtn" class="btn btn-ghost btn-sm">Logout</button>`
+        : `<a class="btn btn-primary btn-sm" href="${prefix}login.html">Login</a>`;
+      header.innerHTML = `<div class="header-inner"><div class="flex items-center gap-3"><button id="fallbackSidebarToggle" class="mobile-menu-btn btn btn-ghost btn-sm">☰</button><div><div class="text-sm text-slate-400 font-bold">${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div><h1 class="text-xl md:text-2xl font-black tracking-tight">${document.title.replace("SalesIQ - ", "")}</h1></div></div><div class="flex items-center gap-2"><button id="fallbackThemeToggle" class="btn btn-ghost btn-sm">${theme() === "light" ? "🌙 Dark" : "☀️ Light"}</button><a class="btn btn-ghost btn-sm hide-mobile" href="${prefix}profile.html">${avatarHTML(profile)}Profile</a>${authAction}</div></div>`;
       $("#fallbackSidebarToggle")?.addEventListener("click", () =>
         $("#appSidebar")?.classList.toggle("open"),
       );
-      $("#fallbackThemeToggle")?.addEventListener("click", () => {
-        localStorage.setItem(
-          "salesiq_theme",
-          theme() === "light" ? "dark" : "light",
-        );
+      $("#fallbackThemeToggle")?.addEventListener("click", (e) => {
+        const next = theme() === "light" ? "dark" : "light";
+        localStorage.setItem("salesiq_theme", next);
         applyTheme();
-        location.reload();
+        e.currentTarget.textContent =
+          next === "light" ? "🌙 Dark" : "☀️ Light";
+      });
+      $("#fallbackLogoutBtn")?.addEventListener("click", () => {
+        localStorage.removeItem("salesiq_user");
+        location.href = prefix + "login.html";
       });
     }
   }
@@ -311,10 +327,9 @@
     initDashboardPlaceholders();
     initGenericEmptyStates();
     setTimeout(initCanvasPlaceholders, 250);
-    // Second pass only fills gaps left by slow Firebase/module scripts.
-    // Runs once via idle callback (falls back to timeout) instead of
-    // unconditionally re-rendering everything.
+    // Second pass only fills gaps if module scripts fail or don't mount shell.
     const secondPass = () => {
+      if (document.querySelector("#appSidebar")?.dataset.mounted) return;
       initShell();
       initDashboardPlaceholders();
       initGenericEmptyStates();

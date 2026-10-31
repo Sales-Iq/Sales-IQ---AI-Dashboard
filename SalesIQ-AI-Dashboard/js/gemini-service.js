@@ -157,6 +157,16 @@ export function getCandidateModelsForTask(task = "general") {
  * @param {Function} [options.onModelSwitch] - Callback when failing over: (fromModel, toModel, reason) => void
  * @returns {Promise<{text: string, json?: any, modelUsed: string, modelId: string}>}
  */
+export function getActiveGeminiApiKey() {
+  if (typeof window !== "undefined") {
+    const userKey = window.localStorage?.getItem("salesiq_gemini_api_key");
+    if (userKey && userKey.trim() && !userKey.includes("PASTE")) {
+      return userKey.trim();
+    }
+  }
+  return GEMINI_API_KEY;
+}
+
 export async function callGemini({
   prompt,
   systemInstruction = "",
@@ -164,10 +174,10 @@ export async function callGemini({
   jsonMode = false,
   onModelSwitch = null,
 }) {
-  const apiKey = GEMINI_API_KEY;
+  const apiKey = getActiveGeminiApiKey();
   if (!apiKey || apiKey.includes("PASTE")) {
     throw new Error(
-      "Gemini API key is not configured in js/firebase-config.js",
+      "Gemini API key is not configured in js/firebase-config.js or Settings",
     );
   }
 
@@ -329,7 +339,8 @@ export async function mapExcelHeadersWithAI(headers = [], sampleRows = []) {
   const fallbackMapping = getSynonymMapping(headers);
 
   // If no API key or offline, return synonym matching immediately
-  if (!GEMINI_API_KEY || GEMINI_API_KEY.includes("PASTE")) {
+  const activeKey = getActiveGeminiApiKey();
+  if (!activeKey || activeKey.includes("PASTE")) {
     return {
       mapping: fallbackMapping,
       modelUsed: "Rule-Based Synonym Engine",

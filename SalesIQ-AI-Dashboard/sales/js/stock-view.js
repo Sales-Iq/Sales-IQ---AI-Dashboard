@@ -3,6 +3,7 @@ import {
   initAppShell,
   fetchAll,
   watchCollection,
+  getCachedCollection,
   $,
   $$,
   money,
@@ -300,7 +301,7 @@ function renderTable() {
   `;
 }
 
-async function load() {
+async function load(forceRefresh = false) {
   updateConnectionUI();
 
   if (!profile.adminId) {
@@ -311,13 +312,26 @@ async function load() {
     return;
   }
 
+  // Fast 0ms render from client-side cache
+  if (!forceRefresh) {
+    const cached = getCachedCollection(
+      `salesiq_cache_products_${profile.adminId}_false`,
+    );
+    if (cached?.data?.length) {
+      products = cached.data;
+      populateCategories();
+      renderStats();
+      renderTable();
+      return;
+    }
+  }
+
   try {
     // Unsorted fetchAll ensures no products are dropped if createdAt timestamp is missing
-    products = await fetchAll("products", false, profile.adminId);
+    products = await fetchAll("products", false, profile.adminId, forceRefresh);
   } catch (err) {
     console.error("Failed to fetch products:", err);
     toast(err?.message || "Could not load products.", "err");
-    products = [];
   }
 
   populateCategories();
@@ -394,7 +408,7 @@ const refreshBtn = $("#refreshStock");
 if (refreshBtn) {
   refreshBtn.onclick = async () => {
     toast("Refreshing stock data...", "info");
-    await load();
+    await load(true);
   };
 }
 

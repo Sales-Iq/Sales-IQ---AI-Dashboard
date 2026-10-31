@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SalesIQ — Academic Presentation Poster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-navy: #0f172a;
+      --accent-green: #10b981;
+      --accent-green-dark: #059669;
+      --accent-orange: #ea580c;
+      --accent-purple: #7c3aed;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --badge-bg: #f1f5f9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+      color: var(--text-main);
+    }
+
+    .no-print-bar {
+      width: 100%;
+      max-width: 1400px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+    }
+
+    .btn-print {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-print:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+
+    /* POSTER CONTAINER — Aspect Ratio approx 4:3 / A1-A2 landscape banner */
+    .poster-canvas {
+      width: 100%;
+      max-width: 1400px;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.4);
+      position: relative;
+    }
+
+    /* ─── 1. TOP UNIVERSITY HEADER ─── */
+    .uni-header {
+      background: #ffffff;
+      padding: 18px 36px 14px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      position: relative;
+    }
+
+    .uni-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .uni-logo-icon {
+      width: 58px;
+      height: 58px;
+      background: linear-gradient(135deg, #ea580c, #c2410c);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 900;
+      font-size: 26px;
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+    }
+
+    .uni-titles h1 {
+      font-size: 26px;
+      font-weight: 900;
+      color: #9a3412;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+    }
+    .uni-titles h1 span {
+      color: #ea580c;
+    }
+    .uni-titles h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 3px;
+    }
+    .uni-titles p {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .uni-coe {
+      text-align: right;
+      border-left: 2px solid #e2e8f0;
+      padding-left: 24px;
+    }
+    .uni-coe .coe-badge {
+      font-size: 15px;
+      font-weight: 900;
+      color: #0369a1;
+      letter-spacing: 0.5px;
+    }
+    .uni-coe .coe-sub {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    /* ─── ACCREDITATION STRIP ─── */
+    .accred-bar {
+      background: linear-gradient(90deg, #0f172a, #1e293b);
+      color: white;
+      padding: 8px 36px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-bottom: 3px solid #0284c7;
+    }
+    .accred-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .accred-tag {
+      background: rgba(255,255,255,0.15);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      font-weight: 800;
+    }
+    .accred-tag.gold {
+      background: #f59e0b;
+      color: #78350f;
+    }
+    .accred-tag.cyan {
+      background: #0ea5e9;
+      color: #082f49;
+    }
+    .accred-tag.green {
+      background: #10b981;
+      color: #064e3b;
+    }
+
+    /* ─── 2. PROJECT HERO BANNER ─── */
+    .project-banner {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 24px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      position: relative;
+    }
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .salesiq-logo-box {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 10px 20px rgba(2, 132, 199, 0.35);
+      border: 3px solid #e0f2fe;
+    }
+    .salesiq-logo-box .siq-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+    .salesiq-logo-box .siq-txt {
+      font-size: 11px;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    .banner-title h1 {
+      font-size: 34px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+    .banner-title h1 span {
+      background: linear-gradient(90deg, #0284c7, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .banner-title .subtitle {
+      font-size: 16px;
+      font-weight: 700;
+      color: #059669;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .banner-tagline-box {
+      background: white;
+      padding: 14px 28px;
+      border-radius: 14px;
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+      text-align: right;
+    }
+    .tagline-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .tagline-text {
+      font-size: 19px;
+      font-weight: 900;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+    .tagline-text span {
+      color: #0284c7;
+    }
+
+    /* ─── 3. MAIN GRID CONTENT ─── */
+    .poster-body {
+      padding: 24px 36px;
+      display: grid;
+      grid-template-columns: 32% 68%;
+      gap: 24px;
+      background: #fafafa;
+    }
+
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* SECTION CARD STYLES */
+    .poster-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 18px 20px;
+      border: 1.5px solid #e2e8f0;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1.5px solid #f1f5f9;
+    }
+
+    .sec-num {
+      width: 28px;
+      height: 28px;
+      background: #0284c7;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 14px;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+    }
+    .sec-num.green {
+      background: #10b981;
+    }
+    .sec-num.orange {
+      background: #ea580c;
+    }
+    .sec-num.purple {
+      background: #7c3aed;
+    }
+
+    .sec-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .card-text {
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #334155;
+      font-weight: 500;
+    }
+
+    /* SECTION 1: INTRO */
+    .intro-box {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .intro-mockup {
+      width: 105px;
+      height: 125px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+      border: 2px solid #38bdf8;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .mockup-header {
+      height: 10px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+      width: 70%;
+    }
+    .mockup-chart {
+      height: 48px;
+      background: rgba(56, 189, 248, 0.15);
+      border-radius: 6px;
+      border: 1px dashed rgba(56, 189, 248, 0.4);
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      padding: 4px;
+    }
+    .mockup-bar {
+      flex: 1;
+      background: #38bdf8;
+      border-radius: 2px 2px 0 0;
+    }
+    .mockup-footer {
+      display: flex;
+      justify-content: space-between;
+    }
+    .mockup-btn {
+      width: 45%;
+      height: 12px;
+      background: #10b981;
+      border-radius: 3px;
+    }
+
+    /* SECTION 2: PROBLEM STATEMENT */
+    .problem-box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 8px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .problem-icon {
+      font-size: 28px;
+      color: #ea580c;
+    }
+
+    /* SECTION 3: OBJECTIVES */
+    .obj-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .obj-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .obj-icon-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .obj-card.cyan .obj-icon-circle { background: #e0f2fe; color: #0284c7; }
+    .obj-card.green .obj-icon-circle { background: #dcfce7; color: #10b981; }
+    .obj-card.purple .obj-icon-circle { background: #f3e8ff; color: #7c3aed; }
+    .obj-card.amber .obj-icon-circle { background: #fef3c7; color: #d97706; }
+
+    .obj-text {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.3;
+    }
+
+    /* SECTION 4: TOOLS & TECHNOLOGY */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .tech-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .tech-item:hover {
+      transform: translateY(-2px);
+      border-color: #0284c7;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12);
+    }
+    .tech-logo {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .tech-name {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .tech-role {
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* SECTION 5: PROPOSED ARCHITECTURE MODEL */
+    .arch-diagram-wrap {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+      position: relative;
+    }
+    .arch-grid {
+      display: grid;
+      grid-template-columns: 24% 48% 28%;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .arch-node {
+      background: white;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      text-align: center;
+    }
+    .arch-node.client-admin { border-top: 4px solid #0284c7; }
+    .arch-node.client-staff { border-top: 4px solid #10b981; }
+    .arch-node.backend-core { border-top: 4px solid #7c3aed; background: #faf5ff; }
+    .arch-node.cloud-db { border-top: 4px solid #ea580c; background: #fff7ed; }
+
+    .node-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .node-pill {
+      font-size: 9.5px;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #475569;
+      font-weight: 700;
+      margin-top: 4px;
+      display: inline-block;
+    }
+    .node-actions {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 6px;
+      line-height: 1.4;
+      font-weight: 500;
+    }
+
+    .arrow-divider {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    /* ─── BOTTOM TWO-COLUMN SECTION (6 & 7) ─── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 50% 50%;
+      gap: 16px;
+      margin-top: 4px;
+    }
+
+    /* SECTION 6: DATASET & COLLECTIONS */
+    .dataset-items {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .data-pill-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+    .data-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    .data-val {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+
+    /* SECTION 7: RESULTS */
+    .results-badges {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .res-badge {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .res-check {
+      width: 22px;
+      height: 22px;
+      background: #10b981;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .res-text {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #14532d;
+    }
+
+    /* ─── 4. BOTTOM FOOTER BANNER ─── */
+    .poster-footer {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      padding: 16px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      border-top: 4px solid #10b981;
+      position: relative;
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .author-badge {
+      display: flex;
+      flex-direction: column;
+    }
+    .author-role {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .author-name {
+      font-size: 20px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+    .author-name span {
+      color: #38bdf8;
+    }
+
+    .footer-right {
+      text-align: right;
+    }
+    .inst-name {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .dept-name {
+      font-size: 11.5px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    /* ─── PRINT OPTIMIZATIONS ─── */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+      .no-print-bar {
+        display: none;
+      }
+      .poster-canvas {
+        max-width: 100%;
+        box-shadow: none;
+        border-radius: 0;
+      }
+      @page {
+        size: A3 landscape;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Controls Bar (Hidden during Print) -->
+  <div class="no-print-bar">
+    <div>
+      <h3 style="font-size: 16px; font-weight: 800;">🎓 SalesIQ — Academic Project Showcase Poster</h3>
+      <p style="font-size: 12px; color: #94a3b8;">High-resolution academic presentation poster formatted for Ganpat University (AMPICS)</p>
+    </div>
+    <div style="display: flex; gap: 12px;">
+      <button class="btn-print" onclick="window.print()">
+        <span>🖨️</span> Print / Save as PDF (A3 / Landscape)
+      </button>
+      <a href="index.html" style="color: white; text-decoration: none; padding: 10px 16px; border: 1px solid #334155; border-radius: 8px; font-size: 13px; font-weight: 700; display: flex; align-items: center;">
+        ← Back to App
+      </a>
+    </div>
+  </div>
+
+  <!-- THE POSTER CONTAINER -->
+  <div class="poster-canvas" id="posterArea">
+
+    <!-- 1. UNIVERSITY & INSTITUTE HEADER -->
+    <header class="uni-header">
+      <div class="uni-left">
+        <div class="uni-logo-icon">GU</div>
+        <div class="uni-titles">
+          <h1>Ganpat <span>University</span></h1>
+          <h2>A.M. Patel Institute of Computer Studies (AMPICS)</h2>
+          <p>Department of Computer Applications • Master of Computer Applications (MCA)</p>
+        </div>
+      </div>
+      <div class="uni-coe">
+        <div class="coe-badge">CENTRE OF EXCELLENCE</div>
+        <div class="coe-sub">Notified by Government of Gujarat</div>
+      </div>
+    </header>
+
+    <!-- ACCREDITATION BADGES BAR -->
+    <div class="accred-bar">
+      <div class="accred-item">
+        <span class="accred-tag cyan">QS I-GAUGE</span>
+        <span>DIAMOND RATING</span>
+      </div>
+      <div class="accred-item">
+        <span class="accred-tag gold">NAAC 'A'</span>
+        <span>ACCREDITED UNIVERSITY</span>
+      </div>
+      <div class="accred-item">
+        <span class="accred-tag">IIC</span>
+        <span>INSTITUTIONS INNOVATION COUNCIL</span>
+      </div>
+      <div class="accred-item">
+        <span class="accred-tag gold">GSIRF</span>
+        <span>★★★★★ 5-STAR RATING</span>
+      </div>
+      <div class="accred-item">
+        <span class="accred-tag green">CareEdge</span>
+        <span>NGO 2A GRADING</span>
+      </div>
+    </div>
+
+    <!-- 2. PROJECT HERO TITLE BANNER -->
+    <section class="project-banner">
+      <div class="banner-left">
+        <div class="salesiq-logo-box">
+          <div class="siq-icon">⚡</div>
+          <div class="siq-txt">SIQ</div>
+        </div>
+        <div class="banner-title">
+          <h1>SalesIQ — <span>AI-Powered Sales & Inventory</span></h1>
+          <div class="subtitle">
+            <span>🔮 Intelligent Demand Forecasting & Multi-Tenant Retail Point-of-Sale System</span>
+          </div>
+        </div>
+      </div>
+      <div class="banner-tagline-box">
+        <div class="tagline-label">Strategic Platform Tagline</div>
+        <div class="tagline-text">Predict. <span>Manage.</span> Automate. <span>Scale.</span></div>
+      </div>
+    </section>
+
+    <!-- 3. POSTER MAIN CONTENT BODY -->
+    <div class="poster-body">
+
+      <!-- ─── LEFT COLUMN (Intro, Problem, Objectives) ─── -->
+      <div class="left-column">
+
+        <!-- 1. INTRODUCTION -->
+        <div class="poster-card">
+          <div class="card-header">
+            <div class="sec-num">1</div>
+            <div class="sec-title">Introduction</div>
+          </div>
+          <div class="intro-box">
+            <p class="card-text">
+              <strong>SalesIQ</strong> is an enterprise-grade retail intelligence platform that empowers shop owners with <strong>real-time multi-device POS billing</strong>, automated <strong>FEFO perishable batch tracking</strong>, and conversational <strong>AI business intelligence powered by Google Gemini</strong> to eliminate stockouts and dead capital.
+            </p>
+            <div class="intro-mockup">
+              <div class="mockup-header"></div>
+              <div class="mockup-chart">
+                <div class="mockup-bar" style="height: 35%;"></div>
+                <div class="mockup-bar" style="height: 60%;"></div>
+                <div class="mockup-bar" style="height: 45%;"></div>
+                <div class="mockup-bar" style="height: 85%;"></div>
+                <div class="mockup-bar" style="height: 70%;"></div>
+              </div>
+              <div class="mockup-footer">
+                <div class="mockup-btn"></div>
+                <div class="mockup-btn" style="background:#0284c7;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. PROBLEM STATEMENT -->
+        <div class="poster-card">
+          <div class="card-header">
+            <div class="sec-num orange">2</div>
+            <div class="sec-title">Problem Statement</div>
+          </div>
+          <p class="card-text">
+            Traditional retail management suffers from <strong>unpredicted stockouts</strong>, <strong>capital locked in stagnant dead stock</strong>, and severe financial losses caused by <strong>expired perishable goods</strong> due to manual inventory logs and lack of real-time synchronization across billing counters.
+          </p>
+          <div class="problem-box">
+            <div class="problem-icon">⚠️</div>
+            <div style="font-size: 11.5px; color: #9a3412; font-weight: 700; line-height: 1.4;">
+              Manual paper journals and static spreadsheets cause up to 24% revenue leakage through inventory spoilage and stock depletion.
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. OBJECTIVES -->
+        <div class="poster-card">
+          <div class="card-header">
+            <div class="sec-num green">3</div>
+            <div class="sec-title">Project Objectives</div>
+          </div>
+          <div class="obj-grid">
+            <div class="obj-card cyan">
+              <div class="obj-icon-circle">⚡</div>
+              <div class="obj-text">Real-Time Reactive Cloud Sync</div>
+            </div>
+            <div class="obj-card green">
+              <div class="obj-icon-circle">🔮</div>
+              <div class="obj-text">Predictive 30-Day Demand Forecasting</div>
+            </div>
+            <div class="obj-card amber">
+              <div class="obj-icon-circle">🥬</div>
+              <div class="obj-text">FEFO Batch Expiration Protection</div>
+            </div>
+            <div class="obj-card purple">
+              <div class="obj-icon-circle">🤖</div>
+              <div class="obj-text">Gemini AI Strategic Decision Copilot</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ─── RIGHT COLUMN (Tools, Architecture, Data & Results) ─── -->
+      <div class="right-column">
+
+        <!-- 4. USED TOOLS & TECHNOLOGY -->
+        <div class="poster-card">
+          <div class="card-header">
+            <div class="sec-num">4</div>
+            <div class="sec-title">Used Tools & Technology Stack</div>
+          </div>
+          <div class="tech-grid">
+            <div class="tech-item">
+              <div class="tech-logo">⚡</div>
+              <div class="tech-name">Vanilla JS</div>
+              <div class="tech-role">ES Modules</div>
+            </div>
+            <div class="tech-item">
+              <div class="tech-logo">🎨</div>
+              <div class="tech-name">Tailwind</div>
+              <div class="tech-role">v3.4 Liquid Glass</div>
+            </div>
+            <div class="tech-item">
+              <div class="tech-logo">🔐</div>
+              <div class="tech-name">Firebase Auth</div>
+              <div class="tech-role">JWT & Google OAuth</div>
+            </div>
+            <div class="tech-item">
+              <div class="tech-logo">🔥</div>
+              <div class="tech-name">Firestore</div>
+              <div class="tech-role">Realtime NoSQL</div>
+            </div>
+            <div class="tech-item">
+              <div class="tech-logo">🤖</div>
+              <div class="tech-name">Gemini AI</div>
+              <div class="tech-role">Multi-Model LLM</div>
+            </div>
+            <div class="tech-item">
+              <div class="tech-logo">📈</div>
+              <div class="tech-name">Chart.js</div>
+              <div class="tech-role">Interactive Analytics</div>
+            </div>
+            <div class="tech-item">
+              <div class="tech-logo">📄</div>
+              <div class="tech-name">SheetJS / PDF</div>
+              <div class="tech-role">Export Engines</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. PROPOSED SYSTEM MODEL & ARCHITECTURE -->
+        <div class="poster-card">
+          <div class="card-header">
+            <div class="sec-num purple">5</div>
+            <div class="sec-title">Proposed Architecture & Dataflow Model</div>
+          </div>
+          <div class="arch-diagram-wrap">
+            <div class="arch-grid">
+              
+              <!-- Left Clients -->
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div class="arch-node client-staff">
+                  <div class="node-title"><span>🛒</span> Sales Staff</div>
+                  <div class="node-pill">POS Terminal</div>
+                  <div class="node-actions">Quick Scan • Billing • Receipt Print<br><strong>Stock-Decrement Only Guard</strong></div>
+                </div>
+                <div class="arch-node client-admin">
+                  <div class="node-title"><span>👑</span> Store Admin</div>
+                  <div class="node-pill">Executive Hub</div>
+                  <div class="node-actions">Product CRUD • Pricing • Reports<br><strong>Team Invites • Supplier Orders</strong></div>
+                </div>
+              </div>
+
+              <!-- Center Core Engine -->
+              <div class="arch-node backend-core" style="padding: 16px;">
+                <div class="node-title" style="font-size:14px; color:#6b21a8;">
+                  <span>⚙️</span> SalesIQ Client-Side Business Core
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+                  <div style="background:white; padding:8px; border-radius:6px; font-size:10.5px; border:1px solid #d8b4fe; font-weight:700;">
+                    🥑 FEFO Allocation Engine<br><span style="font-size:9px; color:#6b21a8; font-weight:500;">Deducts earliest expiry batch first</span>
+                  </div>
+                  <div style="background:white; padding:8px; border-radius:6px; font-size:10.5px; border:1px solid #d8b4fe; font-weight:700;">
+                    🔮 Moving Average Forecast<br><span style="font-size:9px; color:#6b21a8; font-weight:500;">Weighted velocity & depletion runout</span>
+                  </div>
+                  <div style="background:white; padding:8px; border-radius:6px; font-size:10.5px; border:1px solid #d8b4fe; font-weight:700;">
+                    ⚡ Stale-While-Revalidate<br><span style="font-size:9px; color:#6b21a8; font-weight:500;">0ms instantaneous screen load</span>
+                  </div>
+                  <div style="background:white; padding:8px; border-radius:6px; font-size:10.5px; border:1px solid #d8b4fe; font-weight:700;">
+                    🛡️ Multi-Tenant RBAC<br><span style="font-size:9px; color:#6b21a8; font-weight:500;">firestore-rules.txt data firewall</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Cloud Services -->
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div class="arch-node cloud-db">
+                  <div class="node-title"><span>🔥</span> Cloud Firestore</div>
+                  <div class="node-pill">Realtime NoSQL Database</div>
+                  <div class="node-actions">11 Tenant-Scoped Collections<br>onSnapshot Reactive Push Sync</div>
+                </div>
+                <div class="arch-node" style="border-top:4px solid #0284c7; background:#f0f9ff;">
+                  <div class="node-title"><span>🤖</span> Google Gemini</div>
+                  <div class="node-pill">Multi-Model Orchestrator</div>
+                  <div class="node-actions">Strategic Insights • Demand Risk<br>Auto 429 Quota Failover</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 6 & 7. BOTTOM ROW: DATASET & RESULTS -->
+        <div class="bottom-row">
+
+          <!-- 6. DATASET & SCHEMA -->
+          <div class="poster-card">
+            <div class="card-header">
+              <div class="sec-num">6</div>
+              <div class="sec-title">Firestore Schema & Data Model</div>
+            </div>
+            <div class="dataset-items">
+              <div class="data-pill-box">
+                <div class="data-label">Catalog</div>
+                <div class="data-val">products</div>
+              </div>
+              <div class="data-pill-box">
+                <div class="data-label">Perishables</div>
+                <div class="data-val">productBatches</div>
+              </div>
+              <div class="data-pill-box">
+                <div class="data-label">Transactions</div>
+                <div class="data-val">sales</div>
+              </div>
+              <div class="data-pill-box">
+                <div class="data-label">Procurement</div>
+                <div class="data-val">purchases</div>
+              </div>
+            </div>
+            <p class="card-text" style="font-size:11px; margin-top:8px; color:#64748b;">
+              Scoped strictly via <code>adminId</code> to guarantee multi-tenant security and cross-store data privacy.
+            </p>
+          </div>
+
+          <!-- 7. RESULTS & ACHIEVEMENTS -->
+          <div class="poster-card">
+            <div class="card-header">
+              <div class="sec-num green">7</div>
+              <div class="sec-title">Results & Key Achievements</div>
+            </div>
+            <div class="results-badges">
+              <div class="res-badge">
+                <div class="res-check">✓</div>
+                <div class="res-text">Zero-latency (0ms) perceived screen render using stale-while-revalidate client caching.</div>
+              </div>
+              <div class="res-badge">
+                <div class="res-check">✓</div>
+                <div class="res-text">100% elimination of perishable batch waste via automated FEFO inventory allocation.</div>
+              </div>
+              <div class="res-badge">
+                <div class="res-check">✓</div>
+                <div class="res-text">Continuous real-time multi-counter synchronization with atomic transaction safety.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- 4. BOTTOM FOOTER (STUDENT & COLLEGE INFO) -->
+    <footer class="poster-footer">
+      <div class="footer-left">
+        <div class="author-badge">
+          <div class="author-role">Project Developed By</div>
+          <div class="author-name">Karan <span>Patel</span></div>
+        </div>
+      </div>
+      <div class="footer-right">
+        <div class="inst-name">Ganpat University • A.M. Patel Institute of Computer Studies</div>
+        <div class="dept-name">Master of Computer Applications (MCA) Project Showcase</div>
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>
+

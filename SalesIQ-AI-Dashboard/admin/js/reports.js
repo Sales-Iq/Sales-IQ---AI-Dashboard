@@ -36,6 +36,36 @@ let tableSearchQuery = "";
 let currentPage = 1;
 const pageSize = 15;
 
+// ── Fast Synchronous Cache Restore (0ms Instant Render) ─────────────────────
+try {
+  const cachedP = getCachedCollection(
+    `salesiq_cache_products_${profile.id}_false`,
+  );
+  const cachedS = getCachedCollection(
+    `salesiq_cache_sales_${profile.id}_true`,
+  );
+  const cachedPurch = getCachedCollection(
+    `salesiq_cache_purchases_${profile.id}_false`,
+  );
+  const cachedC = getCachedCollection(
+    `salesiq_cache_customers_${profile.id}_false`,
+  );
+  const cachedAdm = getCachedCollection("salesiq_cache_admins_all_false");
+  const cachedSt = getCachedCollection("salesiq_cache_staff_all_false");
+
+  if (cachedP?.data) products = cachedP.data;
+  if (cachedS?.data) sales = cachedS.data;
+  if (cachedPurch?.data) purchases = cachedPurch.data;
+  if (cachedC?.data) customers = cachedC.data;
+  if (cachedAdm?.data) admins = cachedAdm.data;
+  if (cachedSt?.data) staff = cachedSt.data;
+
+  accounts = [
+    ...(admins || []).map((a) => ({ ...a, accountCollection: "admins" })),
+    ...(staff || []).map((s) => ({ ...s, accountCollection: "staff" })),
+  ];
+} catch (_) {}
+
 // ── Helper Date Utilities ──────────────────────────────────────────────────
 function toYMD(d) {
   if (!d) return "";
