@@ -164,7 +164,38 @@
     });
   }
 
-  // ── 5. Master Enhance & Mutation Observer ─────────────────────────────────
+  // ── 5. Global Precision Radial Spotlight Border Beam Tracking ────────────
+  let activeSpotlightCard = null;
+
+  document.addEventListener(
+    "pointermove",
+    (event) => {
+      const card = event.target?.closest?.(
+        ".stat-card, .chart-box, .spotlight-card, .glass-card-hover, .glass-spotlight, .product-card"
+      );
+
+      if (card) {
+        if (activeSpotlightCard && activeSpotlightCard !== card) {
+          activeSpotlightCard.style.removeProperty("--card-x");
+          activeSpotlightCard.style.removeProperty("--card-y");
+        }
+        activeSpotlightCard = card;
+        const rect = card.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        card.style.setProperty("--card-x", `${x.toFixed(1)}px`);
+        card.style.setProperty("--card-y", `${y.toFixed(1)}px`);
+      } else if (activeSpotlightCard) {
+        activeSpotlightCard.style.removeProperty("--card-x");
+        activeSpotlightCard.style.removeProperty("--card-y");
+        activeSpotlightCard = null;
+      }
+    },
+    { passive: true },
+  );
+
+  // ── 6. Master Enhance & Mutation Observer ─────────────────────────────────
   function enhance() {
     addRiseAnimation();
     addTiltEffect();

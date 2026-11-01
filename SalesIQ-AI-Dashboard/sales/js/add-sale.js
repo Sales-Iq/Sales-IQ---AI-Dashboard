@@ -5,6 +5,7 @@ import {
   $,
   toast,
   setBusy,
+  morphButtonState,
   money,
   uid,
   statusFor,
@@ -409,10 +410,16 @@ $("#billingForm").onsubmit = async (e) => {
     toast(`Invoice ${invoiceNumber} generated.`);
     $("#billingForm").reset();
     await loadProducts();
+
+    // Thinking Gods Morphing Button: transition into emerald checkmark state!
+    await morphButtonState(btn, "success", "Sale Completed! ✓", 2400);
   } catch (err) {
     toast(err.message, "err");
+    morphButtonState(btn, "error", "Failed to Save");
   } finally {
-    setBusy(btn, false);
+    if (!btn.classList.contains("btn-morph-success")) {
+      setBusy(btn, false);
+    }
   }
 };
 

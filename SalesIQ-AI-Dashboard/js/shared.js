@@ -331,18 +331,107 @@ export function toast(message, type = "ok") {
   setTimeout(() => box.remove(), 4200);
 }
 
+/**
+ * Thinking Gods Morphing Action Button Controller
+ * Smoothly transitions a button through idle -> loading -> animated checkmark success -> idle
+ */
+export async function morphButtonState(
+  btn,
+  state = "idle",
+  text = "",
+  duration = 2200,
+) {
+  if (!btn) return;
+
+  if (state === "loading") {
+    if (!btn.dataset.originalHtml) {
+      btn.dataset.originalHtml = btn.innerHTML;
+    }
+    btn.disabled = true;
+    btn.classList.add("btn-morph", "btn-morph-loading");
+    btn.classList.remove("btn-morph-success", "btn-morph-error");
+    btn.innerHTML = `
+      <span class="btn-morph-inner">
+        <svg class="btn-morph-spinner" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="btn-morph-label">${text || "Processing..."}</span>
+      </span>
+    `;
+    return;
+  }
+
+  if (state === "success") {
+    btn.classList.add("btn-morph");
+    btn.classList.remove("btn-morph-loading", "btn-morph-error");
+    btn.classList.add("btn-morph-success");
+    btn.innerHTML = `
+      <span class="btn-morph-inner">
+        <svg class="btn-morph-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span class="btn-morph-label">${text || "Sale Completed! ✓"}</span>
+      </span>
+    `;
+
+    // Celebratory spark burst around the button
+    try {
+      const rect = btn.getBoundingClientRect();
+      const clickEvt = new MouseEvent("click", {
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+        bubbles: true,
+      });
+      const canvas = document.getElementById("clickSparkCanvas");
+      if (canvas) canvas.dispatchEvent(clickEvt);
+    } catch (_) {}
+
+    if (duration > 0) {
+      await new Promise((resolve) => setTimeout(resolve, duration));
+      if (btn.classList.contains("btn-morph-success")) {
+        morphButtonState(btn, "idle");
+      }
+    }
+    return;
+  }
+
+  if (state === "error") {
+    btn.classList.add("btn-morph");
+    btn.classList.remove("btn-morph-loading", "btn-morph-success");
+    btn.classList.add("btn-morph-error");
+    btn.innerHTML = `
+      <span class="btn-morph-inner">
+        <span class="btn-morph-icon">⚠️</span>
+        <span class="btn-morph-label">${text || "Action Failed"}</span>
+      </span>
+    `;
+    setTimeout(() => {
+      morphButtonState(btn, "idle");
+    }, 2000);
+    return;
+  }
+
+  // Idle state
+  btn.disabled = false;
+  btn.classList.remove("btn-morph-loading", "btn-morph-success", "btn-morph-error");
+  if (btn.dataset.originalHtml) {
+    btn.innerHTML = btn.dataset.originalHtml;
+    delete btn.dataset.originalHtml;
+  }
+}
+
 export function setBusy(btn, busy = true, text = "Saving...") {
   if (!btn) return;
 
   if (busy) {
-    btn.dataset.oldText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `<span class="animate-pulse">${text}</span>`;
+    morphButtonState(btn, "loading", text);
     return;
   }
 
-  btn.disabled = false;
-  btn.innerHTML = btn.dataset.oldText || btn.innerHTML;
+  if (!btn.classList.contains("btn-morph-success")) {
+    morphButtonState(btn, "idle");
+  }
 }
 
 
