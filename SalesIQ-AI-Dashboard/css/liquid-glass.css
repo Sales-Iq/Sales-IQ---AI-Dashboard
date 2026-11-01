@@ -115,26 +115,42 @@ body.light::before {
   border-radius: inherit;
   background:
     radial-gradient(
-      380px circle at var(--card-x, 50%) var(--card-y, 50%),
-      rgba(56, 189, 248, 0.16),
+      180px circle at var(--card-x, 50%) var(--card-y, 50%),
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(56, 189, 248, 0.18) 35%,
+      transparent 70%
+    ),
+    radial-gradient(
+      420px circle at var(--card-x, 50%) var(--card-y, 50%),
+      rgba(56, 189, 248, 0.14),
       transparent 65%
     ),
     linear-gradient(
       120deg,
-      rgba(56, 189, 248, 0.15),
+      rgba(255, 255, 255, 0.12) 0%,
       transparent 28%,
       transparent 70%,
-      rgba(139, 92, 246, 0.1)
+      rgba(139, 92, 246, 0.1) 100%
     ),
     radial-gradient(
       circle at 25% 10%,
-      rgba(56, 189, 248, 0.18),
+      rgba(56, 189, 248, 0.15),
       transparent 30%
     );
-  opacity: 0.3;
+  opacity: 0.35;
   mix-blend-mode: screen;
   z-index: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.35s ease;
+}
+
+.glass:hover::before,
+.glass-strong:hover::before,
+.stat-card:hover::before,
+.chart-box:hover::before,
+.modal-card:hover::before,
+.auth-card:hover::before,
+.liquid-panel:hover::before {
+  opacity: 0.85;
 }
 
 .light .glass::before,
@@ -147,7 +163,13 @@ body.light::before {
 .light .liquid-panel::before {
   background:
     radial-gradient(
-      380px circle at var(--card-x, 50%) var(--card-y, 50%),
+      220px circle at var(--card-x, 50%) var(--card-y, 50%),
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(14, 165, 233, 0.15) 45%,
+      transparent 70%
+    ),
+    radial-gradient(
+      400px circle at var(--card-x, 50%) var(--card-y, 50%),
       rgba(14, 165, 233, 0.12),
       transparent 65%
     ),
@@ -160,6 +182,16 @@ body.light::before {
     );
   mix-blend-mode: normal;
   opacity: 0.75;
+}
+
+.light .glass:hover::before,
+.light .glass-strong:hover::before,
+.light .stat-card:hover::before,
+.light .chart-box:hover::before,
+.light .modal-card:hover::before,
+.light .auth-card:hover::before,
+.light .liquid-panel:hover::before {
+  opacity: 1;
 }
 
 .glass > *,
@@ -233,12 +265,15 @@ body.light::before {
 .liquid-panel {
   background: rgba(11, 20, 39, 0.72) !important;
   border: 1px solid var(--liq-border) !important;
-  backdrop-filter: blur(24px) saturate(1.8) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.8) !important;
+  backdrop-filter: blur(24px) saturate(1.85) contrast(1.05) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.85) contrast(1.05) !important;
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(14, 165, 233, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    0 24px 70px -12px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.4),
+    inset 1.5px 0 2px 0 rgba(56, 189, 248, 0.12),
+    inset -1.5px 0 2px 0 rgba(168, 85, 247, 0.12) !important;
   transition:
     transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.25s ease,
@@ -253,14 +288,17 @@ body.light::before {
 .light .app-sidebar,
 .light .auth-card,
 .light .liquid-panel {
-  background: rgba(255, 255, 255, 0.94) !important;
-  border: 1px solid rgba(203, 213, 225, 0.85) !important;
-  backdrop-filter: blur(20px) saturate(1.3) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.3) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  backdrop-filter: blur(20px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
   box-shadow:
-    0 10px 30px rgba(15, 23, 42, 0.05),
-    0 1px 3px rgba(15, 23, 42, 0.03),
-    inset 0 1px 0 #ffffff !important;
+    0 12px 36px -8px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.8),
+    inset 0 1.5px 1px 0 #ffffff,
+    inset 0 -1px 1px 0 rgba(15, 23, 42, 0.06),
+    inset 1.5px 0 2px 0 rgba(14, 165, 233, 0.08),
+    inset -1.5px 0 2px 0 rgba(168, 85, 247, 0.08) !important;
 }
 
 .glass:hover,
@@ -268,11 +306,15 @@ body.light::before {
 .stat-card:hover,
 .chart-box:hover,
 .liquid-panel:hover {
-  border-color: var(--liq-border-hover) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
   box-shadow:
-    0 32px 90px rgba(0, 0, 0, 0.45),
-    0 0 35px rgba(56, 189, 248, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    0 32px 85px -15px rgba(0, 0, 0, 0.6),
+    0 0 35px rgba(56, 189, 248, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.45),
+    inset 2px 0 4px 0 rgba(56, 189, 248, 0.25),
+    inset -2px 0 4px 0 rgba(168, 85, 247, 0.22) !important;
 }
 
 .light .glass:hover,
@@ -280,12 +322,15 @@ body.light::before {
 .light .stat-card:hover,
 .light .chart-box:hover,
 .light .liquid-panel:hover {
-  background: rgba(255, 255, 255, 0.98) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
   border-color: rgba(14, 165, 233, 0.5) !important;
   box-shadow:
-    0 18px 45px rgba(14, 165, 233, 0.12),
-    0 4px 12px rgba(15, 23, 42, 0.06),
-    inset 0 1px 0 #ffffff !important;
+    0 20px 48px -10px rgba(14, 165, 233, 0.15),
+    0 0 0 1px #ffffff,
+    inset 0 1.5px 1px 0 #ffffff,
+    inset 0 -1px 1px 0 rgba(15, 23, 42, 0.08),
+    inset 2px 0 4px 0 rgba(14, 165, 233, 0.15),
+    inset -2px 0 4px 0 rgba(168, 85, 247, 0.12) !important;
 }
 
 /* ── 5. Button & Interactive Micro-Animations ─────────────────────────────── */

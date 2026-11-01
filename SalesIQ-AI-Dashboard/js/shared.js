@@ -350,13 +350,171 @@ export function getTheme() {
   return localStorage.getItem("salesiq_theme") || "dark";
 }
 
-export function applyTheme(theme = getTheme()) {
+export function updateThemeToggleUI(theme = getTheme()) {
+  const isLight = theme === "light";
+  const icon = isLight ? "🌙" : "☀️";
+  const label = isLight ? "Dark" : "Light";
+
+  const mainBtn = document.getElementById("themeToggle");
+  if (mainBtn) {
+    mainBtn.innerHTML = `<span class="theme-toggle-spin">${icon}</span> ${label}`;
+  }
+
+  const fallbackBtn = document.getElementById("fallbackThemeToggle");
+  if (fallbackBtn) {
+    fallbackBtn.innerHTML = `<span class="theme-toggle-spin">${icon}</span> ${label}`;
+  }
+
+  const profileBtn = document.getElementById("profileTheme");
+  if (profileBtn) {
+    profileBtn.innerHTML = `<span class="theme-toggle-spin">${icon}</span> ${isLight ? "Switch to Dark" : "Switch to Light"}`;
+  }
+}
+
+export function applyTheme(theme = getTheme(), dispatchEvent = true) {
   document.body.classList.toggle("light", theme === "light");
   document.documentElement.classList.toggle("light", theme === "light");
   localStorage.setItem("salesiq_theme", theme);
-  window.dispatchEvent(
-    new CustomEvent("salesiq:theme-changed", { detail: { theme } }),
+  if (dispatchEvent) {
+    window.dispatchEvent(
+      new CustomEvent("salesiq:theme-changed", { detail: { theme } }),
+    );
+  }
+}
+
+/**
+ * Ultra-fast zero-allocation theme color sync for active Chart.js instances.
+ * Uses chart.update('none') to repaint canvas pixels in 0ms synchronously
+ * with NO animation frames scheduled, ensuring the view transition snapshot
+ * is captured with pristine light/dark colors while consuming 0 background CPU.
+ */
+export function syncChartThemeColors(isLight) {
+  if (typeof window === "undefined" || !window.Chart) return;
+  const textColor = isLight ? "#0f172a" : "#e2e8f0";
+  const tickColor = isLight ? "#1e293b" : "#cbd5e1";
+  const gridColor = isLight
+    ? "rgba(15, 23, 42, 0.08)"
+    : "rgba(148, 163, 184, 0.12)";
+
+  const instances = window.Chart.instances;
+  if (!instances) return;
+
+  Object.values(instances).forEach((chart) => {
+    try {
+      if (!chart || chart.destroyed) return;
+
+      if (chart.options?.scales) {
+        Object.values(chart.options.scales).forEach((scale) => {
+          if (scale?.ticks) scale.ticks.color = tickColor;
+          if (scale?.grid) scale.grid.color = gridColor;
+        });
+      }
+
+      if (chart.options?.plugins?.legend?.labels) {
+        chart.options.plugins.legend.labels.color = textColor;
+      }
+
+      if (Array.isArray(chart.data?.datasets)) {
+        chart.data.datasets.forEach((ds) => {
+          if (ds._themeColor === "primary" || ds.label === "Sales") {
+            ds.borderColor = isLight ? "#0284c7" : "#38bdf8";
+            ds.backgroundColor = isLight
+              ? "rgba(2, 132, 199, 0.20)"
+              : "rgba(56, 189, 248, 0.20)";
+            ds.pointBackgroundColor = ds.borderColor;
+          } else if (ds._themeColor === "purple" || ds.label === "Stock") {
+            ds.borderColor = isLight ? "#7c3aed" : "#a78bfa";
+            ds.backgroundColor = isLight
+              ? "rgba(124, 58, 237, 0.45)"
+              : "rgba(167, 139, 250, 0.55)";
+          }
+        });
+      }
+
+      chart.update("none");
+    } catch (_) {}
+  });
+}
+
+/**
+ * Kerfa-style Circular Expanding Wave Theme Transition
+ * Uses the native View Transitions API to seamlessly expand the new theme
+ * in a circular ripple originating directly from the user's cursor / button.
+ */
+export async function toggleThemeWithWave(event) {
+  const current = getTheme();
+  const next = current === "light" ? "dark" : "light";
+
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Fallback if browser doesn't support View Transitions or prefers reduced motion
+  if (
+    typeof document === "undefined" ||
+    !document.startViewTransition ||
+    prefersReduced
+  ) {
+    applyTheme(next);
+    updateThemeToggleUI(next);
+    return;
+  }
+
+  // Anchor wave directly from the button center for a clean symmetric radial wave
+  const btn =
+    event?.currentTarget ||
+    event?.target?.closest?.("button, a") ||
+    document.getElementById("themeToggle") ||
+    document.getElementById("profileTheme") ||
+    document.getElementById("fallbackThemeToggle");
+
+  let x = event?.clientX;
+  let y = event?.clientY;
+
+  if (btn && btn.getBoundingClientRect) {
+    const rect = btn.getBoundingClientRect();
+    x = rect.left + rect.width / 2;
+    y = rect.top + rect.height / 2;
+  } else if (x === undefined || y === undefined || (x === 0 && y === 0)) {
+    x = window.innerWidth - 80;
+    y = 35;
+  }
+
+  // Distance to the farthest corner of the viewport
+  const endRadius = Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y),
   );
+
+  // Set CSS variables for GPU compositor keyframe animation
+  document.documentElement.style.setProperty("--vt-x", `${x.toFixed(1)}px`);
+  document.documentElement.style.setProperty("--vt-y", `${y.toFixed(1)}px`);
+  document.documentElement.style.setProperty("--vt-r", `${endRadius.toFixed(1)}px`);
+  document.documentElement.classList.add("theme-transitioning");
+
+  const transition = document.startViewTransition(() => {
+    // 1. Instantly switch theme classes without dispatching heavy events
+    applyTheme(next, false);
+    // 2. Update button label/icon
+    updateThemeToggleUI(next);
+    // 3. Instantly update visible Chart.js canvas colors in 0ms without re-animating
+    syncChartThemeColors(next === "light");
+  });
+
+  try {
+    await transition.finished;
+  } catch (_) {
+  } finally {
+    document.documentElement.classList.remove("theme-transitioning");
+    // Fire theme changed events AFTER the visual wave has cleanly concluded
+    window.dispatchEvent(
+      new CustomEvent("salesiq:theme-changed", { detail: { theme: next } }),
+    );
+    window.dispatchEvent(
+      new CustomEvent("themechanged", { detail: { theme: next } }),
+    );
+  }
 }
 
 export function initSplash() {
@@ -538,6 +696,14 @@ export function initClickSpark() {
   document.addEventListener(
     "click",
     (e) => {
+      // Do not spawn heavy spark physics when toggling themes to keep 120 FPS compositor throughput
+      if (
+        e.target?.closest?.("#themeToggle, #fallbackThemeToggle, #profileTheme") ||
+        document.documentElement.classList.contains("theme-transitioning")
+      ) {
+        return;
+      }
+
       const isLight = document.body.classList.contains("light");
       const palette = isLight ? lightPalette : darkPalette;
       const count = 12;
@@ -610,6 +776,597 @@ export function avatarHTML(profile = {}) {
   return `<img class="profile-avatar" src="${safe}" alt="${label}" referrerpolicy="no-referrer" onerror="this.outerHTML='<span class=&quot;profile-avatar&quot;>${label}</span>'" />`;
 }
 
+/**
+ * Kerfa-style Liquid Stretchy Pill Navigation Indicator
+ * Uses 100% hardware-accelerated GPU transforms (translate3d + scale)
+ * for butter-smooth 120 FPS performance with zero layout reflow.
+ */
+export function initLiquidNavPill(navEl, activeKey) {
+  if (!navEl) return;
+  const pill = navEl.querySelector(".nav-liquid-pill");
+  if (!pill) return;
+
+  const links = Array.from(navEl.querySelectorAll(".nav-link"));
+  if (!links.length) return;
+
+  navEl.classList.add("has-liquid-pill");
+
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const activeLink =
+    (activeKey && navEl.querySelector(`.nav-link[data-nav-key="${activeKey}"]`)) ||
+    navEl.querySelector(".nav-link.active") ||
+    links[0];
+
+  let _animRafId = null;
+  let currentY = 0;
+  let _currentTargetEl = null;
+
+  function measureElement(el) {
+    if (!el) return { y: 0, height: 44, width: 250, left: 10 };
+    return {
+      y: el.offsetTop,
+      height: el.offsetHeight || 44,
+      width: el.offsetWidth || 250,
+      left: el.offsetLeft || 10,
+    };
+  }
+
+  function applyInstant(el) {
+    if (!el) return;
+    if (_animRafId) {
+      cancelAnimationFrame(_animRafId);
+      _animRafId = null;
+    }
+    _currentTargetEl = el;
+    const m = measureElement(el);
+    currentY = m.y;
+    pill.style.transition = "none";
+    pill.style.width = `${m.width}px`;
+    pill.style.left = `${m.left}px`;
+    pill.style.height = `${m.height}px`;
+    pill.style.transform = `translate3d(0, ${m.y}px, 0) scale(1, 1)`;
+    pill.style.opacity = "1";
+  }
+
+  function animateStretchTo(targetEl, fromYOverride = null) {
+    if (!targetEl) return;
+    _currentTargetEl = targetEl;
+    const m = measureElement(targetEl);
+    const toY = m.y;
+    const baseH = m.height;
+    const fromY = fromYOverride !== null ? fromYOverride : currentY;
+
+    pill.style.width = `${m.width}px`;
+    pill.style.left = `${m.left}px`;
+    pill.style.height = `${baseH}px`;
+    pill.style.opacity = "1";
+
+    if (prefersReduced || Math.abs(toY - fromY) < 1) {
+      if (_animRafId) {
+        cancelAnimationFrame(_animRafId);
+        _animRafId = null;
+      }
+      currentY = toY;
+      pill.style.transform = `translate3d(0, ${toY}px, 0) scale(1, 1)`;
+      return;
+    }
+
+    if (_animRafId) {
+      cancelAnimationFrame(_animRafId);
+      _animRafId = null;
+    }
+
+    const duration = 340; // ms
+    const startTime = performance.now();
+
+    function easeOutPower3(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function easeInOutPower2(t) {
+      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, Math.max(0, elapsed / duration));
+
+      if (progress < 0.88) {
+        // Fluid stretchy leap
+        const sub = progress / 0.88;
+        const pLead = easeOutPower3(sub);
+        const pTrail = easeInOutPower2(sub);
+
+        const curLead = fromY + (toY - fromY) * pLead;
+        const curTrail = fromY + (toY - fromY) * pTrail;
+
+        const curTop = Math.min(curLead, curTrail);
+        const curBottom = Math.max(curLead, curTrail) + baseH;
+        const curH = curBottom - curTop;
+
+        const sy = Math.max(1, curH / baseH);
+        const sx = Math.max(0.92, 1 - (sy - 1) * 0.035);
+
+        pill.style.transform = `translate3d(0, ${curTop.toFixed(2)}px, 0) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`;
+        currentY = curTop;
+      } else {
+        // Subtle organic jelly settle firmly locked at destination toY
+        const settleP = (progress - 0.88) / 0.12;
+        const bounce = Math.sin(settleP * Math.PI) * (1 - settleP) * 0.035;
+        const sy = 1 - bounce;
+        const sx = 1 + bounce * 0.6;
+
+        pill.style.transform = `translate3d(0, ${toY}px, 0) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`;
+        currentY = toY;
+      }
+
+      if (progress < 1) {
+        _animRafId = requestAnimationFrame(step);
+      } else {
+        _animRafId = null;
+        currentY = toY;
+        pill.style.transform = `translate3d(0, ${toY}px, 0) scale(1, 1)`;
+
+        const icon = targetEl.querySelector(".nav-icon");
+        if (icon) {
+          icon.classList.remove("nav-icon-pop");
+          void icon.offsetWidth;
+          icon.classList.add("nav-icon-pop");
+        }
+      }
+    }
+
+    _animRafId = requestAnimationFrame(step);
+  }
+
+  // Cross-page restoration
+  let restored = false;
+  try {
+    const raw = sessionStorage.getItem("salesiq_nav_transition");
+    if (raw) {
+      const data = JSON.parse(raw);
+      const isFresh = data && Date.now() - Number(data.time || 0) < 3500;
+      if (isFresh && data.fromKey && data.toKey === activeKey) {
+        const fromEl = navEl.querySelector(`.nav-link[data-nav-key="${data.fromKey}"]`);
+        if (fromEl) {
+          const m = measureElement(fromEl);
+          applyInstant(fromEl);
+          restored = true;
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              animateStretchTo(activeLink, m.y);
+            });
+          });
+        }
+      }
+      sessionStorage.removeItem("salesiq_nav_transition");
+    }
+  } catch (_) {}
+
+  if (!restored && activeLink) {
+    applyInstant(activeLink);
+    if (!prefersReduced) {
+      pill.classList.add("nav-pill-entering");
+      setTimeout(() => pill.classList.remove("nav-pill-entering"), 450);
+    }
+  }
+
+  links.forEach((link) => {
+    link.addEventListener("click", (e) => {
+      if (
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey ||
+        link.target === "_blank" ||
+        e.button !== 0
+      )
+        return;
+
+      const targetKey = link.dataset.navKey;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("http") || href.startsWith("mailto:")) return;
+
+      e.preventDefault();
+      if (_isNavigating) return;
+      if (link.classList.contains("active")) return;
+
+      const currentActive =
+        navEl.querySelector(".nav-link.active") || _currentTargetEl;
+      const fromY = _animRafId ? currentY : (currentActive ? currentActive.offsetTop : currentY);
+
+      // Update active classes
+      navEl.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
+      link.classList.add("active");
+      navEl.dataset.activeKey = targetKey || "";
+
+      // Animate liquid stretch immediately on the persistent sidebar
+      animateStretchTo(link, fromY);
+
+      // Perform seamless SPA page navigation
+      spaNavigate(href, targetKey);
+    });
+  });
+
+  navEl._isAnimating = () => Boolean(_animRafId);
+
+  navEl._animateTo = (targetEl, fromY = null) => {
+    const startY = fromY !== null ? fromY : (_animRafId ? currentY : null);
+    animateStretchTo(targetEl, startY);
+  };
+
+  navEl._syncLiquidPill = (force = false) => {
+    // If currently animating and not forced, DO NOT interrupt or snap
+    if (_animRafId && !force) return;
+    const currentActive =
+      navEl.querySelector(".nav-link.active") ||
+      _currentTargetEl ||
+      (navEl.dataset.activeKey
+        ? navEl.querySelector(`.nav-link[data-nav-key="${navEl.dataset.activeKey}"]`)
+        : null) ||
+      links[0];
+    if (currentActive) {
+      applyInstant(currentActive);
+    }
+  };
+
+  let resizeTimer;
+  window.addEventListener(
+    "resize",
+    () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        navEl._syncLiquidPill?.();
+      }, 100);
+    },
+    { passive: true },
+  );
+
+  window.addEventListener(
+    "pageshow",
+    (e) => {
+      if (e.persisted) {
+        navEl._syncLiquidPill?.();
+      }
+    },
+    { passive: true },
+  );
+}
+
+// ── Persistent Page & SPA Routing Engine ──────────────────────────────────
+let _activePageUnsubs = [];
+export function registerPageUnsub(unsub) {
+  if (typeof unsub === "function") {
+    _activePageUnsubs.push(unsub);
+  }
+}
+
+export function cleanupPageSubscriptions() {
+  if (_activePageUnsubs.length) {
+    _activePageUnsubs.forEach((fn) => {
+      try {
+        fn();
+      } catch (_) {}
+    });
+    _activePageUnsubs = [];
+  }
+}
+
+let _isNavigating = false;
+export async function spaNavigate(href, targetKey, isPopState = false) {
+  if (_isNavigating) return;
+  _isNavigating = true;
+
+  try {
+    // 1. Parallelize network fetch while GPU pill animation glides cleanly
+    const fetchPromise = fetch(href).then((r) => (r.ok ? r.text() : Promise.reject(r)));
+
+    // Let the pill animation execute its energetic leap for 120ms with 0 main-thread interruptions
+    const [htmlText] = await Promise.all([
+      fetchPromise,
+      new Promise((r) => setTimeout(r, 120)),
+    ]);
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
+
+    // 2. Update Title and History
+    document.title = doc.title;
+    if (!isPopState) {
+      history.pushState({ href, targetKey }, doc.title, href);
+    }
+
+    // 3. Update Header Title
+    const headerTitle = document.querySelector("#appHeader h1");
+    if (headerTitle) {
+      headerTitle.textContent = doc.title.replace("SalesIQ - ", "");
+    }
+
+    // 4. Update body dataset & sidebar state
+    if (document.body) {
+      document.body.dataset.active = targetKey || "";
+    }
+    const navEl = document.querySelector("#appSidebar .sidebar-nav");
+    if (navEl && targetKey) {
+      navEl.dataset.activeKey = targetKey;
+      const targetLink = navEl.querySelector(`.nav-link[data-nav-key="${targetKey}"]`);
+      if (targetLink) {
+        navEl.querySelectorAll(".nav-link").forEach((l) => l.classList.toggle("active", l === targetLink));
+      }
+    }
+
+    // 5. Clean up previous page subscriptions
+    cleanupPageSubscriptions();
+
+    // 6. Quick, smooth cross-fade for main content container
+    const currentMain = document.querySelector("main.page-container");
+    const newMain = doc.querySelector("main.page-container");
+
+    if (!currentMain || !newMain) {
+      // If either current page or target page lacks a SPA container, perform standard navigation
+      location.href = href;
+      return;
+    }
+
+    currentMain.style.opacity = "0";
+    currentMain.style.transform = "translateY(6px)";
+    currentMain.style.transition = "opacity 0.12s ease, transform 0.12s ease";
+
+    await new Promise((r) => setTimeout(r, 110));
+
+    currentMain.className = newMain.className;
+    currentMain.innerHTML = newMain.innerHTML;
+
+    // Swap any page modals that exist in the target page
+    document.querySelectorAll(".modal-backdrop").forEach((m) => m.remove());
+    doc.querySelectorAll(".modal-backdrop").forEach((m) => {
+      document.body.appendChild(m.cloneNode(true));
+    });
+
+    // Reveal new page content
+    currentMain.style.opacity = "1";
+    currentMain.style.transform = "translateY(0)";
+    window.scrollTo({ top: 0, behavior: "instant" });
+
+    // 7. Defer script execution to next idle frame so the pill has completely settled
+    const scripts = Array.from(doc.querySelectorAll('script[type="module"]'));
+    const pageScript = scripts.find((s) => {
+      const src = s.getAttribute("src") || "";
+      return (
+        !src.includes("shared.js") &&
+        !src.includes("fallback-ui.js") &&
+        !src.includes("liquid-glass.js")
+      );
+    });
+
+    if (pageScript) {
+      const rawSrc = pageScript.getAttribute("src");
+      const scriptUrl = new URL(rawSrc, window.location.href).href;
+      requestAnimationFrame(() => {
+        setTimeout(async () => {
+          try {
+            await import(scriptUrl + "?spa=" + Date.now());
+          } catch (e) {
+            console.warn("Module import error:", e);
+          }
+        }, 25);
+      });
+    }
+  } catch (err) {
+    console.warn("SPA navigation error, falling back to full reload:", err);
+    location.href = href;
+  } finally {
+    _isNavigating = false;
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("popstate", () => {
+    const navEl = document.querySelector("#appSidebar .sidebar-nav");
+    const currentMain = document.querySelector("main.page-container");
+    if (!navEl || !currentMain) {
+      location.reload();
+      return;
+    }
+    const href = location.pathname.split("/").pop() || "dashboard.html";
+    const targetLink = navEl.querySelector(`a[href="${href}"]`);
+    if (!targetLink) {
+      location.reload();
+      return;
+    }
+    const targetKey = targetLink.dataset?.navKey;
+    navEl.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
+    targetLink.classList.add("active");
+    navEl._animateTo?.(targetLink);
+    spaNavigate(href, targetKey, true);
+  });
+
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest("a[href]");
+    if (!link) return;
+    if (link.closest("#appSidebar")) return;
+
+    // Only intercept if we are currently inside an active dashboard shell
+    const navEl = document.querySelector("#appSidebar .sidebar-nav");
+    const currentMain = document.querySelector("main.page-container");
+    if (!navEl || !currentMain) return;
+
+    const href = link.getAttribute("href");
+    if (
+      !href ||
+      href.startsWith("#") ||
+      href.startsWith("http") ||
+      href.startsWith("mailto:") ||
+      href.startsWith("javascript:") ||
+      href.startsWith("../") ||
+      href.startsWith("/") ||
+      href === "login.html" ||
+      href === "register.html" ||
+      href === "index.html" ||
+      href === "profile.html" ||
+      href.includes("login") ||
+      href.includes("register")
+    )
+      return;
+
+    if (
+      link.target === "_blank" ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey ||
+      e.button !== 0
+    )
+      return;
+
+    if (href.endsWith(".html")) {
+      const targetLink = navEl.querySelector(`a[href="${href}"]`);
+      if (!targetLink) {
+        // Not a link in the current dashboard nav - let the browser navigate normally
+        return;
+      }
+      e.preventDefault();
+      const targetKey = targetLink.dataset?.navKey;
+      navEl.querySelectorAll(".nav-link").forEach((l) => l.classList.remove("active"));
+      targetLink.classList.add("active");
+      navEl._animateTo?.(targetLink);
+      spaNavigate(href, targetKey);
+    }
+  });
+}
+
+export function initLiquidTabs(container, options = {}) {
+  if (!container) return;
+  const itemSelector = options.itemSelector || ".timeframe-tab";
+  const activeClass = options.activeClass || "btn-primary";
+
+  let pill = container.querySelector(".tab-liquid-pill");
+  if (!pill) {
+    pill = document.createElement("div");
+    pill.className = "tab-liquid-pill";
+    pill.setAttribute("aria-hidden", "true");
+    container.prepend(pill);
+  }
+
+  container.classList.add("has-liquid-tabs");
+  container.style.position = "relative";
+  container.style.isolation = "isolate";
+
+  const tabs = Array.from(container.querySelectorAll(itemSelector));
+  if (!tabs.length) return;
+
+  function getCoords(el) {
+    if (!el) return { top: 0, left: 0, width: 0, height: 0, right: 0 };
+    const pRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    const top = Math.round(eRect.top - pRect.top);
+    const left = Math.round(eRect.left - pRect.left + container.scrollLeft);
+    const width = Math.round(eRect.width);
+    const height = Math.round(eRect.height);
+    const containerWidth = container.scrollWidth;
+    const right = Math.max(0, Math.round(containerWidth - (left + width)));
+    return { top, left, width, height, right, containerWidth };
+  }
+
+  function applyInstantCoords(coords) {
+    pill.style.transition = "none";
+    pill.style.left = `${coords.left}px`;
+    pill.style.right = "auto";
+    pill.style.width = `${coords.width}px`;
+    pill.style.top = `${coords.top}px`;
+    pill.style.height = `${coords.height}px`;
+    pill.style.opacity = "1";
+    pill.style.transform = "scale(1, 1)";
+  }
+
+  function animateTo(targetEl, fromCoordsOverride = null) {
+    if (!targetEl) return;
+    const toCoords = getCoords(targetEl);
+    const containerWidth = container.scrollWidth;
+
+    const fromLeft =
+      fromCoordsOverride?.left ??
+      (parseFloat(pill.style.left) || toCoords.left);
+    const fromWidth =
+      fromCoordsOverride?.width ??
+      (parseFloat(pill.style.width) || toCoords.width);
+    const fromRight =
+      fromCoordsOverride?.right ??
+      Math.max(0, containerWidth - (fromLeft + fromWidth));
+
+    const isRight = toCoords.left > fromLeft;
+    const isLeft = toCoords.left < fromLeft;
+
+    pill.style.transition = "none";
+    pill.style.width = "auto";
+    pill.style.left = `${fromLeft}px`;
+    pill.style.right = `${fromRight}px`;
+    pill.style.top = `${toCoords.top}px`;
+    pill.style.height = `${toCoords.height}px`;
+    pill.style.opacity = "1";
+    pill.style.transform = "scale(1, 0.95)";
+    void pill.offsetWidth;
+
+    if (isRight) {
+      pill.style.transition =
+        "right 300ms cubic-bezier(0.16, 1, 0.3, 1), left 460ms cubic-bezier(0.22, 1, 0.36, 1), transform 250ms ease, opacity 200ms ease";
+    } else if (isLeft) {
+      pill.style.transition =
+        "left 300ms cubic-bezier(0.16, 1, 0.3, 1), right 460ms cubic-bezier(0.22, 1, 0.36, 1), transform 250ms ease, opacity 200ms ease";
+    } else {
+      pill.style.transition =
+        "left 320ms cubic-bezier(0.22, 1, 0.36, 1), right 320ms cubic-bezier(0.22, 1, 0.36, 1), transform 250ms ease, opacity 200ms ease";
+    }
+
+    pill.style.left = `${toCoords.left}px`;
+    pill.style.right = `${toCoords.right}px`;
+    pill.style.transform = "scale(1, 1)";
+
+    clearTimeout(pill._dockTimer);
+    pill._dockTimer = setTimeout(() => {
+      pill.style.transition = "none";
+      pill.style.width = `${toCoords.width}px`;
+      pill.style.right = "auto";
+      pill.classList.remove("is-docking");
+      void pill.offsetWidth;
+      pill.classList.add("is-docking");
+    }, 470);
+  }
+
+  let activeTab = tabs.find((t) => t.classList.contains(activeClass)) || tabs[0];
+  if (activeTab) {
+    applyInstantCoords(getCoords(activeTab));
+  }
+
+  container.addEventListener("click", (e) => {
+    const clickedTab = e.target.closest(itemSelector);
+    if (!clickedTab || clickedTab === activeTab) return;
+    const fromCoords = activeTab ? getCoords(activeTab) : null;
+    activeTab = clickedTab;
+    animateTo(clickedTab, fromCoords);
+  });
+
+  return {
+    sync: () => {
+      const cur = tabs.find((t) => t.classList.contains(activeClass)) || tabs[0];
+      if (cur) {
+        activeTab = cur;
+        applyInstantCoords(getCoords(cur));
+      }
+    },
+    animateTo: (tabEl) => {
+      if (!tabEl) return;
+      const fromCoords = activeTab ? getCoords(activeTab) : null;
+      activeTab = tabEl;
+      animateTo(tabEl, fromCoords);
+    },
+  };
+}
+
 export function initAppShell(
   role = "admin",
   active = "dashboard",
@@ -631,98 +1388,131 @@ export function initAppShell(
         : "Admin";
 
   if (sidebar) {
-    sidebar.dataset.mounted = "true";
-    sidebar.innerHTML = `
-      <div class="sidebar-logo">
-        <div class="logo-mark">SIQ</div>
-        <div>
-          <div class="font-black text-xl tracking-tight">SalesIQ</div>
-          <div class="text-xs text-slate-400 font-bold">
-            ${workspaceLabel} Workspace
+    if (sidebar.dataset.mounted === "true") {
+      const navEl = sidebar.querySelector(".sidebar-nav");
+      if (navEl) {
+        navEl.dataset.activeKey = active;
+        const targetLink = navEl.querySelector(`.nav-link[data-nav-key="${active}"]`);
+        if (targetLink) {
+          navEl.querySelectorAll(".nav-link").forEach((a) => {
+            a.classList.toggle("active", a === targetLink);
+          });
+          // Do not interrupt an active in-flight stretch animation
+          if (!navEl._isAnimating?.()) {
+            navEl._syncLiquidPill?.();
+          }
+        }
+      }
+    } else {
+      sidebar.dataset.mounted = "true";
+      sidebar.innerHTML = `
+        <div class="sidebar-logo">
+          <div class="logo-mark">SIQ</div>
+          <div>
+            <div class="font-black text-xl tracking-tight">SalesIQ</div>
+            <div class="text-xs text-slate-400 font-bold">
+              ${workspaceLabel} Workspace
+            </div>
           </div>
         </div>
-      </div>
-      <nav>
-        ${links
-          .map(
-            ([key, label, href, icon]) => `
-          <a class="nav-link ${active === key ? "active" : ""}" href="${href}">
-            <span>${icon}</span>
-            <span>${label}</span>
-          </a>
-        `,
-          )
-          .join("")}
-      </nav>
-      <div class="mt-4 p-3 glass rounded-2xl">
-        <div class="text-xs text-slate-400 font-bold">Logged in</div>
-        <div class="flex items-center gap-2 mt-1">
-          ${avatarHTML(profile)}
-          <div class="font-black truncate">${profile.name || profile.email || "User"}</div>
+        <nav class="sidebar-nav">
+          <div class="nav-liquid-pill" aria-hidden="true"></div>
+          ${links
+            .map(
+              ([key, label, href, icon]) => `
+            <a class="nav-link ${active === key ? "active" : ""}" data-nav-key="${key}" href="${href}">
+              <span class="nav-icon">${icon}</span>
+              <span class="nav-label">${label}</span>
+            </a>
+          `,
+            )
+            .join("")}
+        </nav>
+        <div class="mt-4 p-3 glass rounded-2xl">
+          <div class="text-xs text-slate-400 font-bold">Logged in</div>
+          <div class="flex items-center gap-2 mt-1">
+            ${avatarHTML(profile)}
+            <div class="font-black truncate">${profile.name || profile.email || "User"}</div>
+          </div>
+          <a href="../profile.html" class="text-sky-300 text-sm font-bold hover:underline">Open Profile</a>
         </div>
-        <a href="../profile.html" class="text-sky-300 text-sm font-bold hover:underline">Open Profile</a>
-      </div>
-    `;
+      `;
+
+      const navEl = sidebar.querySelector(".sidebar-nav");
+      if (navEl) {
+        navEl.dataset.activeKey = active;
+        initLiquidNavPill(navEl, active);
+      }
+    }
   }
 
   const header = $("#appHeader");
   if (header) {
-    header.dataset.mounted = "true";
-    header.innerHTML = `
-      <div class="header-inner">
-        <div class="flex items-center gap-3">
-          <button id="sidebarToggle" class="mobile-menu-btn btn btn-ghost btn-sm">☰</button>
-          <div>
-            <div class="text-sm text-slate-400 font-bold">
-              ${new Date().toLocaleDateString("en-IN", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+    if (header.dataset.mounted === "true") {
+      const h1 = header.querySelector("h1");
+      if (h1) h1.textContent = document.title.replace("SalesIQ - ", "");
+    } else {
+      header.dataset.mounted = "true";
+      header.innerHTML = `
+        <div class="header-inner">
+          <div class="flex items-center gap-3">
+            <button id="sidebarToggle" class="mobile-menu-btn btn btn-ghost btn-sm">☰</button>
+            <div>
+              <div class="text-sm text-slate-400 font-bold">
+                ${new Date().toLocaleDateString("en-IN", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </div>
+              <h1 class="text-xl md:text-2xl font-black tracking-tight">
+                ${document.title.replace("SalesIQ - ", "")}
+              </h1>
             </div>
-            <h1 class="text-xl md:text-2xl font-black tracking-tight">
-              ${document.title.replace("SalesIQ - ", "")}
-            </h1>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="themeToggle" class="btn btn-ghost btn-sm">
+              <span class="theme-toggle-spin">${getTheme() === "light" ? "🌙" : "☀️"}</span> ${getTheme() === "light" ? "Dark" : "Light"}
+            </button>
+            <a class="btn btn-ghost btn-sm hide-mobile" href="../profile.html">
+              ${avatarHTML(profile)}
+              Profile
+            </a>
+            <button id="logoutBtn" class="btn btn-danger btn-sm">Logout</button>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="themeToggle" class="btn btn-ghost btn-sm">
-            ${getTheme() === "light" ? "🌙 Dark" : "☀️ Light"}
-          </button>
-          <a class="btn btn-ghost btn-sm hide-mobile" href="../profile.html">
-            ${avatarHTML(profile)}
-            Profile
-          </a>
-          <button id="logoutBtn" class="btn btn-danger btn-sm">Logout</button>
-        </div>
-      </div>
-    `;
+      `;
+
+      $("#sidebarToggle")?.addEventListener("click", () => {
+        const sb = $("#appSidebar");
+        if (!sb) return;
+        sb.classList.toggle("open");
+        if (sb.classList.contains("open")) {
+          const navEl = sb.querySelector(".sidebar-nav");
+          requestAnimationFrame(() => navEl?._syncLiquidPill?.());
+        }
+      });
+
+      $("#themeToggle")?.addEventListener("click", (e) => {
+        toggleThemeWithWave(e);
+      });
+
+      $("#logoutBtn")?.addEventListener("click", async () => {
+        try {
+          sessionStorage.clear();
+          localStorage.removeItem("salesiq_user");
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith("salesiq_cache_")) localStorage.removeItem(k);
+          }
+          idbClear().catch(() => {});
+        } catch (_) {}
+        await signOut(auth);
+        location.href = "../login.html";
+      });
+    }
   }
-
-  $("#sidebarToggle")?.addEventListener("click", () => {
-    $("#appSidebar")?.classList.toggle("open");
-  });
-
-  $("#themeToggle")?.addEventListener("click", () => {
-    const next = getTheme() === "light" ? "dark" : "light";
-    applyTheme(next);
-    $("#themeToggle").textContent = next === "light" ? "🌙 Dark" : "☀️ Light";
-  });
-
-  $("#logoutBtn")?.addEventListener("click", async () => {
-    try {
-      sessionStorage.clear();
-      localStorage.removeItem("salesiq_user");
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("salesiq_cache_")) localStorage.removeItem(k);
-      }
-      idbClear().catch(() => {});
-    } catch (_) {}
-    await signOut(auth);
-    location.href = "../login.html";
-  });
 
   // 1. Ultra-Fast Link & Script Prefetching on Hover / Touch
   const _prefetchedHrefs = new Set();
@@ -1580,6 +2370,7 @@ export function watchCollection(
       },
     );
 
+    registerPageUnsub(unsub);
     return unsub;
   }
 
@@ -1605,7 +2396,7 @@ export function watchCollection(
   };
 
   try {
-    return onSnapshot(
+    const unsub = onSnapshot(
       makeRef(),
       (snap) => {
         let rawDocs = snap.docs.map((d) => ({
@@ -1631,6 +2422,8 @@ export function watchCollection(
         fetchAll(name, sorted, customAdminId).then(callback);
       },
     );
+    registerPageUnsub(unsub);
+    return unsub;
   } catch (err) {
     console.warn(`Could not start realtime listener for ${name}:`, err);
     fetchAll(name, sorted, customAdminId).then(callback);
@@ -1839,6 +2632,264 @@ function normalizeDatasets(datasets = []) {
   });
 }
 
+
+/**
+ * Metrics & Numbers Ticker Animation (Kerfa style)
+ */
+export function parseMetric(str) {
+  const s = String(str || "").trim();
+  const match = s.match(/^([^0-9.-]*)([-+]?[0-9,]+(?:\.[0-9]+)?)(.*)$/);
+  if (!match) return null;
+  const prefix = match[1];
+  const numStr = match[2].replace(/,/g, "");
+  const suffix = match[3];
+  const num = parseFloat(numStr);
+  if (isNaN(num)) return null;
+  const decMatch = numStr.match(/\.([0-9]+)$/);
+  const decimals = decMatch ? decMatch[1].length : 0;
+  return { prefix, num, suffix, decimals };
+}
+
+export function animateCounter(el, targetStr, duration = 1000) {
+  if (!el) return;
+  const parsed = parseMetric(targetStr);
+  if (!parsed) {
+    el.textContent = targetStr;
+    return;
+  }
+
+  const { prefix, num: targetVal, suffix, decimals } = parsed;
+  const startVal =
+    typeof el._currentCountVal === "number" ? el._currentCountVal : 0;
+
+  if (startVal === targetVal && el._hasAnimatedOnce) {
+    el.textContent = targetStr;
+    return;
+  }
+
+  if (el._rafCountId) {
+    cancelAnimationFrame(el._rafCountId);
+    el._rafCountId = null;
+  }
+
+  el._hasAnimatedOnce = true;
+  const startTime = performance.now();
+
+  function formatVal(v) {
+    const formattedNum = v.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    return `${prefix}${formattedNum}${suffix}`;
+  }
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(1, Math.max(0, elapsed / duration));
+    // Expo out curve for smooth, punchy roll-up
+    const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+    const currentVal = startVal + (targetVal - startVal) * eased;
+
+    el.textContent = formatVal(currentVal);
+
+    if (progress < 1) {
+      el._rafCountId = requestAnimationFrame(step);
+    } else {
+      el.textContent = targetStr;
+      el._currentCountVal = targetVal;
+      el._rafCountId = null;
+    }
+  }
+
+  el._rafCountId = requestAnimationFrame(step);
+}
+
+export function animateCounters(
+  container = document,
+  selector = ".stat-value",
+  duration = 1050,
+) {
+  if (!container) return;
+  const elements = container.querySelectorAll(selector);
+  elements.forEach((el, idx) => {
+    // 35ms stagger across cards for sequential roll-up wave
+    const delay = idx * 35;
+    const targetText = (el.dataset.counterTarget || el.textContent || "").trim();
+    el.dataset.counterTarget = targetText;
+    if (delay > 0) {
+      setTimeout(() => animateCounter(el, targetText, duration), delay);
+    } else {
+      animateCounter(el, targetText, duration);
+    }
+  });
+}
+
+export const salesiqLeftToRightPlugin = {
+  id: "salesiqLeftToRight",
+  beforeDatasetsDraw(chart, args, pluginOptions) {
+    if (!pluginOptions || pluginOptions.enabled === false) return;
+    const { ctx, chartArea } = chart;
+    if (!chartArea || !chartArea.width) return;
+
+    const progress =
+      typeof chart._revealProgress === "number" ? chart._revealProgress : 1;
+
+    if (progress < 1) {
+      ctx.save();
+      ctx.beginPath();
+      const currentWidth = Math.max(0, chartArea.width * progress);
+      ctx.rect(
+        chartArea.left,
+        chartArea.top - 20,
+        currentWidth,
+        chartArea.height + 40,
+      );
+      ctx.clip();
+      chart._revealClipped = true;
+    }
+  },
+  afterDatasetsDraw(chart, args, pluginOptions) {
+    if (!pluginOptions || pluginOptions.enabled === false) return;
+    const { ctx, chartArea } = chart;
+    if (chart._revealClipped) {
+      ctx.restore();
+      chart._revealClipped = false;
+    }
+
+    const progress =
+      typeof chart._revealProgress === "number" ? chart._revealProgress : 1;
+
+    // Draw vertical laser scanner beam & luminous spark head while actively sweeping
+    if (progress > 0.005 && progress < 0.999 && chartArea) {
+      const currentX = chartArea.left + chartArea.width * progress;
+      const meta = chart.getDatasetMeta(0);
+      const pts = meta?.data || [];
+
+      const isLight =
+        typeof document !== "undefined" &&
+        document.body?.classList.contains("light");
+      const accentColor = isLight ? "#0284c7" : "#38bdf8";
+
+      // 1. Subtle vertical laser scanner beam
+      ctx.save();
+      const beamGrad = ctx.createLinearGradient(
+        currentX,
+        chartArea.top,
+        currentX,
+        chartArea.bottom,
+      );
+      beamGrad.addColorStop(0, "rgba(56,189,248,0)");
+      beamGrad.addColorStop(
+        0.5,
+        isLight ? "rgba(2,132,199,0.22)" : "rgba(56,189,248,0.32)",
+      );
+      beamGrad.addColorStop(1, "rgba(56,189,248,0)");
+      ctx.strokeStyle = beamGrad;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(currentX, chartArea.top);
+      ctx.lineTo(currentX, chartArea.bottom);
+      ctx.stroke();
+      ctx.restore();
+
+      if (pts.length > 0) {
+        let currentY = null;
+        for (let i = 0; i < pts.length - 1; i++) {
+          const p1 = pts[i];
+          const p2 = pts[i + 1];
+          if (p1 && p2 && p1.x <= currentX && currentX <= p2.x) {
+            const span = p2.x - p1.x;
+            const ratio = span > 0 ? (currentX - p1.x) / span : 0;
+            currentY = p1.y + (p2.y - p1.y) * ratio;
+            break;
+          }
+        }
+        if (currentY === null) {
+          if (currentX <= pts[0].x) currentY = pts[0].y;
+          else if (currentX >= pts[pts.length - 1].x)
+            currentY = pts[pts.length - 1].y;
+        }
+
+        if (typeof currentY === "number" && !isNaN(currentY)) {
+          const isLight =
+            typeof document !== "undefined" &&
+            document.body?.classList.contains("light");
+          const accentColor = isLight ? "#0284c7" : "#38bdf8";
+
+          ctx.save();
+          // Soft luminous outer glow
+          ctx.shadowColor = accentColor;
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Crisp white center core
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+  },
+};
+
+let isLeftToRightRegistered = false;
+function registerLeftToRightPlugin() {
+  if (isLeftToRightRegistered || typeof window === "undefined" || !window.Chart) {
+    return;
+  }
+  try {
+    window.Chart.register(salesiqLeftToRightPlugin);
+    isLeftToRightRegistered = true;
+  } catch (err) {
+    console.warn("Could not register salesiqLeftToRightPlugin:", err);
+  }
+}
+
+export function startLeftToRightAnimation(chart, duration = 1500, delay = 0) {
+  if (!chart || chart.destroyed) return;
+  if (chart._rafRevealId) {
+    cancelAnimationFrame(chart._rafRevealId);
+    chart._rafRevealId = null;
+  }
+
+  chart._revealProgress = 0;
+  chart._isAnimatingReveal = true;
+  chart.render();
+
+  const startTimestamp = performance.now() + (delay || 0);
+
+  function step(now) {
+    if (!chart || chart.destroyed) return;
+    if (now < startTimestamp) {
+      chart._rafRevealId = requestAnimationFrame(step);
+      return;
+    }
+
+    const elapsed = now - startTimestamp;
+    const t = Math.min(1, Math.max(0, elapsed / duration));
+    // Ease-out cubic: energetic start, silky smooth deceleration as it settles on the right
+    chart._revealProgress = 1 - Math.pow(1 - t, 3);
+    chart.render();
+
+    if (t < 1) {
+      chart._rafRevealId = requestAnimationFrame(step);
+    } else {
+      chart._revealProgress = 1;
+      chart._isAnimatingReveal = false;
+      chart._rafRevealId = null;
+      chart.render();
+    }
+  }
+
+  chart._rafRevealId = requestAnimationFrame(step);
+}
+
 export function makeChart(canvas, type, data, options = {}) {
   if (!canvas) return null;
   // A previous fallback-ui placeholder must never block a real chart.
@@ -1848,6 +2899,83 @@ export function makeChart(canvas, type, data, options = {}) {
   if (!window.Chart) {
     console.warn("Chart.js not loaded yet for", canvas.id || canvas);
     return null;
+  }
+
+  registerLeftToRightPlugin();
+
+  const isLeftToRightTarget =
+    Boolean(options.animateLeftToRight) ||
+    Boolean(options.leftToRight) ||
+    canvas.id === "salesTrendChart" ||
+    canvas.id === "dailySalesChart" ||
+    canvas.id === "revenueChart" ||
+    canvas.id === "aovTrendChart" ||
+    canvas.id === "staffChart";
+
+  let animOptions = { ...options };
+
+  if (isLeftToRightTarget && type === "line") {
+    const existingPlugins = animOptions.plugins || {};
+    animOptions.plugins = {
+      ...existingPlugins,
+      salesiqLeftToRight: {
+        enabled: true,
+        ...(existingPlugins.salesiqLeftToRight || {}),
+      },
+    };
+    animOptions.animation = false;
+  }
+
+  const isInitialMount = !canvas._chart;
+  const shouldReplay =
+    Boolean(options.replayAnimation) ||
+    Boolean(options.forceReplay) ||
+    Boolean(options.replayLeftToRight) ||
+    Boolean(options.forceLeftToRight);
+
+  // Kerfa-style staggered bar growth wave entrance animation (vertical & horizontal)
+  // Only applied on initial mount or when explicit replay is requested — NEVER resets bars on updates or theme switches!
+  if (type === "bar") {
+    if (isInitialMount || shouldReplay) {
+      const isHorizontal = animOptions.indexAxis === "y";
+      const animAxis = isHorizontal ? "x" : "y";
+      animOptions.animations = {
+        ...(animOptions.animations || {}),
+        [animAxis]: {
+          duration: 950,
+          easing: "easeOutQuart",
+          from: (ctx) => {
+            if (ctx.type === "data" && ctx.chart?.scales?.[animAxis]) {
+              return ctx.chart.scales[animAxis].getPixelForValue(0);
+            }
+          },
+          delay(ctx) {
+            if (ctx.type !== "data" || ctx.mode !== "default") return 0;
+            return 120 + ctx.dataIndex * 40; // 40ms stagger per bar column
+          },
+        },
+      };
+    } else {
+      if (animOptions.animations) {
+        delete animOptions.animations.x;
+        delete animOptions.animations.y;
+      }
+    }
+  }
+
+  // Kerfa-style circular scale & spin entrance for doughnut and pie charts
+  if (type === "doughnut" || type === "pie") {
+    if (isInitialMount || shouldReplay) {
+      animOptions.animation = {
+        animateRotate: true,
+        animateScale: true,
+        duration: 1050,
+        easing: "easeOutQuart",
+        ...(animOptions.animation || {}),
+      };
+    } else {
+      animOptions.animation = false;
+    }
   }
 
   const nextData = {
@@ -1919,13 +3047,27 @@ export function makeChart(canvas, type, data, options = {}) {
       return ds;
     });
   }
-  const nextOptions = mergeChartOptions(type, options);
+  const nextOptions = mergeChartOptions(type, animOptions);
 
   if (canvas._chart && canvas._chart.config.type === type) {
     canvas._chart.data.labels = nextData.labels;
     canvas._chart.data.datasets = nextData.datasets;
     canvas._chart.options = nextOptions;
-    canvas._chart.update();
+
+    const shouldReplay =
+      Boolean(options.replayLeftToRight) || Boolean(options.forceLeftToRight);
+
+    if (shouldReplay && isLeftToRightTarget) {
+      startLeftToRightAnimation(
+        canvas._chart,
+        options.animationDuration || 1400,
+        options.animationDelay || 0,
+      );
+    } else if (options.skipAnimation || options.animation === false) {
+      canvas._chart.update("none");
+    } else {
+      canvas._chart.update();
+    }
     return canvas._chart;
   }
 
@@ -1936,6 +3078,15 @@ export function makeChart(canvas, type, data, options = {}) {
     data: nextData,
     options: nextOptions,
   });
+
+  if (isLeftToRightTarget) {
+    // 420ms delay (includes +0.3s delay) after page load so app shell and cards settle first
+    startLeftToRightAnimation(
+      canvas._chart,
+      options.animationDuration || 1500,
+      options.animationDelay ?? 420,
+    );
+  }
 
   return canvas._chart;
 }

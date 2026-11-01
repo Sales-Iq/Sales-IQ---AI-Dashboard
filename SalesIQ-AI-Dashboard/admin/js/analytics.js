@@ -16,6 +16,9 @@ import {
   toCSV,
   toast,
   getTheme,
+  animateCounters,
+  initLiquidTabs,
+  syncChartThemeColors,
 } from "../../js/shared.js";
 
 const { profile } = await requireAuth(["Admin"]);
@@ -310,12 +313,22 @@ function renderKpis(filteredSales) {
       <div class="stat-hint">Across ${products.length} products in catalog</div>
     </div>
   `;
+  animateCounters(statsEl);
 }
 
 // ── 6. 10 Customizable Charts Rendering ────────────────────────────────────
-function renderCharts(filteredSales) {
+let hasRenderedNonEmptyAnalytics = false;
+
+function renderCharts(filteredSales, replayAnimation = false) {
   const isLight =
     document.body.classList.contains("light") || getTheme() === "light";
+
+  const shouldReplay =
+    replayAnimation ||
+    (!hasRenderedNonEmptyAnalytics && filteredSales.length > 0);
+  if (filteredSales.length > 0) {
+    hasRenderedNonEmptyAnalytics = true;
+  }
 
   // Timeline grouping key generator based on user granularity
   const dateKey = (sale) => {
@@ -432,6 +445,8 @@ function renderCharts(filteredSales) {
       ],
     },
     {
+      replayLeftToRight: shouldReplay,
+      animationDelay: 420,
       plugins: {
         tooltip: {
           callbacks: {
@@ -1252,10 +1267,10 @@ function renderLeastProducts(filteredSales) {
 }
 
 // ── 8. Master Render Function & Debouncing ──────────────────────────────────
-function renderAnalytics() {
+function renderAnalytics(replayAnimation = false) {
   const filteredSales = getFilteredSales();
   renderKpis(filteredSales);
-  renderCharts(filteredSales);
+  renderCharts(filteredSales, replayAnimation);
   renderLeastProducts(filteredSales);
   hideSkeletonLoader();
 }
@@ -1313,7 +1328,13 @@ function initTimelineControls() {
   const resetBtn = $("#resetAnalyticsDate");
   const granEl = $("#timelineGranularity");
 
+  let timelinePill = null;
   if (container) {
+    timelinePill = initLiquidTabs(container, {
+      itemSelector: ".timeframe-tab",
+      activeClass: "btn-primary",
+    });
+
     container.addEventListener("click", (e) => {
       const btn = e.target.closest(".timeframe-tab");
       if (!btn) return;
@@ -1332,8 +1353,9 @@ function initTimelineControls() {
         }
       });
 
+      timelinePill?.sync();
       syncDateInputValues();
-      renderAnalytics();
+      renderAnalytics(true);
     });
   }
 
@@ -1349,7 +1371,8 @@ function initTimelineControls() {
           "btn btn-xs px-2.5 py-1.5 rounded-lg timeframe-tab btn-ghost font-medium";
       });
 
-      renderAnalytics();
+      timelinePill?.sync();
+      renderAnalytics(true);
     }
   };
 
@@ -1373,7 +1396,8 @@ function initTimelineControls() {
         }
       });
 
-      renderAnalytics();
+      timelinePill?.sync();
+      renderAnalytics(true);
       toast("Timeline reset to All Time", "ok");
     });
   }
@@ -1450,7 +1474,7 @@ function initChartControls() {
         sel.value = chartPrefs[match[1]][match[2]];
       }
     });
-    renderCharts(getFilteredSales());
+    renderCharts(getFilteredSales(), true);
     toast("Graph views reset to default", "ok");
   });
 }
@@ -1573,12 +1597,15 @@ window.addEventListener("salesiq:cache-updated", (e) => {
 });
 
 window.addEventListener("salesiq:theme-changed", () => {
-  scheduleRenderCharts();
+  if (document.documentElement.classList.contains("theme-transitioning")) {
+    return;
+  }
+  syncChartThemeColors(getTheme() === "light");
 });
 
 window.addEventListener("storage", (e) => {
   if (e.key === "salesiq_theme") {
-    scheduleRenderCharts();
+    syncChartThemeColors(getTheme() === "light");
   }
 });
 

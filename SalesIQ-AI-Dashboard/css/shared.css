@@ -13,6 +13,8 @@
   --warn: #f59e0b;
   --danger: #f43f5e;
   --radius: 22px;
+  --ease-spring: cubic-bezier(.22, 1, .36, 1);
+  --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
 }
 .light {
   --bg: #f8fafc;
@@ -579,6 +581,344 @@ img.profile-avatar {
   background: linear-gradient(135deg, #0284c7, #7c3aed);
   box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
 }
+
+/* ── Kerfa-Style Liquid Stretchy Navigation Pill ─────────────────────────── */
+.sidebar-nav {
+  position: relative;
+  isolation: isolate;
+}
+
+.nav-liquid-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 44px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 16px;
+  /* Translucent liquid optical body */
+  background: linear-gradient(
+    135deg,
+    rgba(14, 165, 233, 0.65) 0%,
+    rgba(99, 102, 241, 0.58) 52%,
+    rgba(168, 85, 247, 0.65) 100%
+  );
+  backdrop-filter: blur(16px) saturate(210%) contrast(106%);
+  -webkit-backdrop-filter: blur(16px) saturate(210%) contrast(106%);
+  /* Multi-tier optical glass reflections: chromatic dispersion rims, razor specular glaze & caustic shadow */
+  box-shadow:
+    0 14px 34px -4px rgba(14, 165, 233, 0.42),
+    0 6px 18px rgba(139, 92, 246, 0.32),
+    0 0 24px rgba(56, 189, 248, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.32),
+    inset 2px 0 4px 0 rgba(56, 189, 248, 0.38),
+    inset -2px 0 4px 0 rgba(217, 70, 239, 0.35);
+  opacity: 0;
+  transform-origin: top center;
+  will-change: transform, opacity;
+  contain: layout paint;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  overflow: hidden;
+}
+
+.light .nav-liquid-pill {
+  background: linear-gradient(
+    135deg,
+    rgba(2, 132, 199, 0.62) 0%,
+    rgba(124, 58, 237, 0.58) 100%
+  );
+  backdrop-filter: blur(16px) saturate(190%) contrast(104%);
+  -webkit-backdrop-filter: blur(16px) saturate(190%) contrast(104%);
+  box-shadow:
+    0 12px 28px -3px rgba(2, 132, 199, 0.38),
+    0 4px 14px rgba(124, 58, 237, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    inset 0 1.5px 1px 0 #ffffff,
+    inset 0 -1px 1px 0 rgba(15, 23, 42, 0.12),
+    inset 2px 0 4px 0 rgba(14, 165, 233, 0.3),
+    inset -2px 0 4px 0 rgba(168, 85, 247, 0.25);
+}
+
+/* Curved cylindrical lens reflection on top half of pill */
+.nav-liquid-pill::before {
+  content: "";
+  position: absolute;
+  inset: 1px 1px auto 1px;
+  height: 50%;
+  border-radius: 15px 15px 60px 60px / 15px 15px 14px 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.16) 45%,
+    rgba(255, 255, 255, 0.02) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 1;
+}
+
+/* Liquid specular caustic glint */
+.nav-liquid-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse 65% 50% at 30% 20%,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0.08) 45%,
+      transparent 75%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 55%
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Nav links sit transparently above the pill when mounted */
+.sidebar-nav.has-liquid-pill .nav-link {
+  position: relative;
+  z-index: 2;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-nav.has-liquid-pill .nav-link.active {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.sidebar-nav.has-liquid-pill .nav-link:not(.active):hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  transform: translateX(4px);
+}
+
+.light .sidebar-nav.has-liquid-pill .nav-link:not(.active):hover {
+  background: rgba(14, 165, 233, 0.08);
+  color: #0f172a;
+  transform: translateX(4px);
+}
+
+.sidebar-nav.has-liquid-pill .nav-link.active:hover {
+  transform: none;
+}
+
+/* Initial elastic spring pop-in on first direct load - uses scale property so translate3d is never wiped out */
+@keyframes navPillPopIn {
+  0% {
+    scale: 0.68;
+    opacity: 0;
+  }
+  65% {
+    scale: 1.05;
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+.nav-liquid-pill.nav-pill-entering {
+  animation: navPillPopIn 0.44s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Jelly bounce upon docking - uses scale property so translate3d is never wiped out */
+@keyframes navPillDock {
+  0% {
+    scale: 1 1;
+  }
+  42% {
+    scale: 1.028 0.972;
+  }
+  75% {
+    scale: 0.99 1.01;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+.nav-liquid-pill.is-docking {
+  animation: navPillDock 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Active icon elastic bounce */
+@keyframes navIconBounce {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.26) rotate(-3deg);
+  }
+  72% {
+    transform: scale(0.96) rotate(1.5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.nav-link.active .nav-icon,
+.nav-link.has-popped .nav-icon {
+  display: inline-block;
+  animation: navIconBounce 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Horizontal tab liquid pill */
+.tab-liquid-pill {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(14, 165, 233, 0.65),
+    rgba(139, 92, 246, 0.62)
+  );
+  backdrop-filter: blur(14px) saturate(200%);
+  -webkit-backdrop-filter: blur(14px) saturate(200%);
+  box-shadow:
+    0 4px 16px rgba(56, 189, 248, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25),
+    inset 1.5px 0 3px 0 rgba(56, 189, 248, 0.3),
+    inset -1.5px 0 3px 0 rgba(217, 70, 239, 0.3);
+  opacity: 0;
+  transform-origin: center center;
+  will-change: left, right, width, transform, opacity;
+  overflow: hidden;
+}
+
+.tab-liquid-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.light .tab-liquid-pill {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.62), rgba(124, 58, 237, 0.58));
+  backdrop-filter: blur(14px) saturate(190%);
+  -webkit-backdrop-filter: blur(14px) saturate(190%);
+  box-shadow:
+    0 4px 14px rgba(2, 132, 199, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.55),
+    inset 0 1.5px 1px 0 #ffffff,
+    inset 0 -1px 1px 0 rgba(15, 23, 42, 0.1);
+}
+
+.has-liquid-tabs .timeframe-tab {
+  position: relative;
+  z-index: 2;
+  transition: color 0.2s ease;
+}
+
+.has-liquid-tabs .timeframe-tab.btn-primary {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-liquid-pill,
+  .tab-liquid-pill {
+    transition: none !important;
+    animation: none !important;
+  }
+  .nav-link.active .nav-icon,
+  .nav-link.has-popped .nav-icon {
+    animation: none !important;
+  }
+}
+
+/* ── Kerfa-style Circular View Transition for Theme Switcher ─────────────── */
+::view-transition-group(root) {
+  animation: none;
+}
+
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  /* Initial state: strictly clipped to 0px so it cannot flash on frame 0 */
+  clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%));
+  animation: vtThemeExpand 0.46s cubic-bezier(0.25, 0.9, 0.35, 1) both;
+  mix-blend-mode: normal;
+  z-index: 9999;
+  will-change: clip-path;
+}
+
+@keyframes vtThemeExpand {
+  0% {
+    clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  100% {
+    clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}
+
+/* Disable layout, shadow and blur transitions during the snapshot wipe to keep 120 FPS compositor throughput */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: none !important;
+}
+
+.theme-transitioning .theme-toggle-spin {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* Playful 360-degree spring spin for theme toggle button icon */
+@keyframes themeIconSpin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  40% {
+    transform: rotate(180deg) scale(1.3);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.theme-toggle-spin {
+  display: inline-block;
+  will-change: transform;
+  animation: themeIconSpin 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .app-main {
   margin-left: 322px;
   min-height: 100vh;
@@ -716,6 +1056,7 @@ img.profile-avatar {
   font-weight: 900;
   letter-spacing: -0.04em;
   margin-top: 0.35rem;
+  font-variant-numeric: tabular-nums;
 }
 .stat-hint {
   color: var(--muted);
@@ -1087,7 +1428,7 @@ img.profile-avatar {
   mask-image: radial-gradient(circle at center, black, transparent 72%);
 }
 .glass-card-hover {
-  transition: 0.28s ease;
+  transition: transform 0.32s var(--ease-spring), box-shadow 0.32s var(--ease-spring), border-color 0.32s ease;
 }
 .glass-card-hover:hover {
   transform: translateY(-7px);

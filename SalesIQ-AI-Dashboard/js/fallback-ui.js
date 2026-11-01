@@ -115,12 +115,36 @@
       $("#fallbackSidebarToggle")?.addEventListener("click", () =>
         $("#appSidebar")?.classList.toggle("open"),
       );
-      $("#fallbackThemeToggle")?.addEventListener("click", (e) => {
+      $("#fallbackThemeToggle")?.addEventListener("click", async (e) => {
         const next = theme() === "light" ? "dark" : "light";
-        localStorage.setItem("salesiq_theme", next);
-        applyTheme();
-        e.currentTarget.textContent =
-          next === "light" ? "🌙 Dark" : "☀️ Light";
+        const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!document.startViewTransition || prefersReduced) {
+          localStorage.setItem("salesiq_theme", next);
+          applyTheme();
+          e.currentTarget.textContent = next === "light" ? "🌙 Dark" : "☀️ Light";
+          return;
+        }
+        const btn = e.currentTarget || document.getElementById("fallbackThemeToggle");
+        const rect = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
+        const x = rect ? rect.left + rect.width / 2 : (e.clientX || window.innerWidth - 80);
+        const y = rect ? rect.top + rect.height / 2 : (e.clientY || 35);
+        const endRadius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+        document.documentElement.style.setProperty("--vt-x", `${x.toFixed(1)}px`);
+        document.documentElement.style.setProperty("--vt-y", `${y.toFixed(1)}px`);
+        document.documentElement.style.setProperty("--vt-r", `${endRadius.toFixed(1)}px`);
+        document.documentElement.classList.add("theme-transitioning");
+
+        const transition = document.startViewTransition(() => {
+          localStorage.setItem("salesiq_theme", next);
+          applyTheme();
+          e.currentTarget.textContent = next === "light" ? "🌙 Dark" : "☀️ Light";
+        });
+        try {
+          await transition.finished;
+        } catch (_) {
+        } finally {
+          document.documentElement.classList.remove("theme-transitioning");
+        }
       });
       $("#fallbackLogoutBtn")?.addEventListener("click", () => {
         localStorage.removeItem("salesiq_user");

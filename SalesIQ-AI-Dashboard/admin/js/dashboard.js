@@ -16,6 +16,8 @@ import {
   convertFromINR,
   getCurrency,
   getTheme,
+  animateCounters,
+  syncChartThemeColors,
 } from "../../js/shared.js";
 import {
   db,
@@ -331,6 +333,7 @@ function renderStats({ salesToday, monthSales, low, out }) {
   `,
     )
     .join("");
+  animateCounters(statsEl);
 }
 
 function toLocalYMD(d) {
@@ -469,7 +472,9 @@ function getEffectiveChartRange() {
   return { start, end, defaultStart, defaultEnd, isCustom };
 }
 
-function renderSalesChart() {
+let hasRenderedNonEmptySales = false;
+
+function renderSalesChart(replayAnimation = false) {
   const range = getEffectiveChartRange();
   const dateKeys = getDaysArray(range.start, range.end);
 
@@ -533,6 +538,12 @@ function renderSalesChart() {
   const isLight =
     document.body.classList.contains("light") || getTheme() === "light";
 
+  const shouldReplay =
+    replayAnimation || (!hasRenderedNonEmptySales && sales.length > 0);
+  if (sales.length > 0) {
+    hasRenderedNonEmptySales = true;
+  }
+
   makeChart(
     $("#salesTrendChart"),
     "line",
@@ -551,6 +562,8 @@ function renderSalesChart() {
       ],
     },
     {
+      replayLeftToRight: shouldReplay,
+      animationDelay: 420,
       plugins: {
         tooltip: {
           callbacks: {
@@ -1098,7 +1111,7 @@ function initChartDateControls() {
       if (endEl && chartStartDate) {
         endEl.min = chartStartDate;
       }
-      renderSalesChart();
+      renderSalesChart(true);
     };
 
     startEl.addEventListener("change", () => handleStartChange());
@@ -1128,7 +1141,7 @@ function initChartDateControls() {
         localStorage.removeItem("salesiq_chart_end");
       }
 
-      renderSalesChart();
+      renderSalesChart(true);
     };
 
     endEl.addEventListener("change", () => handleEndChange());
@@ -1142,7 +1155,7 @@ function initChartDateControls() {
       chartEndDate = "";
       localStorage.removeItem("salesiq_chart_start");
       localStorage.removeItem("salesiq_chart_end");
-      renderSalesChart();
+      renderSalesChart(true);
       toast("Sales chart reset to default range");
     });
   }
@@ -1956,8 +1969,13 @@ renderDemoControls();
 startRunnerIfNeeded();
 
 const onThemeRefresh = () => {
+  if (document.documentElement.classList.contains("theme-transitioning")) {
+    return;
+  }
   try {
-    renderCharts();
+    // Ultra-fast zero-refresh theme sync: update all chart colors instantly
+    // without rebuilding data or re-triggering entrance animations!
+    syncChartThemeColors(getTheme() === "light");
   } catch (err) {
     console.warn("Theme chart refresh error:", err);
   }

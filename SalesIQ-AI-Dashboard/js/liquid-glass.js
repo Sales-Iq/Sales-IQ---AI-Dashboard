@@ -81,6 +81,17 @@
       tiltAttached.add(card);
       card.classList.add("liquid-tilt");
 
+      card.addEventListener("mouseenter", (event) => {
+        const rect = card.getBoundingClientRect();
+        if (rect.width < 50 || rect.height < 50) return;
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        card.style.setProperty("--card-x", `${x.toFixed(1)}px`);
+        card.style.setProperty("--card-y", `${y.toFixed(1)}px`);
+        card.style.setProperty("--card-pct-x", `${((x / rect.width) * 100).toFixed(1)}%`);
+        card.style.setProperty("--card-pct-y", `${((y / rect.height) * 100).toFixed(1)}%`);
+      });
+
       card.addEventListener("mousemove", (event) => {
         const rect = card.getBoundingClientRect();
         if (rect.width < 50 || rect.height < 50) return;
@@ -121,7 +132,7 @@
   // ── 4. Elastic Magnetic Buttons & Interactive Elements ────────────────────
   function addButtonMagnet() {
     const interactiveElements = document.querySelectorAll(
-      ".btn, .nav-link, .timeframe-tab, .chart-icon-btn, .chart-ctrl-select, .google-3d",
+      ".btn, .timeframe-tab, .chart-icon-btn, .chart-ctrl-select, .google-3d",
     );
 
     interactiveElements.forEach((el) => {

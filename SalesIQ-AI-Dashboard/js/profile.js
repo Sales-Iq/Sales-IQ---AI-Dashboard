@@ -8,7 +8,7 @@ import {
   signOut,
 } from "./firebase-config.js";
 
-import { $, toast, applyTheme, getTheme } from "./shared.js";
+import { $, toast, applyTheme, getTheme, toggleThemeWithWave, updateThemeToggleUI } from "./shared.js";
 import { getAccountProfile, accountCollectionForRole } from "./account.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
@@ -98,8 +98,10 @@ $("#profileBack").onclick = () => {
       : "admin/dashboard.html";
 };
 
-$("#profileTheme").onclick = () => {
-  applyTheme(getTheme() === "light" ? "dark" : "light");
+updateThemeToggleUI();
+
+$("#profileTheme").onclick = (e) => {
+  toggleThemeWithWave(e);
 };
 
 $("#profileLogout").onclick = async () => {

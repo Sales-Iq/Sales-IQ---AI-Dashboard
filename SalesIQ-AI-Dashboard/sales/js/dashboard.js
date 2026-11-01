@@ -14,6 +14,9 @@ import {
   hideSkeletonLoader,
   convertFromINR,
   getCurrency,
+  getTheme,
+  animateCounters,
+  syncChartThemeColors,
 } from "../../js/shared.js";
 import {
   db,
@@ -96,6 +99,7 @@ function renderStats(mine) {
   `,
     )
     .join("");
+  animateCounters(statsEl);
 }
 
 // ============================================================
@@ -1410,9 +1414,11 @@ window.addEventListener("salesiq:cache-updated", (e) => {
 });
 
 window.addEventListener("themechanged", () => {
+  if (document.documentElement.classList.contains("theme-transitioning")) {
+    return;
+  }
   try {
-    const mine = sales.filter((sale) => sale.salespersonId === profile.id);
-    renderChart(mine);
+    syncChartThemeColors(getTheme() === "light");
   } catch (err) {
     console.warn("Theme chart refresh error:", err);
   }
