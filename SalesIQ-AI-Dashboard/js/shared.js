@@ -1201,8 +1201,9 @@ export async function spaNavigate(href, targetKey, isPopState = false) {
       return;
     }
 
+    currentMain.style.willChange = "transform, opacity";
     currentMain.style.opacity = "0";
-    currentMain.style.transform = "translateY(6px)";
+    currentMain.style.transform = "translate3d(0, 6px, 0)";
     currentMain.style.transition = "opacity 0.12s ease, transform 0.12s ease";
 
     await new Promise((r) => setTimeout(r, 110));
@@ -1216,10 +1217,22 @@ export async function spaNavigate(href, targetKey, isPopState = false) {
       document.body.appendChild(m.cloneNode(true));
     });
 
-    // Reveal new page content
+    // Reveal new page content with hardware-accelerated spring arrival
+    currentMain.style.transition =
+      "opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)";
     currentMain.style.opacity = "1";
-    currentMain.style.transform = "translateY(0)";
-    window.scrollTo({ top: 0, behavior: "instant" });
+    currentMain.style.transform = "translate3d(0, 0, 0)";
+
+    setTimeout(() => {
+      currentMain.style.willChange = "";
+      currentMain.style.transition = "";
+    }, 260);
+
+    if (window._lenisInstance) {
+      window._lenisInstance.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
 
     // 7. Defer script execution to next idle frame so the pill has completely settled
     const scripts = Array.from(doc.querySelectorAll('script[type="module"]'));
@@ -3195,14 +3208,81 @@ export async function createNotification(
   }).catch(() => {});
 }
 
+/**
+ * Ultra-Smooth Momentum Scrolling Engine (powered by Lenis)
+ * Enhances animation fluidity across the viewport with exponential inertia
+ * while isolating sidebar, modals, and tables with data-lenis-prevent.
+ */
+export function initSmoothScroll() {
+  if (typeof window === "undefined") return;
+  if (
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return;
+  }
+  if (window._lenisInstance) return;
+
+  function mountLenis() {
+    if (!window.Lenis || window._lenisInstance) return;
+    try {
+      const lenis = new window.Lenis({
+        duration: 1.15,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: "vertical",
+        gestureOrientation: "vertical",
+        smoothWheel: true,
+        wheelMultiplier: 0.95,
+        touchMultiplier: 1.4,
+        infinite: false,
+        autoRaf: true,
+      });
+
+      window._lenisInstance = lenis;
+
+      // Ensure nested scroll containers (sidebar, modals, tables) keep their native scroll isolated
+      const markIsolated = () => {
+        document
+          .querySelectorAll(
+            ".app-sidebar, .modal, .modal-card, .table-wrap, .select, select, textarea",
+          )
+          .forEach((el) => {
+            if (!el.hasAttribute("data-lenis-prevent")) {
+              el.setAttribute("data-lenis-prevent", "");
+            }
+          });
+      };
+      markIsolated();
+      setTimeout(markIsolated, 600);
+    } catch (err) {
+      console.warn("Smooth scroll initialization:", err);
+    }
+  }
+
+  if (window.Lenis) {
+    mountLenis();
+  } else {
+    const isSubdir =
+      window.location.pathname.includes("/admin/") ||
+      window.location.pathname.includes("/sales/");
+    const script = document.createElement("script");
+    script.src = isSubdir ? "../js/lenis.min.js" : "./js/lenis.min.js";
+    script.async = true;
+    script.onload = mountLenis;
+    document.head.appendChild(script);
+  }
+}
+
 if (document.readyState === "loading") {
   window.addEventListener("DOMContentLoaded", () => {
     initSplash();
     initClickSpark();
+    initSmoothScroll();
   });
 } else {
   initSplash();
   initClickSpark();
+  initSmoothScroll();
 }
 
 window.addEventListener("error", () => {

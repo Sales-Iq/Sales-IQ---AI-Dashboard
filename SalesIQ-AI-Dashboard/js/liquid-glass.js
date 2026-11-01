@@ -195,6 +195,14 @@
     { passive: true },
   );
 
+  document.addEventListener("pointerleave", () => {
+    if (activeSpotlightCard) {
+      activeSpotlightCard.style.removeProperty("--card-x");
+      activeSpotlightCard.style.removeProperty("--card-y");
+      activeSpotlightCard = null;
+    }
+  });
+
   // ── 6. Master Enhance & Mutation Observer ─────────────────────────────────
   function enhance() {
     addRiseAnimation();
