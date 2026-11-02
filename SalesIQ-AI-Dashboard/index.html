@@ -1,62 +1,668 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>SalesIQ — AI Powered Dashboard</title>
+  <title>SalesIQ 2.0 — The Intelligent Retail &amp; Wholesale Operating System</title>
 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="SalesIQ — AI powered sales, inventory and forecasting dashboard." />
-<meta name="theme-color" content="#0f172a" />
-    <link rel="stylesheet" href="/css/tailwind.css" />
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://firestore.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/shared.css" />
-<link rel="stylesheet" href="/css/liquid-glass.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Intelligent point-of-sale checkout, real-time Cloud Firestore sync, and predictive inventory forecasting powered by Google Gemini 1.5 AI." />
+  <meta name="theme-color" content="#020617" />
 
+  <!-- Preconnect & Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheets -->
+  <link rel="stylesheet" href="/css/tailwind.css" />
+  <link rel="stylesheet" href="/css/shared.css" />
+  <link rel="stylesheet" href="/css/liquid-glass.css" />
+  <link rel="stylesheet" href="/css/landing.css" />
+
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 </head>
-<body class="font-inter bg-slate-950 text-white overflow-x-hidden">
-  <div id="animatedBg" class="animated-bg"></div>
-  <div id="splashScreen" class="splash-screen hidden"></div>
+<body class="font-sans text-slate-100 overflow-x-hidden selection:bg-sky-500 selection:text-white">
 
-<nav class="max-w-7xl mx-auto px-5 py-6 flex items-center justify-between relative z-10">
-  <a href="index.html" class="flex items-center gap-3 font-black text-2xl"><span class="logo-mark">SIQ</span> SalesIQ</a>
-  <div class="flex gap-3"><a class="btn btn-ghost" href="login.html">Login</a><a class="btn btn-primary" href="register.html">Create Account</a></div>
-</nav>
-<section class="relative min-h-[calc(100vh-96px)] flex items-center overflow-hidden">
-  <div class="hero-grid"></div>
-  <div class="max-w-7xl mx-auto px-5 grid lg:grid-cols-2 gap-12 items-center relative z-10">
-    <div class="animate-slideUp">
-      <div class="badge badge-info mb-5">⚡ AI Powered Sales & Inventory Forecasting</div>
-      <h1 class="text-5xl md:text-7xl font-black tracking-[-.07em] leading-[.95]">SalesIQ — Real business dashboard for smarter stock decisions.</h1>
-      <p class="text-slate-300 text-lg mt-6 max-w-xl">Manage products, sales, customers, suppliers, reports, AI insights, and forecasting in one animated web app made for MCA projects.</p>
-      <div class="flex flex-wrap gap-4 mt-8"><a class="btn btn-primary" href="login.html">Login to Dashboard</a><a class="btn btn-ghost" href="register.html">Create Account</a></div>
-    </div>
-    <div class="glass p-5 md:p-7 animate-floaty glass-card-hover">
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div class="glass p-5"><div class="stat-label">Today Sales</div><div class="stat-value">₹0</div></div>
-        <div class="glass p-5"><div class="stat-label">Low Stock</div><div class="stat-value">0</div></div>
-      </div>
-      <div class="h-64 glass p-4 relative"><canvas id="landingChart"></canvas></div>
-      <div class="grid md:grid-cols-3 gap-4 mt-4">
-        <div class="glass p-4 glass-card-hover"><b>📈 Sales Analytics</b><p class="text-sm text-slate-400">Daily, monthly, category and product charts.</p></div>
-        <div class="glass p-4 glass-card-hover"><b>🔮 Inventory Forecasting</b><p class="text-sm text-slate-400">Estimate stock finish dates and reorder quantity.</p></div>
-        <div class="glass p-4 glass-card-hover"><b>🤖 AI Insights</b><p class="text-sm text-slate-400">Ask Gemini business questions from your data.</p></div>
-      </div>
-    </div>
+  <!-- Ambient Animated Light Mesh Layer -->
+  <div class="landing-ambient-layer" aria-hidden="true">
+    <div class="ambient-orb ambient-orb-1"></div>
+    <div class="ambient-orb ambient-orb-2"></div>
+    <div class="ambient-orb ambient-orb-3"></div>
   </div>
-</section>
 
+  <div class="landing-shell">
+
+    <!-- ── 1. Sticky Navigation Bar ─────────────────────────────────────────── -->
+    <header class="landing-nav">
+      <div class="landing-container nav-row">
+        <!-- Brand Monogram -->
+        <a href="index.html" class="brand-wrap">
+          <div class="brand-badge-icon">SIQ</div>
+          <div class="brand-text-col">
+            <div class="brand-title-text">
+              <span>SalesIQ</span>
+              <span class="brand-version-badge">2.0 Suite</span>
+            </div>
+            <span class="brand-subtitle-text">Predictive Retail OS</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden lg:flex nav-links-row" aria-label="Main Navigation">
+          <a href="#simulator" class="nav-item-link">POS Simulator</a>
+          <a href="#copilot" class="nav-item-link">Gemini Copilot</a>
+          <a href="#calculator" class="nav-item-link">ROI Calculator</a>
+          <a href="#modules" class="nav-item-link">Platform Modules</a>
+          <a href="#analytics" class="nav-item-link">Analytics Suite</a>
+          <a href="#roles" class="nav-item-link">Roles</a>
+          <a href="#faq" class="nav-item-link">FAQ</a>
+        </nav>
+
+        <!-- Actions -->
+        <div class="nav-actions-row">
+          <button id="landingThemeToggle" class="btn-action btn-action-ghost text-xs" type="button" title="Toggle Theme">
+            ☀️ Light
+          </button>
+          <a href="login.html" class="btn-action btn-action-ghost hidden sm:inline-flex">
+            Sign In
+          </a>
+          <a href="admin/dashboard.html" class="btn-action btn-action-primary">
+            Launch Console →
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── 2. Hero Presentation ─────────────────────────────────────────────── -->
+    <section class="landing-hero landing-container" id="top">
+      <div class="badge-pill mb-4">
+        <span class="pulse-live-dot"></span>
+        <span>Autonomous Retail &amp; Wholesale Operating System</span>
+      </div>
+
+      <h1 class="hero-main-title">
+        The Intelligent POS &amp; <span class="gradient-title-accent">Predictive Inventory</span> Suite
+      </h1>
+
+      <p class="hero-main-subtitle">
+        Split-second barcode &amp; touch checkout for staff on the floor. Real-time Cloud Firestore analytics and Google Gemini 1.5 predictive intelligence for business owners.
+      </p>
+
+      <div class="hero-cta-buttons">
+        <a href="#simulator" class="btn-action btn-action-primary">
+          ⚡ Try Live POS Simulator
+        </a>
+        <a href="#copilot" class="btn-action btn-action-ghost">
+          🤖 Ask Gemini 1.5 Copilot
+        </a>
+      </div>
+
+      <!-- ── The Signature Dual-Engine Retail Simulator ───────────────────── -->
+      <div id="simulator" class="dual-sim-card">
+        <!-- Simulator Window Topbar -->
+        <div class="sim-window-bar">
+          <div class="window-dots">
+            <div class="window-dot window-dot-red"></div>
+            <div class="window-dot window-dot-yellow"></div>
+            <div class="window-dot window-dot-green"></div>
+          </div>
+          <div class="sim-status-ribbon">
+            <span class="pulse-live-dot"></span>
+            <span>Live Sync Engine Active • 24ms Realtime Firestore Channel</span>
+          </div>
+        </div>
+
+        <div class="sim-panes-layout">
+          <!-- Left Pane: Staff POS Counter -->
+          <div class="sim-pos-pane">
+            <div>
+              <div class="pane-caption">Client Node 01 • Counter POS</div>
+              <h2 class="pane-headline">Staff Checkout Terminal</h2>
+            </div>
+            <p class="text-xs text-slate-400">
+              Tap any item below to simulate ringing up an instant counter sale:
+            </p>
+
+            <div class="sim-pos-catalog">
+              <button type="button" class="pos-catalog-item" data-item-name="☕ Espresso Roast 1kg" data-item-price="850">
+                <span class="item-title-bold">☕ Espresso Roast 1kg</span>
+                <span class="item-sub-info">
+                  <span>Stock: 24</span>
+                  <span class="item-price-tag">₹850</span>
+                </span>
+              </button>
+
+              <button type="button" class="pos-catalog-item" data-item-name="🧪 AeroPress Go Kit" data-item-price="3400">
+                <span class="item-title-bold">🧪 AeroPress Go Kit</span>
+                <span class="item-sub-info">
+                  <span>Stock: 8</span>
+                  <span class="item-price-tag">₹3,400</span>
+                </span>
+              </button>
+
+              <button type="button" class="pos-catalog-item" data-item-name="🥛 Oat Milk Barista 1L" data-item-price="280">
+                <span class="item-title-bold">🥛 Oat Milk Barista</span>
+                <span class="item-sub-info">
+                  <span>Stock: 42</span>
+                  <span class="item-price-tag">₹280</span>
+                </span>
+              </button>
+
+              <button type="button" class="pos-catalog-item" data-item-name="❄️ Cold Brew 300ml" data-item-price="180">
+                <span class="item-title-bold">❄️ Cold Brew 300ml</span>
+                <span class="item-sub-info">
+                  <span>Stock: 19</span>
+                  <span class="item-price-tag">₹180</span>
+                </span>
+              </button>
+
+              <button type="button" class="pos-catalog-item" data-item-name="⚗️ Chemex 6-Cup Glass" data-item-price="4200">
+                <span class="item-title-bold">⚗️ Chemex 6-Cup</span>
+                <span class="item-sub-info">
+                  <span>Stock: 5</span>
+                  <span class="item-price-tag">₹4,200</span>
+                </span>
+              </button>
+
+              <button type="button" class="pos-catalog-item" data-item-name="☕ Ceramic Barista Mug" data-item-price="450">
+                <span class="item-title-bold">☕ Ceramic Barista Mug</span>
+                <span class="item-sub-info">
+                  <span>Stock: 35</span>
+                  <span class="item-price-tag">₹450</span>
+                </span>
+              </button>
+            </div>
+
+            <!-- Virtual Register Cart -->
+            <div class="pos-terminal-cart">
+              <div class="cart-line-item">
+                <span id="cartItemLabel">Tap any product above</span>
+                <span id="cartItemPrice">₹0</span>
+              </div>
+              <div class="cart-line-item text-xs text-slate-400">
+                <span>GST Tax (5%)</span>
+                <span id="cartTaxPrice">₹0</span>
+              </div>
+              <div class="cart-sum-line">
+                <span>Register Total</span>
+                <span id="cartTotalPrice">₹0</span>
+              </div>
+            </div>
+
+            <button id="completePosSaleBtn" class="btn-action btn-action-emerald w-full" type="button">
+              💳 Complete &amp; Sync Sale (Print Slip)
+            </button>
+          </div>
+
+          <!-- Center: Pulsing Fiber-Optic Sync Beam -->
+          <div class="sim-center-beam" aria-hidden="true">
+            <div class="beam-vertical-wire"></div>
+            <div id="simSyncPulse" class="beam-pulse-core" title="Firestore Stream">⚡</div>
+            <div class="beam-vertical-wire"></div>
+          </div>
+
+          <!-- Right Pane: Admin Executive Command Suite -->
+          <div class="sim-admin-pane">
+            <div>
+              <div class="pane-caption">HQ Master Node • Real-Time Stream</div>
+              <h2 class="pane-headline">Admin Executive Command</h2>
+            </div>
+
+            <div class="admin-kpi-row">
+              <div class="admin-kpi-tile">
+                <span class="kpi-tile-header">Today's Revenue</span>
+                <span id="simAdminRevenue" class="kpi-tile-value">₹42,850</span>
+                <span class="kpi-tile-trend">+18.4% vs yday</span>
+              </div>
+              <div class="admin-kpi-tile">
+                <span class="kpi-tile-header">Orders Logged</span>
+                <span id="simAdminOrders" class="kpi-tile-value">38</span>
+                <span class="kpi-tile-trend" style="color: #38bdf8;">+1 just now</span>
+              </div>
+              <div class="admin-kpi-tile">
+                <span class="kpi-tile-header">Gross Margin</span>
+                <span class="kpi-tile-value">34.8%</span>
+                <span class="kpi-tile-trend">Optimal</span>
+              </div>
+            </div>
+
+            <!-- Mini Live Chart -->
+            <div class="sim-chart-box">
+              <canvas id="simHeroChart"></canvas>
+            </div>
+
+            <!-- Firestore Realtime Sync Ticker -->
+            <div id="simFirestoreFeed" class="firestore-stream-bar">
+              <span>🟢 Cloud Firestore: Realtime Snapshot listener synced</span>
+              <strong id="simFeedTime">16:45:00</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. Live Telemetry Ribbon ─────────────────────────────────────────── -->
+    <section class="telemetry-ticker-wrap" id="telemetry" aria-label="System Telemetry">
+      <div class="ticker-track">
+        <div class="ticker-item"><span>⚡</span> <span>Sub-50ms <strong>Cloud Firestore</strong> Realtime Sync</span></div>
+        <div class="ticker-item"><span>🤖</span> <span>Powered by <strong>Google Gemini 1.5 Flash</strong></span></div>
+        <div class="ticker-item"><span>📦</span> <span>Multi-Batch <strong>Expiry &amp; FIFO</strong> Inventory</span></div>
+        <div class="ticker-item"><span>🛡️</span> <span>Granular <strong>RBAC Permissions</strong> (Admin vs Staff)</span></div>
+        <div class="ticker-item"><span>🧾</span> <span>1-Click <strong>GST &amp; Tax Receipt</strong> Generation</span></div>
+        <div class="ticker-item"><span>📱</span> <span>Offline-Resilient <strong>PWA Tablet Support</strong></span></div>
+
+        <!-- Repeated for seamless loop -->
+        <div class="ticker-item"><span>⚡</span> <span>Sub-50ms <strong>Cloud Firestore</strong> Realtime Sync</span></div>
+        <div class="ticker-item"><span>🤖</span> <span>Powered by <strong>Google Gemini 1.5 Flash</strong></span></div>
+        <div class="ticker-item"><span>📦</span> <span>Multi-Batch <strong>Expiry &amp; FIFO</strong> Inventory</span></div>
+        <div class="ticker-item"><span>🛡️</span> <span>Granular <strong>RBAC Permissions</strong> (Admin vs Staff)</span></div>
+        <div class="ticker-item"><span>🧾</span> <span>1-Click <strong>GST &amp; Tax Receipt</strong> Generation</span></div>
+        <div class="ticker-item"><span>📱</span> <span>Offline-Resilient <strong>PWA Tablet Support</strong></span></div>
+      </div>
+    </section>
+
+    <!-- ── 4. Gemini 1.5 AI Retail Copilot ─────────────────────────────────── -->
+    <section class="section-wrapper landing-container" id="copilot">
+      <div class="section-header-centered">
+        <div class="badge-pill mb-3">🧠 Built-In Artificial Intelligence</div>
+        <h2 class="section-headline">Google Gemini 1.5 Retail Copilot</h2>
+        <p class="section-subtext">
+          Eliminate guesswork in inventory replenishment and dead-stock liquidation. Click any prompt chip below to see how SalesIQ answers real retail questions.
+        </p>
+      </div>
+
+      <div class="copilot-terminal-box">
+        <div class="copilot-top-bar">
+          <div class="ai-engine-tag">
+            <span>SalesIQ Intelligence</span>
+            <span class="ai-pill-flash">Gemini 1.5 Flash</span>
+          </div>
+          <div class="flex items-center gap-4 text-xs text-slate-400">
+            <span>Latency: <strong class="text-sky-400">118ms</strong></span>
+            <span>Tokens: <strong class="text-sky-400">412</strong></span>
+          </div>
+        </div>
+
+        <div class="copilot-chips-row">
+          <button type="button" class="prompt-chip-btn active-chip" data-topic="stockout">
+            📦 Festival Stockout Risk
+          </button>
+          <button type="button" class="prompt-chip-btn" data-topic="margin">
+            💡 Category Profit Margins
+          </button>
+          <button type="button" class="prompt-chip-btn" data-topic="deadstock">
+            ⚠️ Dead Stock Liquidation
+          </button>
+          <button type="button" class="prompt-chip-btn" data-topic="po">
+            ⚡ 30-Day Purchase Order Draft
+          </button>
+        </div>
+
+        <div class="copilot-stream-output" id="copilotStreamOutput">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 5. Retail ROI & Working Capital Calculator ───────────────────────── -->
+    <section class="section-wrapper landing-container" id="calculator">
+      <div class="section-header-centered">
+        <div class="badge-pill mb-3">📊 Business Impact &amp; Efficiency</div>
+        <h2 class="section-headline">Calculate Your Inventory ROI</h2>
+        <p class="section-subtext">
+          See how many hours and how much locked-up capital SalesIQ saves by replacing manual stocktakes with real-time cloud synchronization.
+        </p>
+      </div>
+
+      <div class="roi-calculator-card">
+        <div>
+          <div class="calc-slider-box">
+            <div class="calc-label-row">
+              <span>Monthly Store Revenue</span>
+              <span id="roiRevReadout" class="calc-value-readout">₹8,50,000</span>
+            </div>
+            <input type="range" id="roiRevRange" class="calc-range-input" min="200000" max="5000000" step="50000" value="850000" aria-label="Monthly Revenue">
+          </div>
+
+          <div class="calc-slider-box">
+            <div class="calc-label-row">
+              <span>Active Inventory SKUs</span>
+              <span id="roiSkuReadout" class="calc-value-readout">350 SKUs</span>
+            </div>
+            <input type="range" id="roiSkuRange" class="calc-range-input" min="50" max="2500" step="25" value="350" aria-label="Active SKUs">
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Based on empirical retail operations: automated inventory tracking eliminates ~14 hours of manual counting per week and recovers 15% in idle working capital.
+          </p>
+        </div>
+
+        <div class="roi-metrics-grid">
+          <div class="roi-metric-tile">
+            <span class="roi-tile-label">Hours Saved / Week</span>
+            <div id="roiHoursSaved" class="roi-tile-num">16.5 hrs</div>
+            <span class="roi-tile-sub">Automated audit count</span>
+          </div>
+
+          <div class="roi-metric-tile">
+            <span class="roi-tile-label">Dead Stock Unlocked</span>
+            <div id="roiCapitalUnlocked" class="roi-tile-num">₹1,27,500</div>
+            <span class="roi-tile-sub">Freed cashflow / year</span>
+          </div>
+
+          <div class="roi-metric-tile">
+            <span class="roi-tile-label">Stockout Loss Prevented</span>
+            <div id="roiLossPrevented" class="roi-tile-num">₹68,000</div>
+            <span class="roi-tile-sub">Saved monthly sales</span>
+          </div>
+
+          <div class="roi-metric-tile">
+            <span class="roi-tile-label">Projected ROI</span>
+            <div class="roi-tile-num" style="color: #a855f7;">14.8x</div>
+            <span class="roi-tile-sub" style="color: #a855f7;">Year 1 Efficiency</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6. Platform Feature Bento Grid ───────────────────────────────────── -->
+    <section class="section-wrapper landing-container" id="modules">
+      <div class="section-header-centered">
+        <div class="badge-pill mb-3">🛠️ Complete Retail Architecture</div>
+        <h2 class="section-headline">Everything Needed to Run &amp; Scale</h2>
+        <p class="section-subtext">
+          Enterprise retail tooling designed to replace fragmented spreadsheets, slow legacy POS machines, and disconnected accounting.
+        </p>
+      </div>
+
+      <div class="bento-features-grid">
+        <div class="bento-module-card">
+          <div class="bento-icon-wrapper">⚡</div>
+          <h3 class="bento-card-title">High-Velocity Cloud POS</h3>
+          <p class="bento-card-desc">
+            Keyboard shortcuts, barcode scanner support, split payments (Cash, UPI, Card), and offline resilience with instant sync when connection restores.
+          </p>
+        </div>
+
+        <div class="bento-module-card">
+          <div class="bento-icon-wrapper">📦</div>
+          <h3 class="bento-card-title">Multi-Batch &amp; Expiry FIFO</h3>
+          <p class="bento-card-desc">
+            Track perishable batches with automatic FIFO prioritization, low-stock threshold triggers, and supplier lead-time buffers to eliminate waste.
+          </p>
+        </div>
+
+        <div class="bento-module-card">
+          <div class="bento-icon-wrapper">🛡️</div>
+          <h3 class="bento-card-title">Granular Permissions (RBAC)</h3>
+          <p class="bento-card-desc">
+            Cashiers ring sales and check stock without distraction. Sensitive profit margins, purchase orders, and supplier costs remain strictly Admin-locked.
+          </p>
+        </div>
+
+        <div class="bento-module-card">
+          <div class="bento-icon-wrapper">📑</div>
+          <h3 class="bento-card-title">1-Click PDF &amp; Excel Reports</h3>
+          <p class="bento-card-desc">
+            Instant GST-compliant tax invoices, daily shift balance sheets, and financial export generated directly in the browser via jsPDF and SheetJS.
+          </p>
+        </div>
+
+        <div class="bento-module-card">
+          <div class="bento-icon-wrapper">📐</div>
+          <h3 class="bento-card-title">Customizable Drag &amp; Drop</h3>
+          <p class="bento-card-desc">
+            Rearrange and resize KPI tiles to suit your exact daily review routine. Toggle edit mode, reposition cards, and save your custom layout with one click.
+          </p>
+        </div>
+
+        <div class="bento-module-card">
+          <div class="bento-icon-wrapper">📱</div>
+          <h3 class="bento-card-title">Progressive Web App (PWA)</h3>
+          <p class="bento-card-desc">
+            Deploy natively on iPads, Android tablets, touch registers, or Mac/Windows laptops without costly app store fees or hardware lock-in.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 7. Interactive Chart.js Visualizer Suite ─────────────────────────── -->
+    <section class="section-wrapper landing-container" id="analytics">
+      <div class="section-header-centered">
+        <div class="badge-pill mb-3">📈 Visual Business Intelligence</div>
+        <h2 class="section-headline">Interactive Analytics Suite</h2>
+        <p class="section-subtext">
+          Switch tabs below to explore how SalesIQ translates raw register transactions into actionable commercial intelligence.
+        </p>
+      </div>
+
+      <div class="chart-suite-card">
+        <div class="chart-tab-controls">
+          <button type="button" class="chart-tab-btn active-tab" data-tab="salesVelocity">
+            📈 Sales Velocity (Weekly)
+          </button>
+          <button type="button" class="chart-tab-btn" data-tab="inventoryBurn">
+            📦 Inventory Runway Days
+          </button>
+          <button type="button" class="chart-tab-btn" data-tab="categoryMargin">
+            🏷️ Category Margins (%)
+          </button>
+          <button type="button" class="chart-tab-btn" data-tab="cashierLeaderboard">
+            👥 Cashier Leaderboard
+          </button>
+        </div>
+
+        <div class="chart-main-canvas-wrap">
+          <canvas id="mainSuiteChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 8. Dual-Persona Role Switcher ────────────────────────────────────── -->
+    <section class="section-wrapper landing-container" id="roles">
+      <div class="section-header-centered">
+        <div class="badge-pill mb-3">👥 Tailored Experiences</div>
+        <h2 class="section-headline">Designed for Both Floor &amp; Boardroom</h2>
+        <p class="section-subtext">
+          Toggle between roles to see how SalesIQ caters to the distinct needs of front-line cashiers versus business executives.
+        </p>
+      </div>
+
+      <div class="role-tabs-wrap">
+        <div class="role-segmented-pill">
+          <button type="button" class="role-segment-btn active-role" data-role="staff">
+            At the Counter (Sales Staff)
+          </button>
+          <button type="button" class="role-segment-btn" data-role="admin">
+            Executive Office (Store Owner)
+          </button>
+        </div>
+      </div>
+
+      <div class="role-content-card">
+        <div>
+          <h3 id="roleContentTitle" class="text-2xl font-bold mb-3 text-slate-100">
+            Designed for High-Velocity Checkout
+          </h3>
+          <p id="roleContentDesc" class="text-sm text-slate-400 mb-6 leading-relaxed">
+            Cashiers and floor staff need split-second responses, barcode scanner support, and immediate receipt generation without cognitive friction.
+          </p>
+          <div id="roleContentList">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900/60 border border-sky-500/20 flex flex-col justify-center gap-4">
+          <div class="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+            <span>Terminal Status</span>
+            <span class="text-emerald-400 font-bold">🟢 Active Session</span>
+          </div>
+          <div class="text-lg font-black text-white">
+            Ready for instant customer billing
+          </div>
+          <div class="flex gap-2">
+            <a href="sales/dashboard.html" class="btn-action btn-action-primary text-xs w-full">
+              Open Staff POS Counter →
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 9. Retailer FAQ Accordion ────────────────────────────────────────── -->
+    <section class="section-wrapper landing-container" id="faq">
+      <div class="section-header-centered">
+        <div class="badge-pill mb-3">❓ Frequently Asked Questions</div>
+        <h2 class="section-headline">Answers for Retail Store Owners</h2>
+      </div>
+
+      <div class="faq-accordion-group">
+        <div class="faq-item-card is-open">
+          <button type="button" class="faq-question-btn">
+            <span>Do I need to purchase expensive proprietary POS hardware?</span>
+            <span class="faq-toggle-arrow">↓</span>
+          </button>
+          <div class="faq-answer-panel">
+            No. SalesIQ is a 100% web-first Progressive Web App (PWA). It runs smoothly in Google Chrome or Safari on iPads, Android tablets, standard touchscreen POS terminals, and Windows or Mac laptops. It connects seamlessly with standard USB/Bluetooth barcode scanners and ESC/POS thermal receipt printers.
+          </div>
+        </div>
+
+        <div class="faq-item-card">
+          <button type="button" class="faq-question-btn">
+            <span>What happens if the store's internet connection drops during rush hour?</span>
+            <span class="faq-toggle-arrow">↓</span>
+          </button>
+          <div class="faq-answer-panel">
+            SalesIQ features local client-side caching. Cashiers can continue ringing up sales, adding items to cart, and printing thermal receipts offline. As soon as the network reconnects, transactions automatically reconcile and synchronize to Cloud Firestore with zero data loss.
+          </div>
+        </div>
+
+        <div class="faq-item-card">
+          <button type="button" class="faq-question-btn">
+            <span>Can cashiers modify product prices, view store profit margins, or delete past sales?</span>
+            <span class="faq-toggle-arrow">↓</span>
+          </button>
+          <div class="faq-answer-panel">
+            Strictly no. SalesIQ enforces database-level Cloud Firestore security rules. Sales staff have read-only access to selling prices and can decrement stock on ring-up, but cannot alter selling prices, view wholesale costs, inspect profit margins, or delete invoice logs. All financial alterations require Admin privileges.
+          </div>
+        </div>
+
+        <div class="faq-item-card">
+          <button type="button" class="faq-question-btn">
+            <span>How does Google Gemini 1.5 forecast inventory replenishment?</span>
+            <span class="faq-toggle-arrow">↓</span>
+          </button>
+          <div class="faq-answer-panel">
+            SalesIQ feeds rolling 30-day sales velocity, current shelf quantities, lead times from registered suppliers, and seasonal rush trends into the Gemini 1.5 Flash model. The AI computes stockout dates and drafts exact reorder quantities, factoring in bulk purchase discounts and historical margin contribution.
+          </div>
+        </div>
+
+        <div class="faq-item-card">
+          <button type="button" class="faq-question-btn">
+            <span>Does SalesIQ support Indian Rupees (₹) and GST compliance?</span>
+            <span class="faq-toggle-arrow">↓</span>
+          </button>
+          <div class="faq-answer-panel">
+            Yes. SalesIQ natively supports Indian Rupees (₹) with Indian number grouping (Lakhs &amp; Crores) as well as international currencies ($ USD, € EUR, £ GBP). Built-in receipt generation provides itemized GST/VAT tax breakdown and one-click PDF invoice downloads.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 10. Enterprise Portal CTA ────────────────────────────────────────── -->
+    <section class="landing-container">
+      <div class="enterprise-portal-box">
+        <h2 class="text-3xl sm:text-4xl font-black text-white mb-4 tracking-tight">
+          Ready to Modernize Your Retail Operations?
+        </h2>
+        <p class="text-slate-300 max-width-xl mx-auto mb-8 text-base max-w-xl">
+          Set up your store catalog in minutes, invite your counter staff, and experience instant Firestore real-time intelligence.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-4">
+          <a href="register.html" class="btn-action btn-action-primary">
+            Create Free Account →
+          </a>
+          <a href="login.html" class="btn-action btn-action-ghost">
+            Sign In to Console
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 11. Tailored Retail Footer ───────────────────────────────────────── -->
+    <footer class="landing-footer">
+      <div class="landing-container footer-nav-grid">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center font-bold text-white text-sm">
+              SIQ
+            </div>
+            <span class="font-extrabold text-lg text-white">SalesIQ 2.0</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed max-w-xs mb-4">
+            The next-generation retail operating system combining real-time Cloud Firestore synchronization and Google Gemini 1.5 predictive intelligence.
+          </p>
+          <div class="text-xs text-slate-400">
+            Engineered for Modern Retailers &amp; Wholesalers.
+          </div>
+        </div>
+
+        <div>
+          <div class="footer-col-header">Platform Modules</div>
+          <ul class="footer-nav-list">
+            <li><a href="#simulator">Live POS Simulator</a></li>
+            <li><a href="#copilot">Gemini AI Copilot</a></li>
+            <li><a href="#calculator">Retail ROI Calculator</a></li>
+            <li><a href="#modules">Architecture Modules</a></li>
+            <li><a href="#analytics">Chart.js Analytics</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-col-header">Console Access</div>
+          <ul class="footer-nav-list">
+            <li><a href="admin/dashboard.html">Admin Dashboard</a></li>
+            <li><a href="sales/dashboard.html">Staff POS Counter</a></li>
+            <li><a href="login.html">Account Sign In</a></li>
+            <li><a href="register.html">Register New Store</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-col-header">Technology Stack</div>
+          <ul class="footer-nav-list">
+            <li><a href="https://firebase.google.com/docs/firestore" target="_blank" rel="noopener">Google Cloud Firestore</a></li>
+            <li><a href="https://ai.google.dev" target="_blank" rel="noopener">Google Gemini 1.5 Flash</a></li>
+            <li><a href="https://www.chartjs.org" target="_blank" rel="noopener">Chart.js 4.4 Engine</a></li>
+            <li><a href="https://tailwindcss.com" target="_blank" rel="noopener">Tailwind CSS + Liquid Glass</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="landing-container footer-bottom-bar">
+        <div>
+          &copy; 2026 SalesIQ. Designed for Modern Retail &amp; Wholesale Operations.
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="login.html" class="hover:text-white transition-colors">Sign In</a>
+          <span>•</span>
+          <a href="register.html" class="hover:text-white transition-colors">Register</a>
+          <span>•</span>
+          <a href="#top" class="hover:text-sky-400 transition-colors">Back to Top ↑</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Ambient Click Sparks & Toast Root -->
   <canvas id="clickSparkCanvas" class="click-spark-canvas" aria-hidden="true"></canvas>
   <div id="toastRoot" class="toast-root"></div>
+
+  <!-- Scripts -->
   <script src="/js/liquid-glass.js" defer></script>
-<script type="module" src="/js/shared.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script><script type="module" src="/js/landing.js"></script>
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/landing.js"></script>
 </body>
 </html>
-
-
-
-
