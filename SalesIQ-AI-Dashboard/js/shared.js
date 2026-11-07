@@ -505,17 +505,22 @@ export function syncChartThemeColors(isLight) {
 
       if (Array.isArray(chart.data?.datasets)) {
         chart.data.datasets.forEach((ds) => {
-          if (ds._themeColor === "primary" || ds.label === "Sales") {
-            ds.borderColor = isLight ? "#0284c7" : "#38bdf8";
+          if (
+            ds._themeColor === "primary" ||
+            ds.label === "Sales" ||
+            ds.label === "My Sales" ||
+            ds.label === "Total Sales"
+          ) {
+            ds.borderColor = isLight ? "#2563eb" : "#3b82f6";
             ds.backgroundColor = isLight
-              ? "rgba(2, 132, 199, 0.20)"
-              : "rgba(56, 189, 248, 0.20)";
+              ? "rgba(37, 99, 235, 0.18)"
+              : "rgba(59, 130, 246, 0.22)";
             ds.pointBackgroundColor = ds.borderColor;
           } else if (ds._themeColor === "purple" || ds.label === "Stock") {
             ds.borderColor = isLight ? "#7c3aed" : "#a78bfa";
             ds.backgroundColor = isLight
-              ? "rgba(124, 58, 237, 0.45)"
-              : "rgba(167, 139, 250, 0.55)";
+              ? "rgba(124, 58, 237, 0.35)"
+              : "rgba(167, 139, 250, 0.45)";
           }
         });
       }
@@ -1203,10 +1208,10 @@ export async function spaNavigate(href, targetKey, isPopState = false) {
 
     currentMain.style.willChange = "transform, opacity";
     currentMain.style.opacity = "0";
-    currentMain.style.transform = "translate3d(0, 6px, 0)";
-    currentMain.style.transition = "opacity 0.12s ease, transform 0.12s ease";
+    currentMain.style.transform = "translate3d(0, 4px, 0)";
+    currentMain.style.transition = "opacity 0.08s ease-out, transform 0.08s ease-out";
 
-    await new Promise((r) => setTimeout(r, 110));
+    await new Promise((r) => setTimeout(r, 80));
 
     currentMain.className = newMain.className;
     currentMain.innerHTML = newMain.innerHTML;
@@ -1217,16 +1222,18 @@ export async function spaNavigate(href, targetKey, isPopState = false) {
       document.body.appendChild(m.cloneNode(true));
     });
 
-    // Reveal new page content with hardware-accelerated spring arrival
+    // Reveal new page content with hardware-accelerated spring arrival (0 conflict with CSS)
+    currentMain.style.animation = "none";
     currentMain.style.transition =
-      "opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)";
+      "opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1), transform 0.16s cubic-bezier(0.16, 1, 0.3, 1)";
     currentMain.style.opacity = "1";
     currentMain.style.transform = "translate3d(0, 0, 0)";
 
     setTimeout(() => {
       currentMain.style.willChange = "";
       currentMain.style.transition = "";
-    }, 260);
+      currentMain.style.animation = "";
+    }, 180);
 
     if (window._lenisInstance) {
       window._lenisInstance.scrollTo(0, { immediate: true });
@@ -2705,17 +2712,17 @@ function normalizeDatasets(datasets = []) {
     getTheme() === "light";
   const palette = isLight
     ? [
+        { border: "#2563eb", bg: "rgba(37,99,235,.20)" },
         { border: "#0284c7", bg: "rgba(2,132,199,.22)" },
         { border: "#7c3aed", bg: "rgba(124,58,237,.22)" },
-        { border: "#059669", bg: "rgba(5,150,105,.22)" },
         { border: "#d97706", bg: "rgba(217,119,6,.22)" },
         { border: "#db2777", bg: "rgba(219,39,119,.22)" },
         { border: "#0891b2", bg: "rgba(8,145,178,.22)" },
       ]
     : [
+        { border: "#3b82f6", bg: "rgba(59,130,246,.24)" },
         { border: "#38bdf8", bg: "rgba(56,189,248,.22)" },
         { border: "#a78bfa", bg: "rgba(167,139,250,.22)" },
-        { border: "#22c55e", bg: "rgba(34,197,94,.22)" },
         { border: "#f59e0b", bg: "rgba(245,158,11,.22)" },
         { border: "#f472b6", bg: "rgba(244,114,182,.22)" },
         { border: "#2dd4bf", bg: "rgba(45,212,191,.22)" },
@@ -2953,7 +2960,7 @@ function registerLeftToRightPlugin() {
   }
 }
 
-export function startLeftToRightAnimation(chart, duration = 1500, delay = 0) {
+export function startLeftToRightAnimation(chart, duration = 600, delay = 0) {
   if (!chart || chart.destroyed) return;
   if (chart._rafRevealId) {
     cancelAnimationFrame(chart._rafRevealId);
@@ -3182,11 +3189,11 @@ export function makeChart(canvas, type, data, options = {}) {
   });
 
   if (isLeftToRightTarget) {
-    // 420ms delay (includes +0.3s delay) after page load so app shell and cards settle first
+    // Crisp 100ms delay after page load so app shell and cards settle first, then fluid 600ms reveal
     startLeftToRightAnimation(
       canvas._chart,
-      options.animationDuration || 1500,
-      options.animationDelay ?? 420,
+      options.animationDuration || 600,
+      options.animationDelay ?? 100,
     );
   }
 

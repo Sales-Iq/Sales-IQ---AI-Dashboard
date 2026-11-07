@@ -18,6 +18,7 @@ node_modules/
 *.mp4
 *.avi
 *.mov
+!SalesIQ-AI-Dashboard/assets/**
 
 # PDFs (generated exports, not source)
 *.pdf

@@ -1,61 +1,32 @@
 /* SalesIQ Liquid Glass + 3D Animation & Dynamic Mouse Glow Layer
    Applied across landing, auth, admin, sales, and superadmin pages. */
 :root {
-  --liq-border: rgba(56, 189, 248, 0.2);
-  --liq-border-hover: rgba(56, 189, 248, 0.45);
-  --liq-highlight: rgba(255, 255, 255, 0.15);
-  --liq-shadow: rgba(0, 0, 0, 0.4);
-  --liq-cyan: rgba(56, 189, 248, 0.32);
-  --liq-purple: rgba(168, 85, 247, 0.3);
-  --liq-emerald: rgba(16, 185, 129, 0.22);
+  --liq-border: rgba(59, 130, 246, 0.2);
+  --liq-border-hover: rgba(59, 130, 246, 0.45);
+  --liq-highlight: rgba(255, 255, 255, 0.18);
+  --liq-shadow: rgba(0, 0, 0, 0.45);
+  --liq-blue: rgba(59, 130, 246, 0.28);
+  --liq-sky: rgba(96, 165, 250, 0.22);
   --liq-amber: rgba(245, 158, 11, 0.2);
   --liq-rose: rgba(244, 63, 94, 0.2);
 }
 
 .light {
-  --liq-border: rgba(15, 23, 42, 0.12);
-  --liq-border-hover: rgba(14, 165, 233, 0.45);
-  --liq-highlight: rgba(255, 255, 255, 0.85);
-  --liq-shadow: rgba(15, 23, 42, 0.08);
-  --liq-cyan: rgba(14, 165, 233, 0.18);
-  --liq-purple: rgba(147, 51, 234, 0.15);
-  --liq-emerald: rgba(16, 185, 129, 0.12);
+  --liq-border: rgba(15, 23, 42, 0.08);
+  --liq-border-hover: rgba(37, 99, 235, 0.4);
+  --liq-highlight: rgba(255, 255, 255, 0.95);
+  --liq-shadow: rgba(15, 23, 42, 0.06);
+  --liq-blue: rgba(37, 99, 235, 0.15);
+  --liq-sky: rgba(59, 130, 246, 0.12);
   --liq-amber: rgba(217, 119, 6, 0.12);
   --liq-rose: rgba(225, 29, 72, 0.12);
 }
 
-/* ── 1. Floating Liquid Background Mesh with Smooth Mouse Glow ─────────────── */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -4;
-  background:
-    radial-gradient(
-      480px circle at var(--mouse-lerp-x, var(--mouse-x, 50%)) var(--mouse-lerp-y, var(--mouse-y, 50%)),
-      rgba(56, 189, 248, 0.22),
-      transparent 65%
-    ),
-    radial-gradient(circle at 18% 18%, var(--liq-cyan), transparent 30%),
-    radial-gradient(circle at 82% 14%, var(--liq-purple), transparent 32%),
-    radial-gradient(circle at 65% 85%, var(--liq-emerald), transparent 28%),
-    radial-gradient(circle at 25% 80%, var(--liq-amber), transparent 26%);
-  filter: blur(8px);
-  animation: liquidMove 16s ease-in-out infinite alternate;
-}
-
+/* ── 1. Floating Liquid Background Mesh (Cursor Tracking Removed) ─────────── */
+body::before,
 body.light::before {
-  opacity: 0.45;
-  background:
-    radial-gradient(
-      520px circle at var(--mouse-lerp-x, var(--mouse-x, 50%)) var(--mouse-lerp-y, var(--mouse-y, 50%)),
-      rgba(14, 165, 233, 0.12),
-      transparent 65%
-    ),
-    radial-gradient(circle at 18% 18%, rgba(56, 189, 248, 0.1), transparent 30%),
-    radial-gradient(circle at 82% 14%, rgba(168, 85, 247, 0.08), transparent 32%),
-    radial-gradient(circle at 65% 85%, rgba(16, 185, 129, 0.08), transparent 28%);
+  display: none !important;
+  content: none !important;
 }
 
 @keyframes liquidMove {
@@ -97,7 +68,7 @@ body.light::before {
   content: none !important;
 }
 
-/* ── 3. Dynamic Cursor Spotlight & Specular Sheen ─────────────────────────── */
+/* ── 3. Cursor Spotlight Removed (Click Only) ─────────────────────────────── */
 .glass::before,
 .glass-strong::before,
 .stat-card::before,
@@ -105,54 +76,7 @@ body.light::before {
 .modal-card::before,
 .app-sidebar::before,
 .auth-card::before,
-.liquid-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  width: auto;
-  height: auto;
-  pointer-events: none;
-  border-radius: inherit;
-  background:
-    radial-gradient(
-      180px circle at var(--card-x, 50%) var(--card-y, 50%),
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(56, 189, 248, 0.18) 35%,
-      transparent 70%
-    ),
-    radial-gradient(
-      420px circle at var(--card-x, 50%) var(--card-y, 50%),
-      rgba(56, 189, 248, 0.14),
-      transparent 65%
-    ),
-    linear-gradient(
-      120deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      transparent 28%,
-      transparent 70%,
-      rgba(139, 92, 246, 0.1) 100%
-    ),
-    radial-gradient(
-      circle at 25% 10%,
-      rgba(56, 189, 248, 0.15),
-      transparent 30%
-    );
-  opacity: 0.35;
-  mix-blend-mode: screen;
-  z-index: 0;
-  transition: opacity 0.35s ease;
-}
-
-.glass:hover::before,
-.glass-strong:hover::before,
-.stat-card:hover::before,
-.chart-box:hover::before,
-.modal-card:hover::before,
-.auth-card:hover::before,
-.liquid-panel:hover::before {
-  opacity: 0.85;
-}
-
+.liquid-panel::before,
 .light .glass::before,
 .light .glass-strong::before,
 .light .stat-card::before,
@@ -161,37 +85,8 @@ body.light::before {
 .light .app-sidebar::before,
 .light .auth-card::before,
 .light .liquid-panel::before {
-  background:
-    radial-gradient(
-      220px circle at var(--card-x, 50%) var(--card-y, 50%),
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(14, 165, 233, 0.15) 45%,
-      transparent 70%
-    ),
-    radial-gradient(
-      400px circle at var(--card-x, 50%) var(--card-y, 50%),
-      rgba(14, 165, 233, 0.12),
-      transparent 65%
-    ),
-    linear-gradient(
-      120deg,
-      rgba(255, 255, 255, 0.85),
-      transparent 30%,
-      transparent 72%,
-      rgba(255, 255, 255, 0.45)
-    );
-  mix-blend-mode: normal;
-  opacity: 0.75;
-}
-
-.light .glass:hover::before,
-.light .glass-strong:hover::before,
-.light .stat-card:hover::before,
-.light .chart-box:hover::before,
-.light .modal-card:hover::before,
-.light .auth-card:hover::before,
-.light .liquid-panel:hover::before {
-  opacity: 1;
+  display: none !important;
+  content: none !important;
 }
 
 .glass > *,
@@ -215,20 +110,8 @@ body.light::before {
 .auth-card::after,
 .liquid-panel::after {
   content: "";
-  position: absolute;
-  width: 170px;
-  height: 170px;
-  right: -75px;
-  top: -75px;
-  border-radius: 999px;
-  background: radial-gradient(
-    circle,
-    rgba(14, 165, 233, 0.25),
-    transparent 66%
-  );
-  pointer-events: none;
-  animation: glassOrb 6s ease-in-out infinite alternate;
-  z-index: 0;
+  display: none !important;
+  content: none !important;
 }
 
 .light .glass::after,
@@ -238,23 +121,11 @@ body.light::before {
 .light .modal-card::after,
 .light .auth-card::after,
 .light .liquid-panel::after {
-  background: radial-gradient(
-    circle,
-    rgba(14, 165, 233, 0.16),
-    transparent 68%
-  );
+  display: none !important;
+  content: none !important;
 }
 
-@keyframes glassOrb {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(-18px, 18px, 0) scale(1.15);
-  }
-}
-
-/* ── 4. Frosted Glassmorphism Styles ──────────────────────────────────────── */
+/* ── 4. Kerfa High-Performance Frosted Liquid Glass (60-120FPS Composited) ─── */
 .glass,
 .glass-strong,
 .stat-card,
@@ -263,21 +134,19 @@ body.light::before {
 .app-sidebar,
 .auth-card,
 .liquid-panel {
-  background: rgba(11, 20, 39, 0.72) !important;
-  border: 1px solid var(--liq-border) !important;
-  backdrop-filter: blur(24px) saturate(1.85) contrast(1.05) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.85) contrast(1.05) !important;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, rgba(20, 29, 44, 0.62) 0%, rgba(11, 18, 28, 0.52) 100%) !important;
+  backdrop-filter: blur(24px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
   box-shadow:
-    0 24px 70px -12px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.4),
-    inset 1.5px 0 2px 0 rgba(56, 189, 248, 0.12),
-    inset -1.5px 0 2px 0 rgba(168, 85, 247, 0.12) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 18px 42px -12px rgba(0, 0, 0, 0.45) !important;
+  border: none !important;
   transition:
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.18s ease;
 }
 
 .light .glass,
@@ -288,17 +157,16 @@ body.light::before {
 .light .app-sidebar,
 .light .auth-card,
 .light .liquid-panel {
-  background: rgba(255, 255, 255, 0.88) !important;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
-  backdrop-filter: blur(20px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(246, 248, 250, 0.72) 100%) !important;
+  backdrop-filter: blur(24px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.4) !important;
   box-shadow:
-    0 12px 36px -8px rgba(15, 23, 42, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.8),
-    inset 0 1.5px 1px 0 #ffffff,
-    inset 0 -1px 1px 0 rgba(15, 23, 42, 0.06),
-    inset 1.5px 0 2px 0 rgba(14, 165, 233, 0.08),
-    inset -1.5px 0 2px 0 rgba(168, 85, 247, 0.08) !important;
+    inset 0 1px 0 #ffffff,
+    inset 0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 8px 24px -6px rgba(15, 23, 42, 0.05) !important;
+  border: none !important;
 }
 
 .glass:hover,
@@ -306,15 +174,11 @@ body.light::before {
 .stat-card:hover,
 .chart-box:hover,
 .liquid-panel:hover {
-  border-color: rgba(56, 189, 248, 0.45) !important;
   box-shadow:
-    0 32px 85px -15px rgba(0, 0, 0, 0.6),
-    0 0 35px rgba(56, 189, 248, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.18),
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.38),
-    inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.45),
-    inset 2px 0 4px 0 rgba(56, 189, 248, 0.25),
-    inset -2px 0 4px 0 rgba(168, 85, 247, 0.22) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 0 0 1px rgba(59, 130, 246, 0.35),
+    0 24px 55px -12px rgba(0, 0, 0, 0.55),
+    0 0 28px rgba(59, 130, 246, 0.15) !important;
 }
 
 .light .glass:hover,
@@ -322,15 +186,34 @@ body.light::before {
 .light .stat-card:hover,
 .light .chart-box:hover,
 .light .liquid-panel:hover {
-  background: rgba(255, 255, 255, 0.96) !important;
-  border-color: rgba(14, 165, 233, 0.5) !important;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(246, 248, 250, 0.82) 100%) !important;
   box-shadow:
-    0 20px 48px -10px rgba(14, 165, 233, 0.15),
-    0 0 0 1px #ffffff,
-    inset 0 1.5px 1px 0 #ffffff,
-    inset 0 -1px 1px 0 rgba(15, 23, 42, 0.08),
-    inset 2px 0 4px 0 rgba(14, 165, 233, 0.15),
-    inset -2px 0 4px 0 rgba(168, 85, 247, 0.12) !important;
+    inset 0 1px 0 #ffffff,
+    inset 0 0 0 1px rgba(37, 99, 235, 0.28),
+    0 16px 36px -8px rgba(15, 23, 42, 0.08),
+    0 0 20px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* ── Translucent Frosted Liquid Glass Graph Container ── */
+.chart-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius, 22px);
+  padding: 1.25rem 1.5rem;
+}
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  background: transparent !important;
+}
+
+.chart-wrap canvas {
+  background: transparent !important;
+  display: block;
+  max-width: 100%;
 }
 
 /* ── 5. Button & Interactive Micro-Animations ─────────────────────────────── */
@@ -347,86 +230,149 @@ body.light::before {
 
 .btn {
   box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.22),
+    0 8px 24px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
   transition:
-    transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
     box-shadow 0.2s ease,
-    background 0.2s ease;
+    background 0.2s ease,
+    transform 0.06s ease;
 }
 
 .btn:hover {
-  transform: translateY(-3px) scale(1.02);
+  transform: none;
   box-shadow:
-    0 16px 36px rgba(0, 0, 0, 0.28),
-    0 0 20px rgba(56, 189, 248, 0.22),
+    0 12px 28px rgba(0, 0, 0, 0.25),
+    0 0 16px rgba(59, 130, 246, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-.btn:active {
-  transform: translateY(0) scale(0.98);
+.btn:active,
+button:active,
+.nav-link:active,
+.tile-action-btn:active {
+  transform: scale(0.96) !important;
+  transition: transform 0.06s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 8px 20px -4px rgba(59, 130, 246, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
+  box-shadow:
+    0 12px 28px -4px rgba(59, 130, 246, 0.6),
+    0 0 18px rgba(59, 130, 246, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+.light .btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 6px 18px -4px rgba(37, 99, 235, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+.light .btn-primary:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  box-shadow:
+    0 10px 24px -4px rgba(37, 99, 235, 0.45),
+    0 0 16px rgba(37, 99, 235, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
 
 .nav-link {
   transition:
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
     background 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    transform 0.06s ease;
 }
 
 .nav-link:hover {
-  transform: translateX(6px) translateZ(12px);
+  transform: none;
 }
 
 .nav-link.active {
   box-shadow:
-    0 14px 32px rgba(56, 189, 248, 0.24),
-    0 0 18px rgba(56, 189, 248, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 12px 26px rgba(59, 130, 246, 0.22),
+    0 0 16px rgba(59, 130, 246, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: rgba(59, 130, 246, 0.14) !important;
+  color: #60a5fa !important;
+}
+
+.light .nav-link.active {
+  box-shadow:
+    0 6px 18px rgba(37, 99, 235, 0.15),
+    inset 0 1px 0 #ffffff;
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #1e40af !important;
 }
 
 .input:focus,
 .select:focus,
 .textarea:focus {
   transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25), 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), 0 8px 24px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* ── 6. Page & Staggered Rise Animations ──────────────────────────────────── */
+/* ── Universal Liquid Click Ripple Feedback ──────────────────────────────── */
+.liquid-click-ripple {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(59, 130, 246, 0.35) 45%, transparent 70%);
+  animation: liquidClickRipple 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  z-index: 99;
+}
+
+.light .liquid-click-ripple {
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.4) 0%, rgba(59, 130, 246, 0.18) 50%, transparent 70%);
+}
+
+@keyframes liquidClickRipple {
+  0% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.4);
+  }
+}
+
+/* ── 6. High-Performance GPU Composited Page Transitions (Zero-Lag) ──────── */
 .page-container {
-  animation: page3dIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: pageIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
 }
 
-@keyframes page3dIn {
+@keyframes pageIn {
   from {
     opacity: 0;
-    transform: perspective(900px) rotateX(6deg) translateY(24px) scale(0.98);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
-    transform: perspective(900px) rotateX(0) translateY(0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .liquid-tilt {
-  transition:
-    transform 0.1s ease-out,
-    box-shadow 0.25s ease;
+  transform: none !important;
+  transition: none !important;
 }
 
 .liquid-rise {
-  animation: liquidRise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes liquidRise {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
 }
 
 /* ── 7. Reduced Motion Fallback ───────────────────────────────────────────── */

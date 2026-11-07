@@ -6,13 +6,16 @@
   place-items:center;
   padding:24px;
   overflow:hidden;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(56,189,248,.30), transparent 32%),
-    radial-gradient(circle at 82% 18%, rgba(139,92,246,.28), transparent 34%),
-    radial-gradient(circle at 50% 90%, rgba(34,197,94,.16), transparent 36%),
-    linear-gradient(135deg, #020617, #070e20 40%, #0c1630 65%, #020617);
+  background-color: #020617;
+  background-image:
+    linear-gradient(rgba(2, 6, 23, 0.70), rgba(11, 20, 39, 0.85)),
+    url('../assets/img/abstract-bg.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
-.auth-grid-bg { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px); background-size:48px 48px; mask-image:linear-gradient(to bottom, transparent, black 14%, black 82%, transparent); animation:moveAuthGrid 16s linear infinite; }
+.auth-grid-bg { display: none !important; }
 @keyframes moveAuthGrid { from{transform:translateY(0)} to{transform:translateY(48px)} }
 .auth-orb { position:absolute; width:280px; height:280px; border-radius:999px; filter:blur(20px); opacity:.55; animation:authOrbFloat 8s ease-in-out infinite alternate; }
 .auth-orb.one { background:#22d3ee; left:-90px; top:100px; }

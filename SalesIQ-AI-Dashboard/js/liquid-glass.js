@@ -1,224 +1,63 @@
+/**
+ * SalesIQ Liquid Glass Click & Interaction Engine
+ * Cursor-following effects removed per user request.
+ * Pure tactile click feedback and ripple effects enabled.
+ */
 (function () {
+  "use strict";
+
   const reduced =
     window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduced) return;
 
-  const tiltAttached = new WeakSet();
-  const magnetAttached = new WeakSet();
+  // ── Universal Liquid Click Ripple Feedback ────────────────────────────────
+  function createClickRipple(event) {
+    if (reduced) return;
 
-  // ── 1. Smooth Interpolated (Lerped) Cursor Glow Physics ──────────────────
-  let targetX = window.innerWidth / 2;
-  let targetY = window.innerHeight / 2;
-  let currentX = targetX;
-  let currentY = targetY;
-  let lerpRaf = null;
+    // Only respond to primary click (left mouse button or tap)
+    if (event.button !== undefined && event.button !== 0) return;
 
-  function updateLerpLoop() {
-    const dx = targetX - currentX;
-    const dy = targetY - currentY;
-    currentX += dx * 0.1;
-    currentY += dy * 0.1;
-
-    document.documentElement.style.setProperty(
-      "--mouse-lerp-x",
-      `${((currentX / window.innerWidth) * 100).toFixed(2)}%`,
+    // Target clickable / interactive elements
+    const target = event.target?.closest?.(
+      ".btn, button, .nav-link, .tile-action-btn, .timeframe-tab, .chart-icon-btn, .chip, .tab-btn, .clickable-card"
     );
-    document.documentElement.style.setProperty(
-      "--mouse-lerp-y",
-      `${((currentY / window.innerHeight) * 100).toFixed(2)}%`,
-    );
-    document.documentElement.style.setProperty(
-      "--mouse-x",
-      `${((targetX / window.innerWidth) * 100).toFixed(2)}%`,
-    );
-    document.documentElement.style.setProperty(
-      "--mouse-y",
-      `${((targetY / window.innerHeight) * 100).toFixed(2)}%`,
-    );
+    if (!target) return;
 
-    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-      lerpRaf = requestAnimationFrame(updateLerpLoop);
-    } else {
-      lerpRaf = null;
+    // Ensure target has positioning and overflow clipping for ripple
+    const computed = window.getComputedStyle(target);
+    if (computed.position === "static") {
+      target.style.position = "relative";
     }
-  }
+    target.style.overflow = "hidden";
 
-  document.addEventListener(
-    "mousemove",
-    (event) => {
-      targetX = event.clientX;
-      targetY = event.clientY;
+    const rect = target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const diameter = Math.max(rect.width, rect.height) * 2.2;
 
-      if (!lerpRaf) {
-        lerpRaf = requestAnimationFrame(updateLerpLoop);
-      }
-    },
-    { passive: true },
-  );
+    const ripple = document.createElement("span");
+    ripple.className = "liquid-click-ripple";
+    ripple.style.width = `${diameter}px`;
+    ripple.style.height = `${diameter}px`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
 
-  // ── 2. Staggered Cascading Entrance Reveals ───────────────────────────────
-  function addRiseAnimation() {
-    const elements = document.querySelectorAll(
-      ".glass, .glass-strong, .stat-card, .chart-box, .table-wrap, .modal-card, .liquid-panel",
-    );
-    elements.forEach((element, index) => {
-      if (!element.dataset.liquidRiseDone) {
-        element.classList.add("liquid-rise");
-        element.style.animationDelay = `${Math.min(index * 0.03, 0.4)}s`;
-        element.dataset.liquidRiseDone = "1";
-      }
-    });
-  }
+    target.appendChild(ripple);
 
-  // ── 3. Hyper-Smooth 3D Card Tilt with Specular Spotlight ──────────────────
-  function addTiltEffect() {
-    const elements = document.querySelectorAll(
-      ".glass, .glass-strong, .stat-card, .chart-box, .auth-card, .liquid-panel",
-    );
-    elements.forEach((card) => {
-      if (tiltAttached.has(card)) return;
-      tiltAttached.add(card);
-      card.classList.add("liquid-tilt");
-
-      card.addEventListener("mouseenter", (event) => {
-        const rect = card.getBoundingClientRect();
-        if (rect.width < 50 || rect.height < 50) return;
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        card.style.setProperty("--card-x", `${x.toFixed(1)}px`);
-        card.style.setProperty("--card-y", `${y.toFixed(1)}px`);
-        card.style.setProperty("--card-pct-x", `${((x / rect.width) * 100).toFixed(1)}%`);
-        card.style.setProperty("--card-pct-y", `${((y / rect.height) * 100).toFixed(1)}%`);
-      });
-
-      card.addEventListener("mousemove", (event) => {
-        const rect = card.getBoundingClientRect();
-        if (rect.width < 50 || rect.height < 50) return;
-
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        const pctX = (x / rect.width) * 100;
-        const pctY = (y / rect.height) * 100;
-
-        // Dynamic specular spotlight coordinates
-        card.style.setProperty("--card-x", `${x.toFixed(1)}px`);
-        card.style.setProperty("--card-y", `${y.toFixed(1)}px`);
-        card.style.setProperty("--card-pct-x", `${pctX.toFixed(1)}%`);
-        card.style.setProperty("--card-pct-y", `${pctY.toFixed(1)}%`);
-
-        // Subtle, refined 3D tilt rotation
-        const rotateY = ((x / rect.width) - 0.5) * 7.5;
-        const rotateX = -((y / rect.height) - 0.5) * 7.5;
-
-        card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px)`;
-      });
-
-      card.addEventListener("mouseleave", () => {
-        card.style.transition = "transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease";
-        card.style.transform = "";
-        card.style.removeProperty("--card-x");
-        card.style.removeProperty("--card-y");
-        card.style.removeProperty("--card-pct-x");
-        card.style.removeProperty("--card-pct-y");
-
-        setTimeout(() => {
-          card.style.transition = "";
-        }, 450);
-      });
-    });
-  }
-
-  // ── 4. Elastic Magnetic Buttons & Interactive Elements ────────────────────
-  function addButtonMagnet() {
-    const interactiveElements = document.querySelectorAll(
-      ".btn, .timeframe-tab, .chart-icon-btn, .chart-ctrl-select, .google-3d",
+    ripple.addEventListener(
+      "animationend",
+      () => {
+        ripple.remove();
+      },
+      { once: true },
     );
 
-    interactiveElements.forEach((el) => {
-      if (magnetAttached.has(el)) return;
-      magnetAttached.add(el);
-
-      el.addEventListener("mousemove", (event) => {
-        const rect = el.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const deltaX = (event.clientX - centerX) * 0.18;
-        const deltaY = (event.clientY - centerY) * 0.18;
-
-        el.style.setProperty("--mx", `${deltaX.toFixed(1)}px`);
-        el.style.setProperty("--my", `${deltaY.toFixed(1)}px`);
-        el.style.transform = `translate3d(${deltaX.toFixed(1)}px, ${deltaY.toFixed(1)}px, 0)`;
-      });
-
-      el.addEventListener("mouseleave", () => {
-        el.style.transition = "transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-        el.style.transform = "";
-        el.style.removeProperty("--mx");
-        el.style.removeProperty("--my");
-
-        setTimeout(() => {
-          el.style.transition = "";
-        }, 350);
-      });
-    });
+    // Failsafe cleanup in case animationend didn't fire
+    setTimeout(() => {
+      if (ripple.parentNode) ripple.remove();
+    }, 550);
   }
 
-  // ── 5. Global Precision Radial Spotlight Border Beam Tracking ────────────
-  let activeSpotlightCard = null;
-
-  document.addEventListener(
-    "pointermove",
-    (event) => {
-      const card = event.target?.closest?.(
-        ".stat-card, .chart-box, .spotlight-card, .glass-card-hover, .glass-spotlight, .product-card"
-      );
-
-      if (card) {
-        if (activeSpotlightCard && activeSpotlightCard !== card) {
-          activeSpotlightCard.style.removeProperty("--card-x");
-          activeSpotlightCard.style.removeProperty("--card-y");
-        }
-        activeSpotlightCard = card;
-        const rect = card.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-
-        card.style.setProperty("--card-x", `${x.toFixed(1)}px`);
-        card.style.setProperty("--card-y", `${y.toFixed(1)}px`);
-      } else if (activeSpotlightCard) {
-        activeSpotlightCard.style.removeProperty("--card-x");
-        activeSpotlightCard.style.removeProperty("--card-y");
-        activeSpotlightCard = null;
-      }
-    },
-    { passive: true },
-  );
-
-  document.addEventListener("pointerleave", () => {
-    if (activeSpotlightCard) {
-      activeSpotlightCard.style.removeProperty("--card-x");
-      activeSpotlightCard.style.removeProperty("--card-y");
-      activeSpotlightCard = null;
-    }
-  });
-
-  // ── 6. Master Enhance & Mutation Observer ─────────────────────────────────
-  function enhance() {
-    addRiseAnimation();
-    addTiltEffect();
-    addButtonMagnet();
-  }
-
-  window.addEventListener("DOMContentLoaded", () => {
-    enhance();
-    let enhanceTimer = 0;
-    new MutationObserver(() => {
-      clearTimeout(enhanceTimer);
-      enhanceTimer = setTimeout(enhance, 250);
-    }).observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-  });
+  // Listen globally for click / pointerdown
+  document.addEventListener("pointerdown", createClickRipple, { passive: true });
 })();

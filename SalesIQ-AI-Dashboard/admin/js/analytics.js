@@ -436,11 +436,11 @@ function renderCharts(filteredSales, replayAnimation = false) {
           data: dailyData.length ? dailyData : [0],
           tension: 0.35,
           fill: isDailyArea || actualDailyType === "line",
-          borderColor: isLight ? "#0284c7" : "#38bdf8",
+          borderColor: isLight ? "#2563eb" : "#3b82f6",
           backgroundColor: isDailyArea
-            ? (isLight ? "rgba(2,132,199,.28)" : "rgba(56,189,248,.35)")
-            : (isLight ? "rgba(2,132,199,.15)" : "rgba(56,189,248,.18)"),
-          pointBackgroundColor: isLight ? "#0284c7" : "#38bdf8",
+            ? (isLight ? "rgba(37,99,235,.25)" : "rgba(59,130,246,.30)")
+            : (isLight ? "rgba(37,99,235,.12)" : "rgba(59,130,246,.16)"),
+          pointBackgroundColor: isLight ? "#2563eb" : "#3b82f6",
         },
       ],
     },
@@ -578,13 +578,13 @@ function renderCharts(filteredSales, replayAnimation = false) {
                 ? "Gross Profit"
                 : "Units Sold",
           data: topDataValues,
-          borderColor: isLight ? "#059669" : "#34d399",
+          borderColor: isLight ? "#2563eb" : "#60a5fa",
           backgroundColor:
             actualTopType === "doughnut"
               ? undefined
               : isLight
-                ? "rgba(5,150,105,.35)"
-                : "rgba(52,211,153,.45)",
+                ? "rgba(37,99,235,.30)"
+                : "rgba(96,165,250,.40)",
         },
       ],
     },
@@ -709,15 +709,15 @@ function renderCharts(filteredSales, replayAnimation = false) {
           data: cumulativeRevenue.length ? cumulativeRevenue : [0],
           fill: growthTypePref === "area" || actualGrowthType === "line",
           tension: 0.35,
-          borderColor: isLight ? "#0284c7" : "#38bdf8",
+          borderColor: isLight ? "#2563eb" : "#3b82f6",
           backgroundColor:
             growthTypePref === "area"
               ? isLight
-                ? "rgba(2,132,199,.25)"
-                : "rgba(56,189,248,.25)"
+                ? "rgba(37,99,235,.22)"
+                : "rgba(59,130,246,.25)"
               : isLight
-                ? "rgba(2,132,199,.12)"
-                : "rgba(56,189,248,.12)",
+                ? "rgba(37,99,235,.10)"
+                : "rgba(59,130,246,.12)",
         },
       ],
     },
@@ -772,15 +772,15 @@ function renderCharts(filteredSales, replayAnimation = false) {
           data: profitValues.length ? profitValues : [0],
           fill: isProfitArea || actualProfitType === "line",
           tension: 0.35,
-          borderColor: isLight ? "#059669" : "#10b981",
+          borderColor: isLight ? "#2563eb" : "#3b82f6",
           backgroundColor: isProfitArea
             ? isLight
-              ? "rgba(5,150,105,.28)"
-              : "rgba(16,185,129,.30)"
+              ? "rgba(37,99,235,.25)"
+              : "rgba(59,130,246,.28)"
             : isLight
-              ? "rgba(5,150,105,.14)"
-              : "rgba(16,185,129,.18)",
-          pointBackgroundColor: isLight ? "#059669" : "#10b981",
+              ? "rgba(37,99,235,.12)"
+              : "rgba(59,130,246,.16)",
+          pointBackgroundColor: isLight ? "#2563eb" : "#3b82f6",
         },
       ],
     },

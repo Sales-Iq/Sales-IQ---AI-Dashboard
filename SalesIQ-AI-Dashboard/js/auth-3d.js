@@ -1,17 +1,8 @@
+/**
+ * SalesIQ Auth Screen Interaction
+ * Cursor-following 3D tilt removed per user request.
+ */
 (function () {
-  const card = document.querySelector(".auth-card");
-  if (card && !card.classList.contains("liquid-tilt")) {
-    card.addEventListener("mousemove", (e) => {
-      if (card.classList.contains("liquid-tilt")) return;
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const rotateY = (x / rect.width - 0.5) * 10;
-      const rotateX = -(y / rect.height - 0.5) * 10;
-      card.style.transform = `perspective(1100px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    });
-    card.addEventListener("mouseleave", () => {
-      if (!card.classList.contains("liquid-tilt")) card.style.transform = "";
-    });
-  }
+  "use strict";
+  // Static auth card - zero cursor jitter
 })();
