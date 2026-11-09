@@ -104,7 +104,12 @@
 
     const sidebar = $("#appSidebar");
     if (sidebar && !sidebar.innerHTML.trim() && !sidebar.dataset.mounted) {
-      sidebar.innerHTML = `<div class="sidebar-logo"><div class="logo-mark">SIQ</div><div><div class="font-black text-xl tracking-tight">SalesIQ</div><div class="text-xs text-slate-400 font-bold">${role === "sales" ? "Sales Staff" : "Admin"} Workspace</div></div></div><nav>${links.map(([key, label, href, icon]) => `<a class="nav-link ${active === key ? "active" : ""}" href="${href}"><span>${icon}</span><span>${label}</span></a>`).join("")}</nav><div class="mt-4 p-3 glass rounded-2xl"><div class="text-xs text-slate-400 font-bold">Logged in</div><div class="flex items-center gap-2 mt-1">${avatarHTML(profile)}<div class="font-black truncate">${profile?.name || profile?.email || "Waiting for Firebase..."}</div></div><a href="${prefix}profile.html" class="text-sky-300 text-sm font-bold hover:underline">Open Profile</a></div>`;
+      sidebar.innerHTML = `<div class="sidebar-logo"><div class="flex items-center gap-2.5"><div class="logo-mark">SIQ</div><div><div class="font-black text-xl tracking-tight">SalesIQ</div><div class="text-xs text-slate-400 font-bold">${role === "sales" ? "Sales Staff" : "Admin"} Workspace</div></div></div><button id="fallbackSidebarCloseBtn" class="sidebar-close-btn" aria-label="Close menu">✕</button></div><nav>${links.map(([key, label, href, icon]) => `<a class="nav-link ${active === key ? "active" : ""}" href="${href}"><span>${icon}</span><span>${label}</span></a>`).join("")}</nav><div class="mt-4 p-3 glass rounded-2xl"><div class="text-xs text-slate-400 font-bold">Logged in</div><div class="flex items-center gap-2 mt-1">${avatarHTML(profile)}<div class="font-black truncate">${profile?.name || profile?.email || "Waiting for Firebase..."}</div></div><a href="${prefix}profile.html" class="text-sky-300 text-sm font-bold hover:underline">Open Profile</a></div>`;
+      $("#fallbackSidebarCloseBtn")?.addEventListener("click", () => {
+        $("#appSidebar")?.classList.remove("open");
+        document.body.classList.remove("sidebar-open");
+        $("#sidebarBackdrop")?.classList.remove("active");
+      });
     }
     const header = $("#appHeader");
     if (header && !header.innerHTML.trim() && !header.dataset.mounted) {
@@ -112,9 +117,26 @@
         ? `<button id="fallbackLogoutBtn" class="btn btn-ghost btn-sm">Logout</button>`
         : `<a class="btn btn-primary btn-sm" href="${prefix}login.html">Login</a>`;
       header.innerHTML = `<div class="header-inner"><div class="flex items-center gap-3"><button id="fallbackSidebarToggle" class="mobile-menu-btn btn btn-ghost btn-sm">☰</button><div><div class="text-sm text-slate-400 font-bold">${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div><h1 class="text-xl md:text-2xl font-black tracking-tight">${document.title.replace("SalesIQ - ", "")}</h1></div></div><div class="flex items-center gap-2"><button id="fallbackThemeToggle" class="btn btn-ghost btn-sm">${theme() === "light" ? "🌙 Dark" : "☀️ Light"}</button><a class="btn btn-ghost btn-sm hide-mobile" href="${prefix}profile.html">${avatarHTML(profile)}Profile</a>${authAction}</div></div>`;
-      $("#fallbackSidebarToggle")?.addEventListener("click", () =>
-        $("#appSidebar")?.classList.toggle("open"),
-      );
+      $("#fallbackSidebarToggle")?.addEventListener("click", () => {
+        const sb = $("#appSidebar");
+        if (!sb) return;
+        const willOpen = !sb.classList.contains("open");
+        sb.classList.toggle("open", willOpen);
+        document.body.classList.toggle("sidebar-open", willOpen);
+        let backdrop = $("#sidebarBackdrop");
+        if (!backdrop) {
+          backdrop = document.createElement("div");
+          backdrop.id = "sidebarBackdrop";
+          backdrop.className = "sidebar-backdrop";
+          document.body.appendChild(backdrop);
+          backdrop.addEventListener("click", () => {
+            sb.classList.remove("open");
+            document.body.classList.remove("sidebar-open");
+            backdrop.classList.remove("active");
+          });
+        }
+        backdrop.classList.toggle("active", willOpen);
+      });
       $("#fallbackThemeToggle")?.addEventListener("click", async (e) => {
         const next = theme() === "light" ? "dark" : "light";
         const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

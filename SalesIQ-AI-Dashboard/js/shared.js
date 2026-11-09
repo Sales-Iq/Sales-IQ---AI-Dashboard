@@ -1516,13 +1516,16 @@ export function initAppShell(
       sidebar.dataset.mounted = "true";
       sidebar.innerHTML = `
         <div class="sidebar-logo">
-          <div class="logo-mark">SIQ</div>
-          <div>
-            <div class="font-black text-xl tracking-tight">SalesIQ</div>
-            <div class="text-xs text-slate-400 font-bold">
-              ${workspaceLabel} Workspace
+          <div class="flex items-center gap-2.5">
+            <div class="logo-mark">SIQ</div>
+            <div>
+              <div class="font-black text-xl tracking-tight">SalesIQ</div>
+              <div class="text-xs text-slate-400 font-bold">
+                ${workspaceLabel} Workspace
+              </div>
             </div>
           </div>
+          <button id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close menu">✕</button>
         </div>
         <nav class="sidebar-nav">
           <div class="nav-liquid-pill" aria-hidden="true"></div>
@@ -1593,15 +1596,103 @@ export function initAppShell(
         </div>
       `;
 
-      $("#sidebarToggle")?.addEventListener("click", () => {
+      function openMobileSidebar() {
         const sb = $("#appSidebar");
         if (!sb) return;
-        sb.classList.toggle("open");
-        if (sb.classList.contains("open")) {
-          const navEl = sb.querySelector(".sidebar-nav");
-          requestAnimationFrame(() => navEl?._syncLiquidPill?.());
+        sb.classList.add("open");
+        document.body.classList.add("sidebar-open");
+        let backdrop = $("#sidebarBackdrop");
+        if (!backdrop) {
+          backdrop = document.createElement("div");
+          backdrop.id = "sidebarBackdrop";
+          backdrop.className = "sidebar-backdrop";
+          document.body.appendChild(backdrop);
+          backdrop.addEventListener("click", closeMobileSidebar);
+        }
+        requestAnimationFrame(() => backdrop.classList.add("active"));
+        const navEl = sb.querySelector(".sidebar-nav");
+        requestAnimationFrame(() => navEl?._syncLiquidPill?.());
+      }
+
+      function closeMobileSidebar() {
+        const sb = $("#appSidebar");
+        if (!sb) return;
+        sb.classList.remove("open");
+        document.body.classList.remove("sidebar-open");
+        const backdrop = $("#sidebarBackdrop");
+        if (backdrop) backdrop.classList.remove("active");
+      }
+
+      function toggleMobileSidebar() {
+        const sb = $("#appSidebar");
+        if (sb?.classList.contains("open")) {
+          closeMobileSidebar();
+        } else {
+          openMobileSidebar();
+        }
+      }
+
+      $("#sidebarToggle")?.addEventListener("click", toggleMobileSidebar);
+      $("#fallbackSidebarToggle")?.addEventListener("click", toggleMobileSidebar);
+
+      // Wire close button inside sidebar header
+      let closeBtn = sidebar?.querySelector("#sidebarCloseBtn");
+      if (!closeBtn && sidebar) {
+        closeBtn = document.createElement("button");
+        closeBtn.id = "sidebarCloseBtn";
+        closeBtn.className = "sidebar-close-btn";
+        closeBtn.setAttribute("aria-label", "Close menu");
+        closeBtn.textContent = "✕";
+        const logo = sidebar.querySelector(".sidebar-logo");
+        if (logo) logo.appendChild(closeBtn);
+      }
+      closeBtn?.addEventListener("click", closeMobileSidebar);
+
+      // Auto-close when any nav link is tapped on mobile
+      sidebar?.querySelectorAll(".nav-link, a").forEach((a) => {
+        a.addEventListener("click", () => {
+          if (window.innerWidth <= 1100) {
+            closeMobileSidebar();
+          }
+        });
+      });
+
+      // Close on escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && $("#appSidebar")?.classList.contains("open")) {
+          closeMobileSidebar();
         }
       });
+
+      // Close on click outside sidebar
+      document.addEventListener("pointerdown", (e) => {
+        const sb = $("#appSidebar");
+        if (sb?.classList.contains("open") && window.innerWidth <= 1100) {
+          if (!e.target.closest("#appSidebar") && !e.target.closest("#sidebarToggle, #fallbackSidebarToggle")) {
+            closeMobileSidebar();
+          }
+        }
+      }, { passive: true });
+
+      // Swipe left on sidebar to close
+      let touchStartX = 0;
+      let touchStartY = 0;
+      sidebar?.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      sidebar?.addEventListener("touchend", (e) => {
+        if (e.changedTouches.length === 1) {
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          if (dx < -40 && Math.abs(dx) > Math.abs(dy)) {
+            closeMobileSidebar();
+          }
+        }
+      }, { passive: true });
 
       $("#themeToggle")?.addEventListener("click", (e) => {
         toggleThemeWithWave(e);
