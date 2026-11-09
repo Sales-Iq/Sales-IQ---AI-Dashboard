@@ -564,6 +564,16 @@ body.dashboard-edit-mode .tile-edit-bar {
   }
 }
 
+@media (max-width: 768px) {
+  #toggleEditDashboard,
+  #resetLayoutHeaderBtn,
+  #dashboardEditBanner,
+  .tile-drag-handle,
+  .tile-edit-bar {
+    display: none !important;
+  }
+}
+
 @media (max-width: 640px) {
   #staffChartTile,
   #staffRecentSalesTile {

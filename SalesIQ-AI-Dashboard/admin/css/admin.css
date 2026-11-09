@@ -1180,6 +1180,42 @@ body.dashboard-edit-mode .tile-edit-bar {
   }
 }
 
+@media (max-width: 768px) {
+  /* Hide desktop drag & column edit controls on mobile */
+  #toggleEditDashboard,
+  #resetLayoutHeaderBtn,
+  #dashboardEditBanner,
+  .tile-drag-handle,
+  .tile-edit-bar {
+    display: none !important;
+  }
+
+  /* Touch-optimized chart headers */
+  .sales-chart-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .sales-chart-title-area {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .sales-chart-controls {
+    width: 100% !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+    justify-content: flex-start !important;
+  }
+
+  .chart-date-group {
+    flex-shrink: 0 !important;
+  }
+}
+
 body.is-col-resizing,
 body.is-col-resizing * {
   cursor: col-resize !important;

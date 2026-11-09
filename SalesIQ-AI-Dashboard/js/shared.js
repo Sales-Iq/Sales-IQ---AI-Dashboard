@@ -2776,6 +2776,12 @@ export function animateCounter(el, targetStr, duration = 1000) {
     return;
   }
 
+  // Framer Motion Spring Velocity Ticker Integration
+  if (typeof window !== "undefined" && window.FramerMotion && typeof window.FramerMotion.springTicker === "function") {
+    window.FramerMotion.springTicker(el, targetStr, { duration, preset: "gentle" });
+    return;
+  }
+
   if (el._rafCountId) {
     cancelAnimationFrame(el._rafCountId);
     el._rafCountId = null;

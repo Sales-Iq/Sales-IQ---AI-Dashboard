@@ -333,6 +333,9 @@ function renderStats({ salesToday, monthSales, low, out }) {
   `,
     )
     .join("");
+  if (typeof window !== "undefined" && window.FramerMotion && typeof window.FramerMotion.staggerIn === "function") {
+    window.FramerMotion.staggerIn(statsEl, ".stat-card", { stagger: 40, yOffset: 14, preset: "gentle" });
+  }
   animateCounters(statsEl);
 }
 

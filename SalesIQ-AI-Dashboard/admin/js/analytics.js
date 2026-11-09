@@ -313,6 +313,9 @@ function renderKpis(filteredSales) {
       <div class="stat-hint">Across ${products.length} products in catalog</div>
     </div>
   `;
+  if (typeof window !== "undefined" && window.FramerMotion && typeof window.FramerMotion.staggerIn === "function") {
+    window.FramerMotion.staggerIn(statsEl, ".stat-card", { stagger: 40, yOffset: 14, preset: "gentle" });
+  }
   animateCounters(statsEl);
 }
 
