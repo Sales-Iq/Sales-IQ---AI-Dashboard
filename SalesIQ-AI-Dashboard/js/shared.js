@@ -714,8 +714,8 @@ export function initClickSpark() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(window.innerWidth * dpr);
     canvas.height = Math.round(window.innerHeight * dpr);
-    canvas.style.width = "100vw";
-    canvas.style.height = "100vh";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     clearCanvas();

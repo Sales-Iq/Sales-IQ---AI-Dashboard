@@ -33,15 +33,29 @@
 }
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  overflow-x: hidden;
 }
 body.light {
   background: #f8fafc;
   color: #0f172a;
+}
+
+/* ============================================================
+   Desktop Interface Density Scaling (75% UI Scale)
+   Scales all dashboard components, typography, cards, buttons,
+   and charts to 75% size on desktop viewports while preserving
+   exact spatial placement, grid hierarchies, and functional behavior.
+   ============================================================ */
+@media (min-width: 1025px) {
+  body.app-body {
+    zoom: 0.75;
+  }
 }
 .animated-bg {
   position: fixed;
@@ -1498,8 +1512,8 @@ img.profile-avatar {
 .click-spark-canvas {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 9998;
 }
