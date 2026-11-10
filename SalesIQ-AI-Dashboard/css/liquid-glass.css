@@ -73,7 +73,7 @@ body.light::before {
   content: none !important;
 }
 
-/* ── 3. Cursor Spotlight Removed (Click Only) ─────────────────────────────── */
+/* ── 3. Lumelle Physical Glass Bevel Mask (1.5px Anti-Aliased Rim) ───────── */
 .glass::before,
 .glass-strong::before,
 .stat-card::before,
@@ -81,7 +81,29 @@ body.light::before {
 .modal-card::before,
 .app-sidebar::before,
 .auth-card::before,
-.liquid-panel::before,
+.liquid-panel::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  padding: 1.5px !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) !important;
+  -webkit-mask-composite: xor, source-over !important;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0) !important;
+  mask-composite: exclude !important;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.50),
+    rgba(255, 255, 255, 0.08) 32%,
+    transparent 52%,
+    rgba(255, 255, 255, 0.08) 78%,
+    rgba(255, 255, 255, 0.40)
+  ) !important;
+  display: block !important;
+}
+
 .light .glass::before,
 .light .glass-strong::before,
 .light .stat-card::before,
@@ -90,8 +112,26 @@ body.light::before {
 .light .app-sidebar::before,
 .light .auth-card::before,
 .light .liquid-panel::before {
-  display: none !important;
-  content: none !important;
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  padding: 1.5px !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0) !important;
+  -webkit-mask-composite: xor, source-over !important;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0) !important;
+  mask-composite: exclude !important;
+  background: linear-gradient(
+    145deg,
+    #ffffff,
+    rgba(255, 255, 255, 0.40) 32%,
+    transparent 52%,
+    rgba(255, 255, 255, 0.40) 78%,
+    #ffffff
+  ) !important;
+  display: block !important;
 }
 
 .glass > *,
@@ -103,7 +143,7 @@ body.light::before {
 .auth-card > *,
 .liquid-panel > * {
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 /* Ambient Corner Glowing Orb */
@@ -130,7 +170,17 @@ body.light::before {
   content: none !important;
 }
 
-/* ── 4. Kerfa High-Performance Frosted Liquid Glass (60-120FPS Composited) ─── */
+/* ── 4. Lumelle-Spec Luxury Frosted Glass Engine (60-120FPS Composited) ────── */
+.glass,
+.glass-strong,
+.stat-card,
+.chart-box,
+.modal-card,
+.auth-card,
+.liquid-panel {
+  position: relative;
+}
+
 .glass,
 .glass-strong,
 .stat-card,
@@ -139,16 +189,20 @@ body.light::before {
 .app-sidebar,
 .auth-card,
 .liquid-panel {
-  background:
-    linear-gradient(140deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 38%),
-    linear-gradient(180deg, rgba(20, 29, 44, 0.62) 0%, rgba(11, 18, 28, 0.52) 100%) !important;
-  backdrop-filter: blur(24px) saturate(1.5) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
-    0 18px 42px -12px rgba(0, 0, 0, 0.45) !important;
+  background-color: rgba(18, 25, 38, 0.48) !important;
+  background-image:
+    radial-gradient(130% 70% at 0% 0%, rgba(255, 255, 255, 0.08), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 38%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.03), transparent 22%) !important;
+  backdrop-filter: blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
   border: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 22px rgba(255, 255, 255, 0.04),
+    inset 0 -18px 30px -24px rgba(255, 255, 255, 0.09),
+    0 1px 1px rgba(0, 0, 0, 0.30),
+    0 20px 44px -20px rgba(0, 0, 0, 0.75) !important;
   transition:
     transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.18s ease;
@@ -159,19 +213,33 @@ body.light::before {
 .light .stat-card,
 .light .chart-box,
 .light .modal-card,
+.light .auth-card,
+.light .liquid-panel {
+  position: relative;
+}
+
+.light .glass,
+.light .glass-strong,
+.light .stat-card,
+.light .chart-box,
+.light .modal-card,
 .light .app-sidebar,
 .light .auth-card,
 .light .liquid-panel {
-  background:
-    linear-gradient(140deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(246, 248, 250, 0.72) 100%) !important;
-  backdrop-filter: blur(24px) saturate(1.4) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.4) !important;
-  box-shadow:
-    inset 0 1px 0 #ffffff,
-    inset 0 0 0 1px rgba(15, 23, 42, 0.06),
-    0 8px 24px -6px rgba(15, 23, 42, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.20) !important;
+  background-image:
+    radial-gradient(130% 70% at 0% 0%, rgba(255, 255, 255, 0.34), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 38%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.16), transparent 22%) !important;
+  backdrop-filter: blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
   border: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.90),
+    inset 0 0 22px rgba(255, 255, 255, 0.28),
+    inset 0 -18px 30px -24px rgba(255, 255, 255, 0.70),
+    0 1px 1px rgba(70, 30, 42, 0.05),
+    0 18px 40px -22px rgba(70, 30, 42, 0.36) !important;
 }
 
 .glass:hover,
@@ -180,10 +248,12 @@ body.light::before {
 .chart-box:hover,
 .liquid-panel:hover {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 0 0 1px rgba(59, 130, 246, 0.35),
-    0 24px 55px -12px rgba(0, 0, 0, 0.55),
-    0 0 28px rgba(59, 130, 246, 0.15) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 26px rgba(255, 255, 255, 0.07),
+    inset 0 -18px 30px -24px rgba(255, 255, 255, 0.12),
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    0 24px 52px -18px rgba(0, 0, 0, 0.82),
+    0 0 24px rgba(59, 130, 246, 0.12) !important;
 }
 
 .light .glass:hover,
@@ -191,14 +261,12 @@ body.light::before {
 .light .stat-card:hover,
 .light .chart-box:hover,
 .light .liquid-panel:hover {
-  background:
-    linear-gradient(140deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(246, 248, 250, 0.82) 100%) !important;
   box-shadow:
     inset 0 1px 0 #ffffff,
-    inset 0 0 0 1px rgba(37, 99, 235, 0.28),
-    0 16px 36px -8px rgba(15, 23, 42, 0.08),
-    0 0 20px rgba(37, 99, 235, 0.1) !important;
+    inset 0 0 26px rgba(255, 255, 255, 0.40),
+    inset 0 -18px 30px -24px #ffffff,
+    0 1px 1px rgba(70, 30, 42, 0.08),
+    0 22px 48px -18px rgba(70, 30, 42, 0.45) !important;
 }
 
 /* ── Translucent Frosted Liquid Glass Graph Container ── */
