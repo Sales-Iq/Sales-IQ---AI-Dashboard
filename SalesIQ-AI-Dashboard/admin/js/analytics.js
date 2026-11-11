@@ -426,6 +426,11 @@ function renderCharts(filteredSales, replayAnimation = false) {
     dTitle.textContent = `${timelineGranularity === "monthly" ? "Monthly" : timelineGranularity === "weekly" ? "Weekly" : "Daily"} Sales Trend`;
   }
 
+  const dTooltipTitle = $("#dailySalesTooltipTitle");
+  if (dTooltipTitle) {
+    dTooltipTitle.textContent = `${timelineGranularity === "monthly" ? "Monthly" : timelineGranularity === "weekly" ? "Weekly" : "Daily"} Sales Trend`;
+  }
+
   makeChart(
     $("#dailySalesChart"),
     actualDailyType,
@@ -1479,6 +1484,19 @@ function initChartControls() {
     });
     renderCharts(getFilteredSales(), true);
     toast("Graph views reset to default", "ok");
+  });
+
+  // Mobile / touch support for chart info popovers
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".chart-info-btn");
+    const popover = e.target.closest(".chart-info-popover");
+    document.querySelectorAll(".chart-info-popover.active").forEach((p) => {
+      if (p !== popover) p.classList.remove("active");
+    });
+    if (btn && popover) {
+      e.stopPropagation();
+      popover.classList.toggle("active");
+    }
   });
 }
 

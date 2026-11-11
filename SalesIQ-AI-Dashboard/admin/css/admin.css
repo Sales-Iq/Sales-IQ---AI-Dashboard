@@ -1328,6 +1328,196 @@ body.is-row-resizing * {
 }
 
 /* ============================================================
+   Chart Header Info Popover & Floating Explanation Tooltip
+   ============================================================ */
+.chart-header-row,
+.chart-box > .flex:first-child {
+  position: relative !important;
+  z-index: 30 !important;
+}
+
+.chart-wrap {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.chart-info-popover {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.2rem;
+  z-index: 50 !important;
+}
+
+.chart-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.chart-info-btn svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+}
+
+.chart-info-btn:hover,
+.chart-info-popover:hover .chart-info-btn,
+.chart-info-popover.active .chart-info-btn,
+.chart-info-btn:focus-visible {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  transform: scale(1.1);
+}
+
+.chart-info-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 290px;
+  max-width: 86vw;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(13, 20, 36, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-top-color: rgba(56, 189, 248, 0.65);
+  box-shadow:
+    0 22px 48px -6px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  line-height: 1.48;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(5px);
+  transition:
+    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.2s;
+  z-index: 99999 !important;
+}
+
+.chart-info-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 6px;
+  width: 9px;
+  height: 9px;
+  background: rgba(13, 20, 36, 0.98);
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid rgba(56, 189, 248, 0.65);
+  transform: rotate(45deg);
+}
+
+.chart-info-popover:hover .chart-info-tooltip,
+.chart-info-popover:focus-within .chart-info-tooltip,
+.chart-info-popover.active .chart-info-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.chart-info-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #f8fafc;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chart-info-tooltip-text {
+  color: #cbd5e1;
+}
+
+.chart-info-tooltip-text strong {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+/* Light Theme Support */
+.light .chart-info-btn {
+  background: rgba(2, 132, 199, 0.10);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: #0284c7;
+}
+
+.light .chart-info-btn:hover,
+.light .chart-info-popover:hover .chart-info-btn,
+.light .chart-info-popover.active .chart-info-btn,
+.light .chart-info-btn:focus-visible {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.35);
+}
+
+.light .chart-info-tooltip {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(203, 213, 225, 0.85);
+  border-top-color: #0284c7;
+  box-shadow:
+    0 16px 36px -6px rgba(15, 23, 42, 0.15),
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 #ffffff;
+  color: #475569;
+}
+
+.light .chart-info-tooltip::before {
+  background: #ffffff;
+  border-left-color: rgba(203, 213, 225, 0.85);
+  border-top-color: #0284c7;
+}
+
+.light .chart-info-tooltip-header {
+  color: #0f172a;
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+.light .chart-info-tooltip-text {
+  color: #334155;
+}
+
+.light .chart-info-tooltip-text strong {
+  color: #0284c7;
+}
+
+@media (max-width: 640px) {
+  .chart-info-tooltip {
+    left: -60px;
+    width: 250px;
+  }
+  .chart-info-tooltip::before {
+    left: 64px;
+  }
+}
+
+/* ============================================================
    Analytics Dead Stock Table & Badges in Light Theme
    ============================================================ */
 .light #leastProducts table th {

@@ -96,12 +96,33 @@
         <div class="grid xl:grid-cols-2 gap-6 mb-6">
           <!-- 1. Daily / Timeline Sales Trend -->
           <div class="glass chart-box">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 chart-header-row">
               <div class="flex items-center gap-2">
                 <h3 class="font-black text-slate-100 flex items-center gap-1.5 text-sm md:text-base">
                   <span>📈</span> <span id="dailySalesTitle">Sales Trend</span>
                 </h3>
                 <span id="dailySalesBadge" class="text-xs text-sky-400 font-bold"></span>
+                <!-- Info Button & Hover Tooltip -->
+                <div class="chart-info-popover relative inline-flex items-center">
+                  <button
+                    type="button"
+                    class="chart-info-btn"
+                    aria-label="About Sales Trend Chart"
+                  >
+                    <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <div class="chart-info-tooltip" role="tooltip">
+                    <div class="chart-info-tooltip-header">
+                      <span class="text-sky-400">📈</span>
+                      <span id="dailySalesTooltipTitle" class="font-bold text-slate-100">Monthly Sales Trend</span>
+                    </div>
+                    <div class="chart-info-tooltip-text">
+                      Tracks chronological sales performance over the selected timeframe. Use the controls to switch between <strong>Revenue ($)</strong>, <strong>Orders (#)</strong>, or <strong>Units Sold</strong>, and toggle <strong>Line</strong>, <strong>Bar</strong>, or <strong>Area</strong> views to evaluate growth velocity and demand spikes.
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="chart-header-controls">
                 <select id="ctrl_dailySales_metric" class="chart-ctrl-select" title="Switch metric">

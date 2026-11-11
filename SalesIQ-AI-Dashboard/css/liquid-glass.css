@@ -277,8 +277,15 @@ body.light::before {
   padding: 1.25rem 1.5rem;
 }
 
+.chart-header-row,
+.chart-box > .flex:first-child {
+  position: relative !important;
+  z-index: 25 !important;
+}
+
 .chart-wrap {
-  position: relative;
+  position: relative !important;
+  z-index: 1 !important;
   width: 100%;
   background: transparent !important;
 }
