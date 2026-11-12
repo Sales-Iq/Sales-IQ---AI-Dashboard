@@ -293,7 +293,7 @@ export const Navbar: React.FC = () => {
         <div className="hidden md:flex items-center gap-3">
           <a
             href="/login.html"
-            className="text-xs lg:text-sm font-semibold text-slate-300 hover:text-white px-4 py-2 rounded-xl transition-colors hover:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+            className="inline-flex items-center justify-center text-xs lg:text-sm font-semibold text-white btn-salesiq-secondary px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
           >
             Sign In
           </a>
@@ -354,7 +354,7 @@ export const Navbar: React.FC = () => {
               <div className="flex flex-col gap-2.5 pt-2">
                 <a
                   href="/login.html"
-                  className="w-full text-center py-2.5 rounded-xl glass-panel text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+                  className="w-full text-center py-2.5 rounded-xl btn-salesiq-secondary text-sm font-semibold text-white shadow-md transition-colors"
                 >
                   Sign In
                 </a>
