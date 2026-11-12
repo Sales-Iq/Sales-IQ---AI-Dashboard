@@ -1871,6 +1871,17 @@ function setupDashboardColumnResizer() {
   resizer.addEventListener("touchstart", onPointerDown, { passive: false });
 }
 
+function getPageZoomFactor() {
+  try {
+    const bodyZoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
+    const htmlZoom =
+      parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+    return (bodyZoom * htmlZoom) || 1;
+  } catch (_) {
+    return 1;
+  }
+}
+
 function setupHeightResizers(tileId) {
   const tile = document.getElementById(tileId);
   if (!tile) return;
@@ -1881,15 +1892,21 @@ function setupHeightResizers(tileId) {
 
   handles.forEach((handle) => {
     let isResizing = false;
-    let startY = 0;
-    let startHeight = 0;
+    let tileTop = 0;
+    let clickOffsetY = 0;
     let animFrame = null;
 
     function onStart(e) {
       if (!document.body.classList.contains("dashboard-edit-mode")) return;
       isResizing = true;
-      startY = e.touches ? e.touches[0].clientY : e.clientY;
-      startHeight = tile.getBoundingClientRect().height;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const rect = tile.getBoundingClientRect();
+      tileTop = rect.top;
+      // Store cursor offset from the tile's bottom edge at the moment of click
+      clickOffsetY = clientY - rect.bottom;
+
+      handle.classList.add("is-active");
       tile.classList.add("is-dragging");
       document.body.classList.add("is-row-resizing");
 
@@ -1904,13 +1921,18 @@ function setupHeightResizers(tileId) {
     function onMove(e) {
       if (!isResizing) return;
       const currentY = e.touches ? e.touches[0].clientY : e.clientY;
-      const deltaY = currentY - startY;
+      const zoom = getPageZoomFactor();
+
+      // Screen distance from top of tile to current mouse position, adjusting for initial click offset
+      const desiredScreenHeight = (currentY - clickOffsetY) - tileTop;
+      // Convert physical screen distance to CSS pixels using page zoom factor (e.g. 0.75 desktop UI scale)
+      const desiredCssHeight = desiredScreenHeight / zoom;
 
       if (animFrame) cancelAnimationFrame(animFrame);
       animFrame = requestAnimationFrame(() => {
         const newH = Math.max(
-          240,
-          Math.min(900, Math.round(startHeight + deltaY)),
+          200,
+          Math.min(1400, Math.round(desiredCssHeight)),
         );
         tile.style.height = `${newH}px`;
         tile.style.minHeight = `${newH}px`;
@@ -1924,6 +1946,7 @@ function setupHeightResizers(tileId) {
     function onEnd() {
       if (!isResizing) return;
       isResizing = false;
+      handle.classList.remove("is-active");
       tile.classList.remove("is-dragging");
       document.body.classList.remove("is-row-resizing");
 

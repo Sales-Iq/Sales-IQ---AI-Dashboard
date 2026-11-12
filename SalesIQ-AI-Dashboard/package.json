@@ -1,21 +1,47 @@
 {
   "name": "salesiq-ai-dashboard",
   "version": "1.0.0",
-  "description": "HTML + CSS + Vanilla JavaScript project. Uses Firebase Authentication, Firebase Firestore, Chart.js, jsPDF, SheetJS, and the Gemini API. Tailwind CSS is compiled to a static stylesheet at build time (see npm run build:css) instead of using the Play CDN.",
-  "main": "index.js",
+  "description": "SalesIQ — AI Powered Retail Sales, Inventory & Demand Forecasting Platform",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "build:css": "tailwindcss -i ./css/tailwind-src.css -o ./css/tailwind.css --minify",
     "watch:css": "tailwindcss -i ./css/tailwind-src.css -o ./css/tailwind.css --watch"
   },
-  "keywords": [],
+  "keywords": [
+    "retail",
+    "pos",
+    "inventory",
+    "forecasting",
+    "ai",
+    "gemini",
+    "firestore"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "pptxgenjs": "^4.0.1"
+    "@gsap/react": "^2.1.2",
+    "clsx": "^2.1.1",
+    "gsap": "^3.12.7",
+    "lenis": "^1.1.20",
+    "lucide-react": "^0.475.0",
+    "motion": "^12.4.2",
+    "pptxgenjs": "^4.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.19"
+    "@types/node": "^22.13.4",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
   }
 }
