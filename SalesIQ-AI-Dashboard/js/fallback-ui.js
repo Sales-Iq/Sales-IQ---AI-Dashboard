@@ -25,6 +25,18 @@
     return localStorage.getItem("salesiq_theme") || "dark";
   }
   function applyTheme() {
+    if (
+      document.documentElement.getAttribute("data-force-dark") === "true" ||
+      document.body?.getAttribute("data-force-dark") === "true" ||
+      location.pathname.endsWith("/login.html") ||
+      location.pathname.endsWith("login.html") ||
+      location.pathname.endsWith("/register.html") ||
+      location.pathname.endsWith("register.html")
+    ) {
+      document.documentElement.classList.remove("light");
+      if (document.body) document.body.classList.remove("light");
+      return;
+    }
     document.body.classList.toggle("light", theme() === "light");
     document.documentElement.classList.toggle("light", theme() === "light");
   }

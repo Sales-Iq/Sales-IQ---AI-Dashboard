@@ -461,6 +461,22 @@ export function updateThemeToggleUI(theme = getTheme()) {
 }
 
 export function applyTheme(theme = getTheme(), dispatchEvent = true) {
+  const isForceDarkPage =
+    document.documentElement.getAttribute("data-force-dark") === "true" ||
+    document.body?.getAttribute("data-force-dark") === "true" ||
+    location.pathname.endsWith("/login.html") ||
+    location.pathname.endsWith("login.html") ||
+    location.pathname.endsWith("/register.html") ||
+    location.pathname.endsWith("register.html");
+
+  if (isForceDarkPage) {
+    document.documentElement.classList.remove("light");
+    if (document.body) {
+      document.body.classList.remove("light");
+    }
+    return;
+  }
+
   document.body.classList.toggle("light", theme === "light");
   document.documentElement.classList.toggle("light", theme === "light");
   localStorage.setItem("salesiq_theme", theme);

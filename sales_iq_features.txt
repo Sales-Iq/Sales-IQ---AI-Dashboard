@@ -1,0 +1,734 @@
+================================================================================
+SALESIQ — AI-POWERED ENTERPRISE SALES, INVENTORY & FORECASTING ECOSYSTEM
+COMPLETE ARCHITECTURE, FEATURE CATALOG & PAGE DIRECTORY SPECIFICATION
+================================================================================
+Document Version: 2.4.0 (Enterprise Release)
+Generated: Academic & Industry Reference Specification
+Target System: SalesIQ AI Dashboard Suite
+Operating Mode: Realtime Cloud Firestore + Multi-Model Gemini Orchestrator
+
+================================================================================
+1. PLATFORM OVERVIEW & EXECUTIVE SUMMARY
+================================================================================
+
+1.1 Mission & Vision
+--------------------
+SalesIQ is an all-in-one, modern, enterprise-grade cloud operating system designed 
+specifically for retail businesses, multi-branch wholesale distributors, FMCG stores, 
+and electronic merchants. It bridges the critical divide between point-of-sale (POS) 
+transactions, real-time inventory management, vendor supply chains, and artificial 
+intelligence. 
+
+Unlike legacy ERP software that is clunky, slow, and reactive, SalesIQ transforms raw 
+transaction logs into proactive, forward-looking business intelligence. By marrying 
+low-latency cloud data persistence with Google's Gemini large language models, SalesIQ 
+gives shop owners and corporate executives an automated business analyst that continuously 
+monitors stockouts, forecasts seasonal reorders, models revenue growth trajectories, 
+and safeguards profit margins.
+
+1.2 Target Business Domains
+---------------------------
+- Supermarkets, Grocery Stores & Convenience Markets
+- Consumer Electronics, Mobile Phone Showrooms & Hardware Retailers
+- Fashion Boutiques, Apparel Chains & Footwear Outlets
+- Pharmaceutical & Health Care Distribution Counters
+- Wholesale Distributors, Stockists & Supply Hubs
+- Multi-staff Retail Counters requiring role-segregated POS billing terminals
+
+1.3 Core Value Propositions
+---------------------------
+- Zero-Lag Realtime Persistence: Synchronized across multiple cash registers and 
+  admin monitors in under 50ms via Google Cloud Firestore.
+- Autonomous AI Intelligence: Continuous data synthesis powered by a resilient 
+  multi-model cascade of Google Gemini models with automatic quota failover.
+- Offline-First 3-Tier Caching: Instant page-to-page navigation with zero-millisecond 
+  perceived UI latency via RAM maps, sessionStorage, and IndexedDB caching.
+- Role-Based Operational Security: Complete privilege isolation ensuring sales staff 
+  cannot tamper with product costs, profit margins, sales history, or vendor contacts.
+- Lumelle Liquid Glass Aesthetics: Ultra-premium, tactile visual experience featuring 
+  chromatic caustics, physical glass refraction, smooth Lenis inertia scrolling, 
+  and responsive mobile sheets.
+- Global Multi-Currency Support: Real-time live exchange rate synchronization 
+  converting base INR values to USD, EUR, GBP, AED, CAD, AUD, and SGD on the fly.
+
+1.4 Technological Stack & Standards
+-----------------------------------
+- Frontend Architecture: Zero-framework, clean ES6+ Modular JavaScript architecture.
+  No complicated npm build steps or webpack bundling required; boots instantly via any 
+  standard web server (VS Code Live Server, Firebase Hosting, Nginx, Vercel).
+- Visual Layer: Tailwind CSS (Modern Utility Foundation) combined with custom CSS 
+  custom properties for the proprietary Lumelle Liquid Glass design system.
+- Animation & Physics: Lenis Smooth Scrolling Engine, Framer Motion spring physics, 
+  CSS 3D perspective transforms, and canvas particle spark engines.
+- Backend & Cloud Database: Google Firebase Authentication (Email/Password + Google OAuth) 
+  and Google Cloud Firestore with real-time onSnapshot websocket synchronization.
+- Artificial Intelligence: Google Generative AI (Gemini REST API) with multi-model failover 
+  (Gemini 2.5 Flash Lite, 3.1 Flash Lite, 3.5 Flash, 3.8 Flash, 1.5 Flash).
+- Data Visualization: Chart.js 4.4.1 (Canvas rendering with custom glass gradients, 
+  retina high-DPI scaling, smooth bezier interpolations, and theme-adaptive palettes).
+- Document & Report Engines: jsPDF (Client-side vector PDF generation), SheetJS / XLSX 
+  (Native Excel spreadsheet generation), dynamic RFC 4180 CSV and JSON serialization.
+
+
+================================================================================
+2. SYSTEM ARCHITECTURE & CORE PLATFORM ENGINES
+================================================================================
+
+2.1 Multi-Model Google Gemini AI Orchestration Engine (js/gemini-service.js)
+----------------------------------------------------------------------------
+The AI engine within SalesIQ is built with enterprise resilience to guarantee 100% 
+uptime even under strict API rate limits or quota constraints:
+- Multi-Model Priority Registry:
+  * Primary Intelligence Tier: Gemini 3.8 Flash, Gemini 3.5 Flash, Gemini 3 Flash Preview 
+    (High-reasoning models dedicated to strategic forecasting and business insights).
+  * High-Throughput / High-Quota Tier (500 RPD): Gemini 2.5 Flash Lite, Gemini 3.1 Flash Lite, 
+    Gemini 3.5 Flash Lite (Specialized for high-volume JSON extraction and CSV mapping).
+  * Backstop Emergency Tier: Gemini 2.0 Flash, Gemini 1.5 Flash.
+  * Audio / Voice Tier: Gemini 3.8 Flash TTS.
+- Dynamic Quota Failover: Monitors HTTP 429 and rate-limit responses; automatically switches 
+  to the next candidate model in milliseconds without interrupting the user.
+- Local Storage Quota Cooldowns: Remembers model cooldown windows (1 hour by default) 
+  to prevent redundant failed API calls.
+- AI-Powered Spreadsheet Column Mapper: Automatically inspects arbitrary user-uploaded 
+  Excel/CSV spreadsheets, analyzes column titles and sample row data, and matches them to 
+  the SalesIQ product catalog schema (Name, MRP, Cost Price, Stock, Reorder Level, Category).
+- Offline Synonym Engine: Built-in rule-based synonym dictionary that provides instant 
+  local column mapping if internet or API keys are unavailable.
+- Dynamic Key Management: Allows administrators to input custom Gemini API keys directly 
+  from the UI Settings panel with instant local storage override.
+
+2.2 High-Performance 3-Tier Client Caching Architecture (js/idb-cache.js)
+-------------------------------------------------------------------------
+To eliminate loading spinners and ensure sub-millisecond perceived performance:
+- Tier 1 (Memory Map): Active in-memory JS Map providing instantaneous 0ms reads for 
+  currently mounted views.
+- Tier 2 (Session Storage): Fast multi-kilobyte cache surviving soft refreshes and tab focus.
+- Tier 3 (IndexedDB Engine - salesiq_cache_db_v2): High-capacity client-side structured 
+  storage capable of persisting 50MB+ of inventory documents, historical transactions, 
+  and analytics aggregations across browser sessions.
+- Stale-While-Revalidate Sync: Cached data renders on screen instantly (<5ms) while a 
+  background Firebase snapshot verifies and seamlessly patches fresh updates.
+
+2.3 Real-Time Firestore Data Layer & Sync System (js/shared.js, js/firebase-config.js)
+--------------------------------------------------------------------------------------
+- Bi-directional Websocket Listeners: Utilizes Firestore onSnapshot listeners for real-time 
+  reactivity across inventory updates, new POS sales, and critical stock notifications.
+- Automatic Offline Fallback: If network drops, automatically degrades to one-time cache 
+  fetches with non-intrusive toast notifications.
+- Transactional Inventory Decrement: POS billing executes transactional updates to prevent 
+  overselling and race conditions across multiple simultaneous cash registers.
+- Document Hygiene & Scrubbing: Includes deduplication routines (admin/cleanup-duplicates.js) 
+  to maintain zero-redundancy across Firestore collections.
+
+2.4 Dynamic Live Simulation & Demo Seeder Engine (js/demo-live-data.js, admin/js/demoSeeder.js)
+-----------------------------------------------------------------------------------------------
+- Instant Retail Demo Seeder: One-click generation of 20+ realistic retail inventory items 
+  across 6 major retail categories (Beverages, Snacks, Electronics, Personal Care, Bakery, Dairy).
+- Realtime Live Transaction Simulator: Generates realistic mock sales every 3 to 7 seconds, 
+  simulating walk-in customers, varying cart quantities, cash/UPI/card payments, and live stock decrements.
+- Strict Data Isolation: Demo sales and demo products are tagged with source='dummy' and 
+  isDemo=true, preventing corruption of real production sales records or profit reports.
+- UI Control Panel: Floating interactive demo toolbar on the Admin Dashboard allowing administrators 
+  to Start, Pause, or Flush simulated traffic on demand.
+
+2.5 Global Multi-Currency & Live Exchange Rate Engine (js/shared.js)
+-------------------------------------------------------------------
+- Base Currency Architecture: All records are internally preserved in high-precision Indian Rupees (INR ₹) 
+  to maintain absolute mathematical consistency across reports.
+- Live Forex API Integration: Synchronizes every 6 hours with open.er-api.com to fetch real-world 
+  exchange rates for global currencies:
+  * USD ($) - US Dollar
+  * EUR (€) - Euro
+  * GBP (£) - British Pound Sterling
+  * AED (AED) - UAE Dirham
+  * CAD (CA$) - Canadian Dollar
+  * AUD (A$) - Australian Dollar
+  * SGD (SG$) - Singapore Dollar
+- Dynamic Frontend Transformation: Switching currencies in Settings instantly re-renders all 
+  historical sales, stock valuations, revenue graphs, and invoices in the selected foreign currency.
+- International Number Formatting: Utilizes the native Intl.NumberFormat standard for authentic 
+  local digit grouping (e.g., Lakhs/Crores for en-IN vs Millions for en-US).
+
+2.6 Lumelle Liquid Glass Design System & Micro-Interactions (css/liquid-glass.css, js/liquid-glass.js)
+------------------------------------------------------------------------------------------------------
+- 1.5px Bevel Rim Knockout Mask: Patented CSS mask-image technique that renders genuine frosted glass 
+  rim highlights without heavy multi-layer DOM nesting.
+- Chromatic Caustics & Optical Refraction: Background radial glows and specular light streaks simulate 
+  physical light passing through thick glass panels.
+- Dark-Lock Authentication Architecture: High-specificity stylesheet rules and inline head scripts 
+  guarantee that Login and Register portals remain in luxury obsidian dark mode regardless of OS theme.
+- Lenis Inertia Scrolling: Ultra-smooth, hardware-accelerated momentum scrolling on all administrative tables.
+- Framer Motion Spring Physics: Tactile bouncing on button presses, interactive pill navigation tabs, 
+  and card hover elevations.
+- Interactive Canvas Particle Sparks: Dynamic click-spark particle generator emitting gold and neon 
+  particles upon interactive button clicks.
+- Responsive Mobile Bottom Sheet Drawer (js/mobile-bottom-sheet.js): Touch gesture-driven bottom drawer 
+  allowing full mobile POS operation on tablets and smartphones.
+
+2.7 Role-Based Access Control (RBAC) & Enterprise Security (firestore-rules.txt, js/auth.js)
+--------------------------------------------------------------------------------------------
+- Role Definitions:
+  * Administrator (Admin): Unrestricted access to financial reports, profit calculations, 
+    inventory procurement, user invitation, system settings, and Gemini API keys.
+  * Sales Associate (Staff): Restricted access strictly isolated to POS billing, personal sales logs, 
+    customer contact lookup, and read-only stock level verification.
+- Cloud Firestore Security Guards:
+  * signedIn(): Enforces Firebase authentication tokens on every database request.
+  * isActiveAdmin(): Validates caller UID against the `admins` collection and confirms active status.
+  * isActiveStaff(): Validates caller UID against the `staff` collection.
+  * stockOnlyUpdate(): Crucial security rule allowing POS staff to modify ONLY `stock`, `status`, 
+    and `updatedAt` on product documents, preventing staff from altering retail prices or descriptions.
+  * Destructive Operations Guard: Restricts deletion of sales, products, and customer profiles exclusively to Admins.
+- Session Security & Inactive Quarantine: Deactivated employees (?inactive=1) are instantly signed out 
+  and barred from reading any cached or realtime store data.
+
+
+================================================================================
+3. COMPREHENSIVE PLATFORM FEATURE MATRIX (EVERY SINGLE FEATURE)
+================================================================================
+
+3.1 Point of Sale (POS) & Billing Terminal
+------------------------------------------
+- High-Speed Product Search: Real-time search by product title, brand, category, or barcode/SKU.
+- Barcode Scanner Ready: Listens to rapid hardware barcode scanner inputs for instant cart addition.
+- Interactive Cart Management: Real-time quantity adjustment, item removal, and auto-stock ceiling checks.
+- Stock Safeguard Validation: Real-time validation preventing billing quantities from exceeding available stock.
+- Automated Live Price Calculation: Real-time computation of Subtotal, CGST/SGST Taxes, Discounts, and Grand Total.
+- Multi-Method Payment Gateways: Supports Cash, Credit/Debit Card, UPI / QR Code, and Store Credit.
+- Customer Association: Quick dropdown linking sales to registered customer profiles for loyalty tracking.
+- Instant Thermal Receipt Generation: One-click generation of formatted thermal receipts ready for 80mm/58mm POS printers.
+- Full Commercial Invoicing: Generates formal A4 business tax invoices with complete shop metadata, tax breakdown, and signatures.
+- Transaction Origin Tagging: Every sale records the originating cashier UID and role (admin vs staff) for shift auditing.
+
+3.2 Product Catalog & Inventory Governance
+------------------------------------------
+- Comprehensive Product Metadata: Tracks Name, Category, SKU/Barcode, Cost Price, Selling Price (MRP), 
+  Current Stock, Minimum Reorder Threshold, and Supplier Association.
+- Automated Tri-State Stock Badges: Dynamically computes status:
+  * "Available" (Stock > Reorder Level) - Emerald Neon Badge
+  * "Low Stock" (Stock <= Reorder Level and Stock > 0) - Amber Alert Badge
+  * "Out of Stock" (Stock <= 0) - Crimson Alert Badge
+- AI Spreadsheet Import: Drag-and-drop Excel (.xlsx, .xls) and CSV import powered by Gemini multi-model 
+  column mapping and synonym auto-detection.
+- Batch Management: Supports multi-batch stock tracking (`productBatches`) for expiring or multi-vendor goods.
+- Manual Stock Adjustment Modal: Allows warehouse managers to perform rapid stock audits and inventory reconciliations.
+- Fast vs Slow Moving Product Ranking: Real-time sales velocity algorithm categorizing products into fast-turnover 
+  cash cows and slow-moving dead stock.
+
+3.3 Supply Chain & Purchase Restock Management
+----------------------------------------------
+- Vendor & Supplier Profiles: Records Vendor Name, Contact Person, Phone, Email, Physical Address, and Supplied Categories.
+- Purchase Order Requisitions: Formal restock intake recording Supplier ID, Product ID, Inward Units, Unit Purchase Rate, 
+  Total Purchase Cost, Invoice Date, and Payment Status.
+- Automated Inventory Increment: Approving a purchase order instantly increases warehouse stock levels in Cloud Firestore.
+- Purchase History Ledger: Complete historical audit trail of all inventory inward movements, vendor invoices, and cost trends.
+- Supplier Relationship Tracking: Links vendor performance to product quality, lead times, and fulfillment history.
+
+3.4 Customer Relationship Management (CRM) & Directory
+------------------------------------------------------
+- Customer Profiles: Maintains Customer Name, Phone Number, Email, Billing Address, and Date Joined.
+- Automated Lifetime Value (LTV) Calculation: Dynamically aggregates total historical purchases, visits count, 
+  and average order value (AOV) per customer.
+- Unified Contact Directory: Hybrid directory view synthesizing both retail buyers and wholesale suppliers 
+  into a single high-efficiency search index.
+- Quick Communication Triggers: One-click actions to initiate direct phone calls or launch pre-filled email client drafts.
+
+3.5 Predictive Analytics & Demand Forecasting
+---------------------------------------------
+- Historical Velocity Analysis: Calculates Average Daily Sales (ADS) over 30-day, 60-day, and 90-day moving windows.
+- Stockout Runway Countdown: Real-time calculation estimating the exact number of days remaining before an item reaches zero units:
+  Formula: Stock Finish Days = Current Stock Level / Average Daily Sales
+- Intelligent Reorder Recommendations: Computes recommended economic reorder quantities:
+  Formula: Suggested Reorder = Average Daily Sales * 30 Days Buffer + Safety Threshold
+- Future Demand Trajectory Charting: Chart.js visualization plotting past sales against projected future demand curves.
+- Forecasting Persistence: Ability to save and track generated forecasts in the Firestore `forecasting` collection for historical verification.
+
+3.6 AI Business Copilot & Conversational Intelligence
+-----------------------------------------------------
+- Conversational Business Intelligence: Natural language conversational terminal answering complex enterprise questions:
+  "Which products yielded the highest net margin this week?", "What items are in danger of stockout before Friday?", 
+  "How are our beverage sales comparing to snack sales?"
+- Executive Briefing Generator: One-click AI synthesis summarizing store health, revenue trends, top-performing cashiers, 
+  and urgent operational risks.
+- Contextual Grounding: AI prompts are injected with live, structured Firestore inventory, sales, and customer summaries.
+- One-Click Prompt Shortcuts: Quick chips for "Restock Suggestions", "Margin Optimization", "Slow Moving Inventory", and "Sales Trends".
+
+3.7 Executive Business Analytics & Data Visualizations
+------------------------------------------------------
+- Daily Sales Trend Chart: Smooth bezier line chart displaying daily revenue oscillations with peak indicators.
+- Monthly Revenue Chart: Bar chart benchmarking monthly sales performance and seasonal peaks.
+- Top Selling Products Chart: Horizontal bar chart ranking bestsellers by unit volume and revenue contribution.
+- Category Breakdown Chart: Multi-color Doughnut chart displaying product distribution and department sales share.
+- Revenue Growth Area Chart: Gradient filled area chart tracking cumulative store gross revenue growth.
+- Real-Time Chart Synchronization: Charts update live via Firestore onSnapshot listeners without reloading or flickering.
+
+3.8 Financial & Operational Reporting Center
+--------------------------------------------
+- Multi-Dimensional Filtering: Filter transaction history by custom Date Ranges (Today, Yesterday, Last 7 Days, 
+  This Month, Custom Range), Product Categories, and Payment Methods.
+- Export to Vector PDF: High-fidelity client-side PDF document generation formatted with shop logo, itemized rows, 
+  subtotals, tax breakdowns, and summary footers via jsPDF.
+- Export to Excel (XLSX): Structured multi-column spreadsheet generation with raw numeric formulas via SheetJS.
+- Export to CSV & JSON: RFC 4180 compliant CSV export and formatted JSON downloads for external ERP/accounting integration.
+- Print-Ready Invoice Engine: Built-in CSS print media styles optimizing invoices for laser printers and thermal receipt rolls.
+
+3.9 Real-Time Notification & Alerting Infrastructure
+----------------------------------------------------
+- Automatic Stockout Triggers: Fires immediate system notifications when any product crosses its minimum reorder threshold.
+- Live POS Transaction Alerts: Real-time notifications dispatched across admin screens whenever a cashier completes a sale.
+- Persistent Notification Drawer: Dropdown badge counter in top header displaying unread alerts with timestamps.
+- Notification Management: Real-time Mark as Read, Mark All as Read, and Clear History controls.
+
+3.10 Staff & Administrator User Governance
+------------------------------------------
+- Enterprise Role Segregation: Secure separation between administrative owners (`admins`) and billing cashiers (`staff`).
+- Staff Account Invitation: Admins can search, onboard, and link staff members to store branches.
+- Instant Account Deactivation: One-click toggle switching staff status between `active` and `inactive`. Inactive staff 
+  are booted immediately from active sessions.
+- Audit & Security Logging: Tracks cashier last login timestamps (`lastLoginAt`), total sales registered, and transaction logs.
+
+3.11 User Profile, Personalization & Preferences
+------------------------------------------------
+- Profile Avatar Management: Upload photo or specify custom image URL with fallback to elegant initialed badges.
+- Credential Management: Real-time password updates via Firebase Authentication.
+- Theme Customization: Dark Mode / Light Mode switcher with local storage persistence (`salesiq_theme`).
+- Currency Preference: Global currency selector updating financial symbols and live exchange conversions across all views.
+
+3.12 Enterprise Settings & Store Configuration
+----------------------------------------------
+- Business Profile: Shop Name, Support Email, Phone Number, Physical Address, and Tax ID (GST/VAT).
+- Custom Gemini API Key Management: UI input allowing business owners to connect their private Gemini API keys.
+- Low-Stock Threshold Global Defaults: Sets company-wide default safety margins for newly added products.
+- Database Scrubbing Utilities: Built-in administrative tools to clean test transactions and duplicate documents.
+
+
+================================================================================
+4. COMPLETE DIRECTORY OF ALL 25 PAGES (EXHAUSTIVE BREAKDOWN)
+================================================================================
+
+--------------------------------------------------------------------------------
+4.1 PUBLIC & AUTHENTICATION PAGES (6 PAGES)
+--------------------------------------------------------------------------------
+
+1. index.html — Public SaaS Landing Page & Product Showcase
+   - Path: /index.html
+   - Target Role: Public visitors, prospective store owners, evaluating enterprise clients.
+   - Purpose: High-converting, modern landing page presenting the SalesIQ value proposition.
+   - Key Components & UI:
+     * Interactive Glass Navigation Header with quick links (Features, Architecture, Pricing, Portal Login).
+     * Hero Banner with high-impact typography, animated ambient glow orbs, and primary Call-To-Action buttons.
+     * Live Interactive KPI Preview Cards: Demonstrates dynamic counters (Today Sales, Low Stock Alerts, Revenue).
+     * Interactive Sample Chart Preview: Embedded Chart.js preview showcasing real-time sales trend simulations.
+     * Core Feature Pillar Cards: Deep-dives into AI Insights, Predictive Forecasting, Real-Time Analytics, and POS Terminal.
+     * Social Proof & Testimonials Section: User reviews from retail store owners and operations managers.
+     * Responsive Glass Footer with quick sitemap, copyright notices, and academic project acknowledgments.
+   - Data & Script Connections: js/landing.js, js/liquid-glass.js, js/lenis.min.js.
+
+2. login.html — Secure Authentication Gateway (Always Dark Mode)
+   - Path: /login.html
+   - Target Role: Registered Administrators and Sales Staff.
+   - Purpose: Secure user authentication entrypoint with automatic role-based destination dispatching.
+   - Key Components & UI:
+     * Dark-Mode Locked Shell (data-force-dark="true"): Preserves luxury obsidian aesthetic regardless of system preference.
+     * 3D Gyroscopic Card Tilt: auth-3d.js transforms the login container based on real-time mouse/gyro coordinates.
+     * Dual Authentication Forms:
+       - Standard Email & Password inputs with password visibility toggle.
+       - "Continue with Google" One-Click OAuth sign-in button.
+     * Forgot Password Modal: Triggers Firebase sendPasswordResetEmail directly to the user's inbox.
+     * Dynamic Role-Based Redirection: Automatically reads user claims from Firestore and routes:
+       - Admins -> /admin/dashboard.html
+       - Sales Staff -> /sales/dashboard.html
+     * Inactive Account Guard: Displays explicit security error alerts if deactivated staff attempt entry.
+   - Data & Script Connections: js/auth.js, js/auth-3d.js, js/firebase-config.js, css/auth.css.
+
+3. register.html — Enterprise User Onboarding & Account Registration
+   - Path: /register.html
+   - Target Role: New store owners and sales associates onboarding onto SalesIQ.
+   - Purpose: Create verified Firebase user credentials and establish initial Firestore profile records.
+   - Key Components & UI:
+     * Dark-Mode Locked Shell matching the login aesthetic.
+     * Full Name, Email Address, and Password inputs with client-side length and strength validation.
+     * Role Selection Selector: Radio / segmented pill picker allowing selection between "Admin" and "Sales Staff".
+     * Google OAuth Onboarding: Automatically creates appropriate Firestore document in `admins` or `staff` collection.
+     * First-Admin Auto Bootstrap: Automatically assigns administrative permissions if registering initial instance.
+     * Instant Feedback Toast: Displays success/error banners on credential collisions or validation failures.
+   - Data & Script Connections: js/auth.js, js/account.js, js/auth-3d.js, css/auth.css.
+
+4. profile.html — User Profile & Personal Preferences Center
+   - Path: /profile.html
+   - Target Role: Authenticated Users (Admins and Sales Staff).
+   - Purpose: Personal profile customization, credential security, and display preferences.
+   - Key Components & UI:
+     * User Identity Hero Card: Large profile avatar with photo URL updater and fallback monogram avatar generator.
+     * Role Badge: Visual badge indicating verified account standing ("Administrator" or "Sales Associate").
+     * Personal Information Form: Editable Display Name, read-only Verified Email Address, and Avatar Image URL.
+     * Security & Password Section: Change password form communicating directly with Firebase Auth.
+     * UI Theme Controller: Live preview toggle switching between Dark Mode and Light Mode.
+     * Account Metadata Footnote: Displays account creation timestamp and last active session date.
+   - Data & Script Connections: js/profile.js, js/shared.js, js/account.js.
+
+5. poster.html — Academic & Conference Technical Presentation Poster
+   - Path: /poster.html
+   - Target Role: Academic evaluators, conference attendees, software architecture reviewers.
+   - Purpose: High-resolution, printable architectural poster detailing the technical engineering behind SalesIQ.
+   - Key Components & UI:
+     * Academic Header: Project title, researcher credits, faculty department, and institution affiliation.
+     * Architectural Flow Diagram: Visual map showing client PWA, Firestore Websockets, and Gemini AI endpoints.
+     * Methodology & Technical Pillars: Breakdowns of 3-tier caching, multi-model AI failover, and RBAC security rules.
+     * Key Empirical Metrics: Charts displaying latency improvements (0ms cache vs 450ms network) and forecast accuracy.
+     * Print Optimization: Pre-styled CSS media rules formatted specifically for standard A1/A2 presentation boards.
+   - Data & Script Connections: Standalone responsive presentation stylesheet.
+
+6. 404.html — Glassmorphic Route Not Found Page
+   - Path: /404.html
+   - Target Role: Any user navigating to an invalid or unmapped URL.
+   - Purpose: Prevent broken user journeys with a graceful, animated return path.
+   - Key Components & UI:
+     * Floating 3D "404" Glass Numerals with subtle chromatic aberration and backdrop blur.
+     * Contextual Error Description explaining that the requested resource has moved or does not exist.
+     * "Return to Dashboard" Dynamic CTA: Intelligently inspects the current user session and links to the correct portal.
+     * Animated background particles maintaining visual consistency with the main application shell.
+   - Data & Script Connections: js/liquid-glass.js, js/shared.js.
+
+--------------------------------------------------------------------------------
+4.2 ADMIN PORTAL (15 PAGES)
+--------------------------------------------------------------------------------
+
+7. admin/dashboard.html — Executive Command Center & Business Dashboard
+   - Path: /admin/dashboard.html
+   - Target Role: Store Owners, General Managers, System Administrators.
+   - Purpose: Central nerve center displaying real-time financial health, live sales, inventory alerts, and AI insights.
+   - Key Components & UI:
+     * Realtime KPI Metric Grid: Today's Gross Revenue, Total Sales Count, Low Stock Count, Active Products Count.
+     * Live Sales Velocity Graph: Interactive Chart.js canvas showing hourly transaction volume.
+     * Realtime Transaction Ledger: Live-updating table rendering incoming POS orders via onSnapshot.
+     * Gemini AI Executive Briefing Widget: Automated natural language summary highlighting risks and top performers.
+     * Low-Stock Urgent Alert Rail: Highlighting critical items needing immediate purchase reorders.
+     * Live Simulation Controls: Interactive toolbar to Seed Mock Products, Trigger Single Sale, or Run Live Traffic.
+   - Data & Script Connections: admin/js/dashboard.js, js/shared.js, js/gemini-service.js, js/demo-live-data.js.
+
+8. admin/sales.html — Master Sales Ledger & Transaction Auditing
+   - Path: /admin/sales.html
+   - Target Role: Administrators, Financial Controllers, Auditors.
+   - Purpose: Comprehensive historical archive of every completed sale across all cash registers and staff.
+   - Key Components & UI:
+     * Search & Filter Suite: Real-time search by Invoice Number, Customer Name, Staff Member, or Date Range.
+     * Transaction Ledger Table: Columns for Invoice ID, Timestamp, Customer, Items Count, Total Amount, Payment Method, Cashier.
+     * Detailed Invoice Modal: Inspects itemized line items, unit prices, applied taxes, discounts, and payment metadata.
+     * Thermal Receipt Reprinter: Re-generates standard 80mm thermal receipt slips for past orders on demand.
+     * Multi-Format Data Exporter: Instant export of filtered sales records to CSV, Excel (XLSX), or PDF summary.
+     * Administrative Deletion & Voiding: Allows authorized admins to void fraudulent or erroneous sales with confirmation.
+   - Data & Script Connections: admin/js/sales.js, js/shared.js.
+
+9. admin/add-sale.html — Enterprise Admin POS & Billing Terminal
+   - Path: /admin/add-sale.html
+   - Target Role: Administrators handling direct store billing or wholesale counter sales.
+   - Purpose: High-speed point-of-sale checkout terminal with inventory deduction and invoice generation.
+   - Key Components & UI:
+     * Split-Screen Billing Interface: Left pane for catalog search and item selection; right pane for live cart summary.
+     * Fast Catalog Grid: Filter products by category chips or instant search with real-time stock availability badges.
+     * Interactive Cart Table: Incremental quantity controls, unit price display, and subtotal calculation.
+     * Live Customer Linkage: Dropdown to associate sale with existing customer or quick-modal to register new customer.
+     * Commercial Invoice Calculator: Configurable discount percentage, sales tax toggle (GST), and grand total calculation.
+     * Payment Method Selector: Segmented choice between Cash, UPI / QR, Card, and Credit terms.
+     * Instant Print Actions: "Complete & Print Invoice" and "Complete & Print Thermal Slip" workflow buttons.
+   - Data & Script Connections: admin/js/add-sale.js, js/shared.js.
+
+10. admin/products.html — Product Catalog & Inventory Master
+    - Path: /admin/products.html
+    - Target Role: Inventory Managers, Store Owners.
+    - Purpose: Master repository for creating, modifying, categorizing, and auditing all store merchandise.
+    - Key Components & UI:
+      * Product Inventory Table: Displays Product Name, Category, SKU, Cost Price, Selling Price (MRP), Margin, Stock, Status.
+      * Add / Edit Product Modal: Comprehensive form capturing SKU, Barcode, Product Name, Category, Pricing, and Reorder Point.
+      * AI Spreadsheet Bulk Importer: Drag-and-drop file upload supporting Excel (.xlsx, .xls) and CSV files.
+      * Intelligent Column Mapping Drawer: Powered by Gemini to auto-map user spreadsheet headers to SalesIQ schema.
+      * Quick Stock Adjustment Modal: Rapid inline inventory corrections with audit reason tracking.
+      * Multi-Criteria Filters: Filter inventory by category, stock status (Available, Low, Out), or vendor.
+    - Data & Script Connections: admin/js/products.js, js/gemini-service.js, js/shared.js.
+
+11. admin/purchases.html — Purchase Orders & Restock Management
+    - Path: /admin/purchases.html
+    - Target Role: Procurement Officers, Store Managers.
+    - Purpose: Inward inventory tracking, vendor purchase order management, and stock replenishment logging.
+    - Key Components & UI:
+      * Inward Stock Intake Form: Select Supplier, choose Product, input Inward Quantity, Unit Purchase Cost, and Invoice Number.
+      * Automated Stock Increment: Submitting inward stock automatically increases product inventory in Firestore.
+      * Purchase History Ledger: Comprehensive table tracking all historical restock orders, invoice totals, and delivery dates.
+      * Supplier Performance Metrics: Tracks total procurement spend per vendor and average cost fluctuations over time.
+      * PDF Purchase Voucher Generation: Exports formal restock inward vouchers for company accounting records.
+    - Data & Script Connections: admin/js/purchases.js, js/shared.js.
+
+12. admin/customers.html — Customer Relationship Management (CRM)
+    - Path: /admin/customers.html
+    - Target Role: Store Owners, Marketing Managers, Cashiers.
+    - Purpose: Customer profile directory, loyalty monitoring, and lifetime purchase history tracking.
+    - Key Components & UI:
+      * Customer Directory Table: Displays Customer Name, Phone, Email, Address, Total Orders Placed, and Total Spend.
+      * Add / Edit Customer Modal: Input fields for Full Name, Mobile Number, Email Address, and Shipping/Billing Address.
+      * Customer Detail Flyout: Shows complete chronological purchase history, favorite products, and average ticket size.
+      * Direct Contact Action Buttons: Direct triggers to launch phone calls (`tel:`) or pre-addressed emails (`mailto:`).
+      * Export Customer Database: One-click export of customer contacts to CSV for marketing campaigns.
+    - Data & Script Connections: admin/js/customers.js, js/shared.js.
+
+13. admin/suppliers.html — Vendor & Supplier Directory
+    - Path: /admin/suppliers.html
+    - Target Role: Purchasing Agents, Store Owners.
+    - Purpose: Directory of all authorized wholesale distributors, manufacturers, and product vendors.
+    - Key Components & UI:
+      * Vendor Directory Table: Displays Company Name, Contact Person, Phone, Email, Supplied Category, Active Products.
+      * Add / Edit Supplier Modal: Form capturing Vendor Name, Primary Representative, Mobile, Email, and Warehouse Location.
+      * Vendor Purchase History View: Filter and inspect all inward stock orders fulfilled by the selected supplier.
+      * Rapid Supplier Search: Quick search bar filtering vendors by corporate name or supplied product lines.
+    - Data & Script Connections: admin/js/suppliers.js, js/shared.js.
+
+14. admin/contacts.html — Unified Contacts & Business Directory
+    - Path: /admin/contacts.html
+    - Target Role: Store Managers, Administrative Assistants.
+    - Purpose: Single unified directory combining both retail customers and wholesale suppliers for rapid lookup.
+    - Key Components & UI:
+      * Unified Search Bar: Instant cross-directory search filtering through names, company names, emails, and phone numbers.
+      * Segmented Filter Tabs: Switch views between "All Contacts", "Customers Only", and "Suppliers Only".
+      * Contact Cards Grid: Glassmorphic contact cards with role badges, communication shortcuts, and address summaries.
+      * Quick Dial & Email Integration: Instant contact triggers for rapid operational inquiries.
+    - Data & Script Connections: admin/js/contacts.js, js/shared.js.
+
+15. admin/users.html — User Management & Role Governance
+    - Path: /admin/users.html
+    - Target Role: Super Administrators, Store Owners.
+    - Purpose: Security administration, staff account onboarding, and access control governance.
+    - Key Components & UI:
+      * Administrators Table: Displays all verified admin accounts with email, creation date, and last login time.
+      * Sales Staff Table: Displays all active and inactive sales associates with status badges and performance metrics.
+      * Staff Invitation & Onboarding Suite: Search and link registered user UIDs into the active store roster.
+      * Account Activation Toggle: Instant switch to activate or deactivate staff accounts, enforcing instant session logout.
+      * Role Reassignment Modal: Promote sales associates to administrators or adjust operational permissions.
+    - Data & Script Connections: admin/js/users.js, js/shared.js, js/account.js.
+
+16. admin/analytics.html — Advanced BI & Multi-Chart Analytics
+    - Path: /admin/analytics.html
+    - Target Role: Business Analysts, Store Owners, Financial Executives.
+    - Purpose: Visual business intelligence dashboard analyzing sales trends, product velocity, and revenue drivers.
+    - Key Components & UI:
+      * 5 High-Definition Interactive Charts:
+        1. Daily Sales Trend Chart (Smooth line chart with gradient fill and peak annotations).
+        2. Monthly Revenue Comparison (Bar chart comparing month-over-month sales performance).
+        3. Top Selling Products (Horizontal bar chart ranking items by total revenue generated).
+        4. Category Revenue Distribution (Doughnut chart displaying department sales percentages).
+        5. Cumulative Revenue Growth (Area chart tracking overall financial expansion).
+      * Summary Stat Chips: Average Transaction Value (ATV), Highest Revenue Day, Most Profitable Category.
+      * Dynamic Date Range Selector: Filter analytics by 7 Days, 30 Days, 90 Days, or Full Fiscal Year.
+    - Data & Script Connections: admin/js/analytics.js, js/shared.js.
+
+17. admin/forecasting.html — Predictive Demand & Stockout Runway
+    - Path: /admin/forecasting.html
+    - Target Role: Inventory Planners, Store Owners, Supply Chain Managers.
+    - Purpose: Machine-learning and statistical modeling forecasting product demand and preventing stockouts.
+    - Key Components & UI:
+      * Predictive Inventory Table: Columns for Product Name, Current Stock, Average Daily Sales (ADS), Days Until Stockout, Suggested Reorder.
+      * Urgency Badge Indicators:
+        - "Critical Stockout Imminent" (< 3 days runway) - Flashing Red Badge.
+        - "Reorder Soon" (4 - 7 days runway) - Amber Warning Badge.
+        - "Stock Healthy" (> 8 days runway) - Emerald Stable Badge.
+      * Past Sales vs Projected Demand Chart: Dual-axis Chart.js visualization plotting historical sales velocity against future demand curves.
+      * Reorder Planning Calculator: Calculates optimal order quantities considering supplier lead times and safety stock.
+      * Save Forecast Snapshot: Persists forecasting calculations into the Firestore `forecasting` collection for audit review.
+    - Data & Script Connections: admin/js/forecasting.js, js/shared.js.
+
+18. admin/ai-insights.html — Gemini AI Business Copilot & Insights
+    - Path: /admin/ai-insights.html
+    - Target Role: Store Owners, Corporate Strategists, General Managers.
+    - Purpose: Interactive conversational AI copilot answering open-ended retail intelligence queries via Google Gemini.
+    - Key Components & UI:
+      * Conversational Q&A Interface: Glass chat stream rendering user prompts and detailed AI business responses.
+      * Multi-Model Status Pill: Displays the active Gemini model utilized (e.g., Gemini 3.8 Flash, Gemini 3.5 Flash) with fallback indicators.
+      * Contextual Prompt Chips: Instant shortcut buttons:
+        - "Generate Weekly Executive Summary"
+        - "Identify Products with Declining Velocity"
+        - "Recommend High-Margin Upsell Opportunities"
+        - "Evaluate Dead Stock Liquidation Strategies"
+      * Markdown & Table Formatter: Formats AI responses with bullet points, statistical tables, and strategic takeaways.
+    - Data & Script Connections: admin/js/ai-insights.js, js/gemini-service.js, js/shared.js.
+
+19. admin/reports.html — Financial Reports & Multi-Format Export Center
+    - Path: /admin/reports.html
+    - Target Role: Accountants, Financial Officers, Store Owners.
+    - Purpose: Generate, customize, print, and export formal business reports and audit statements.
+    - Key Components & UI:
+      * Report Criteria Configurator: Filter by Date Range (Today, Week, Month, Custom), Category, Payment Type, or Staff Cashier.
+      * Live Report Preview Table: Formatted presentation of filtered transactions with subtotals, taxes, and net profit.
+      * Export to Vector PDF: Generates branded PDF reports with corporate headers, itemized listings, and summary KPIs.
+      * Export to Excel (.xlsx): Creates multi-sheet workbooks with numeric cell types for corporate spreadsheet modeling.
+      * Export to CSV / JSON: One-click raw data exports for third-party tax software or database backups.
+      * Printable Statement View: Browser print preview styled for continuous thermal paper or standard laser printers.
+    - Data & Script Connections: admin/js/reports.js, js/shared.js.
+
+20. admin/notifications.html — Realtime Notification & Alert Center
+    - Path: /admin/notifications.html
+    - Target Role: Store Administrators, Operational Staff.
+    - Purpose: Unified audit log and real-time inbox for stock alerts, transaction events, and system notices.
+    - Key Components & UI:
+      * Notification Stream: Realtime websocket feed updating via Firestore `notifications` collection.
+      * Alert Categorization Icons: Visual differentiation between Low Stock Alerts, New Sale Receipts, Restock Intakes, and System Updates.
+      * Batch Management Controls: "Mark All as Read" and "Clear Notification History" action buttons.
+      * Direct Navigation Links: Clicking a low-stock alert navigates directly to the corresponding product restock view.
+    - Data & Script Connections: admin/js/notifications.js, js/shared.js.
+
+21. admin/settings.html — Global Business Settings & System Configuration
+    - Path: /admin/settings.html
+    - Target Role: Super Administrators, Business Owners.
+    - Purpose: Global system preferences, corporate branding, internationalization, and AI configuration.
+    - Key Components & UI:
+      * Store Profile Settings: Shop Name, Support Phone, Official Email, Physical Address, and Tax / GST Registration Number.
+      * Internationalization & Currency: Global currency switcher (INR ₹, USD $, EUR €, GBP £, AED, CAD, AUD, SGD) with live Forex sync.
+      * Google Gemini API Key Management: Secure input field to store private Gemini API keys with local override.
+      * Inventory Threshold Defaults: Configure company-wide default minimum stock levels for automated alerts.
+      * Database Maintenance Suite: Safe administrative cleanup routines to clear duplicate documents or test transactions.
+    - Data & Script Connections: admin/js/settings.js, js/shared.js, js/gemini-service.js.
+
+--------------------------------------------------------------------------------
+4.3 SALES STAFF PORTAL (4 PAGES)
+--------------------------------------------------------------------------------
+
+22. sales/dashboard.html — Sales Associate Daily Command Center
+    - Path: /sales/dashboard.html
+    - Target Role: Front-line Sales Associates, Cashiers, Counter Staff.
+    - Purpose: Personal performance dashboard tracking daily targets, recent transactions, and store announcements.
+    - Key Components & UI:
+      * Personal KPI Stat Cards: My Total Sales Today, My Transaction Count, My Average Ticket Size.
+      * Personal Sales Feed: Chronological table of sales rung up exclusively by the currently authenticated cashier.
+      * Quick Stock Glance: Streamlined table of popular store products showing real-time available inventory.
+      * Store Connection Status Banner: Displays store affiliation and branch status.
+      * "New Sale" Quick Action Button: Primary floating CTA launching the staff billing terminal in one tap.
+    - Data & Script Connections: sales/js/dashboard.js, js/shared.js.
+
+23. sales/add-sale.html — Staff Point-of-Sale Billing Terminal
+    - Path: /sales/add-sale.html
+    - Target Role: Cashiers, Sales Associates.
+    - Purpose: Fast, foolproof point-of-sale checkout terminal strictly restricted to cashier permissions.
+    - Key Components & UI:
+      * Fast Product Search & Grid: Rapid item lookup with real-time stock ceiling validation to prevent overselling.
+      * Cart Management Panel: Add/remove items, adjust quantities, view running total.
+      * Customer Lookup: Dropdown to link sale to registered customer for loyalty tracking.
+      * Payment Method Selector: Cash, Card, UPI / QR Code.
+      * Transaction Security: Transaction writes to `sales` collection with source='staff' and cashier UID.
+      * Stock Protection Guard: Restricted by Firestore `stockOnlyUpdate()` rules—staff cannot alter selling price or product specs.
+      * Thermal Receipt Slip Generation: Instant print trigger producing clean, branded customer slips.
+    - Data & Script Connections: sales/js/add-sale.js, js/shared.js.
+
+24. sales/my-sales.html — Personal Sales Ledger & Performance History
+    - Path: /sales/my-sales.html
+    - Target Role: Sales Associates, Cashiers.
+    - Purpose: Individual sales ledger allowing staff to review their transaction history and verify daily commission totals.
+    - Key Components & UI:
+      * Filtered Personal History: Displays only transactions matching the logged-in staff member's Auth UID.
+      * Transaction Summary: Date, Invoice Number, Customer Name, Items Count, Total Amount, Payment Mode.
+      * Read-Only Protection: Deletion and invoice modification controls are strictly omitted per security rules.
+      * Receipt Reprinter: Allows cashiers to reprint receipts for their own customers if needed.
+    - Data & Script Connections: sales/js/my-sales.js, js/shared.js.
+
+25. sales/stock-view.html — Realtime Inventory Stock Checker (Staff View)
+    - Path: /sales/stock-view.html
+    - Target Role: Sales Associates, Floor Staff.
+    - Purpose: Fast stock inquiry tool allowing floor staff to check warehouse inventory without exposing cost prices or vendor info.
+    - Key Components & UI:
+      * Real-Time Stock Table: Shows Product Name, Category, Retail Price (MRP), Available Units, and Status Badges.
+      * Confidentiality Protection: Cost prices, wholesale rates, profit margins, and supplier names are completely stripped.
+      * Instant Product Filter: Search by product title, brand, or SKU to answer customer queries on the shop floor instantly.
+      * Stock Status Color Coding: Clear visual indicators for Available (Green), Low Stock (Yellow), and Out of Stock (Red).
+    - Data & Script Connections: sales/js/stock-view.js, js/shared.js.
+
+
+================================================================================
+5. DATA MODEL & CLOUD FIRESTORE SCHEMA REFERENCE
+================================================================================
+
+5.1 Primary Cloud Firestore Collections
+---------------------------------------
+1. `admins`
+   - Document ID: Firebase Auth UID
+   - Fields: name (string), email (string), role ("Admin"), status ("active" | "inactive"), 
+     photoURL (string), createdAt (timestamp), lastLoginAt (timestamp).
+
+2. `staff`
+   - Document ID: Firebase Auth UID
+   - Fields: name (string), email (string), role ("Sales Staff"), status ("active" | "inactive"), 
+     photoURL (string), createdAt (timestamp), lastLoginAt (timestamp), invitedBy (admin UID).
+
+3. `products`
+   - Document ID: Auto-generated Firestore ID
+   - Fields: name (string), category (string), sku (string), barcode (string), price (number), 
+     costPrice (number), stock (number), minStock (number), supplierId (string), supplierName (string), 
+     status ("Available" | "Low Stock" | "Out of Stock"), source ("real" | "demo"), isDemo (boolean), 
+     createdAt (timestamp), updatedAt (timestamp).
+
+4. `productBatches`
+   - Document ID: Auto-generated Firestore ID
+   - Fields: productId (string), batchNumber (string), expiryDate (timestamp), quantity (number), costPrice (number).
+
+5. `sales`
+   - Document ID: Auto-generated Firestore ID
+   - Fields: invoiceNo (string), items (array of {productId, name, price, qty, total}), subtotal (number), 
+     discount (number), tax (number), total (number), paymentMethod ("Cash" | "Card" | "UPI" | "Credit"), 
+     customerId (string), customerName (string), staffId (string), staffName (string), role ("admin" | "staff"), 
+     source ("admin" | "staff" | "dummy"), isDemo (boolean), createdAt (timestamp), date (string YYYY-MM-DD).
+
+6. `customers`
+   - Document ID: Auto-generated Firestore ID
+   - Fields: name (string), email (string), phone (string), address (string), totalOrders (number), 
+     totalSpend (number), createdAt (timestamp), updatedAt (timestamp).
+
+7. `suppliers`
+   - Document ID: Auto-generated Firestore ID
+   - Fields: name (string), contactPerson (string), email (string), phone (string), address (string), 
+     categories (array of string), createdAt (timestamp).
+
+8. `purchases`
+   - Document ID: Auto-generated Firestore ID
+   - Fields: supplierId (string), supplierName (string), productId (string), productName (string), 
+     quantity (number), unitCost (number), totalCost (number), invoiceNo (string), purchaseDate (string), 
+     createdAt (timestamp).
+
+9. `notifications`
+   - Document ID: Auto-generated Firestore ID
+   - Fields: title (string), message (string), type ("stock" | "sale" | "restock" | "system"), 
+     read (boolean), targetRole ("all" | "admin" | "staff"), createdAt (timestamp).
+
+10. `forecasting`
+    - Document ID: Auto-generated Firestore ID
+    - Fields: productId (string), productName (string), currentStock (number), ads (number), 
+      stockFinishDays (number), suggestedReorder (number), generatedAt (timestamp).
+
+11. `businessSettings`
+    - Document ID: "main" (Singleton configuration)
+    - Fields: storeName (string), email (string), phone (string), address (string), currencyCode (string), 
+      currencySymbol (string), taxRate (number), defaultMinStock (number), updatedAt (timestamp).
+
+
+================================================================================
+6. DEPLOYMENT, HARDWARE & ENVIRONMENT SPECIFICATIONS
+================================================================================
+
+6.1 Runtime Environment
+-----------------------
+- Client Compatibility: Standard modern web browsers (Google Chrome 90+, Microsoft Edge 90+, 
+  Mozilla Firefox 88+, Apple Safari 14+). Fully functional on Desktop, Tablets (iPad/Android), and Mobile browsers.
+- Server Architecture: 100% Serverless Static Client. Can be hosted on Firebase Hosting, GitHub Pages, 
+  Vercel, Netlify, Cloudflare Pages, AWS S3 / CloudFront, or local Apache/Nginx web servers.
+- Zero Compilation Overhead: Native ES modules allow direct execution without Webpack, Vite, or Babel build steps.
+
+6.2 POS Peripheral & Hardware Interoperability
+---------------------------------------------
+- Barcode Scanners: USB and Bluetooth HID barcode scanners natively supported without driver installation.
+- Receipt Printers: ESC/POS 80mm and 58mm thermal printers supported via standard browser print dialogues.
+- Laser & Inkjet Printers: Automated `@media print` CSS sheets format formal tax invoices for standard A4/Letter paper.
+
+6.3 Academic & Production Certification
+---------------------------------------
+SalesIQ represents a complete, robust, full-stack enterprise retail operating system. 
+It combines clean modular architecture, rigorous database security rules, high-speed multi-tier caching, 
+and state-of-the-art generative AI reasoning, establishing a modern benchmark for retail management software.
+
+================================================================================
+END OF SPECIFICATION: SALESIQ COMPLETE ARCHITECTURE & FEATURE CATALOG
+================================================================================
