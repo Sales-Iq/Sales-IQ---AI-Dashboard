@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { Menu, X, ArrowRight } from "lucide-react";
 
 export const Navbar: React.FC = () => {
-  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("features");
 
@@ -140,22 +139,9 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Re-align pill whenever dock scroll state changes
-  useEffect(() => {
-    const currentTarget = tabRefs.current[activeSectionRef.current];
-    if (currentTarget) {
-      const timer = setTimeout(() => {
-        applyInstantCoords(getCoords(currentTarget));
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [scrolled]);
-
   // Scroll spy tracking
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-
       // Do NOT trigger intermediate tab jumps while smooth scrolling to a clicked target!
       if (isProgrammaticScrollRef.current) return;
 
@@ -253,20 +239,8 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 pointer-events-none transition-all duration-300 ${
-        scrolled
-          ? "py-2.5 sm:py-3.5 px-3 sm:px-6 lg:px-8 bg-transparent"
-          : "py-5 px-5 sm:px-6 lg:px-8 bg-transparent"
-      }`}
-    >
-      <div
-        className={`max-w-7xl mx-auto flex items-center justify-between pointer-events-auto transition-all duration-300 ${
-          scrolled
-            ? "landing-liquid-glass-dock shadow-2xl"
-            : "bg-transparent py-0"
-        }`}
-      >
+    <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none py-5 px-5 sm:px-6 lg:px-8 bg-transparent">
+      <div className="max-w-7xl mx-auto flex items-center justify-between pointer-events-auto">
         {/* Brand Logo matching website .logo-mark */}
         <a
           href="#"
@@ -283,11 +257,7 @@ export const Navbar: React.FC = () => {
         {/* Desktop Navigation Links with Dashboard Liquid Sliding Pill */}
         <nav
           ref={navContainerRef}
-          className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-full relative transition-all duration-300 ${
-            scrolled
-              ? "bg-white/[0.04] border border-white/[0.08]"
-              : "glass-pill border border-sky-500/20"
-          }`}
+          className="hidden md:flex items-center gap-1 glass-pill px-2.5 py-1.5 rounded-full border border-sky-500/20 relative"
           style={{ isolation: "isolate" }}
         >
           {/* Kerfa Liquid Stretchy Pill */}
@@ -351,11 +321,11 @@ export const Navbar: React.FC = () => {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="md:hidden pointer-events-auto max-w-lg mx-auto landing-liquid-glass-dock !rounded-2xl overflow-hidden px-5 py-6 mt-2.5 shadow-2xl"
+            className="md:hidden pointer-events-auto max-w-lg mx-auto glass-panel border border-sky-500/20 bg-[#090d14]/95 backdrop-blur-2xl rounded-2xl overflow-hidden px-5 py-6 mt-3 shadow-2xl"
           >
             <div className="flex flex-col gap-2">
               {navLinks.map((link) => {
