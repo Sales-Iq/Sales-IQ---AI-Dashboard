@@ -34,7 +34,7 @@ export const ProductPreviewSection: React.FC = () => {
   };
 
   return (
-    <section id="preview" className="relative py-24 sm:py-32 px-5 sm:px-6 lg:px-8">
+    <section id="preview" className="relative py-24 sm:py-32 px-5 sm:px-6 lg:px-8 defer-render-section">
       <div className="max-w-7xl mx-auto">
         <SectionHeading
           eyebrow="Interactive Product Showcase"
@@ -43,7 +43,7 @@ export const ProductPreviewSection: React.FC = () => {
         />
 
         {/* The Dashboard Mockup Canvas */}
-        <div className="relative">
+        <div className="relative isolated-dashboard-canvas">
           {/* Simulated Demo Notice Badge */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-300">

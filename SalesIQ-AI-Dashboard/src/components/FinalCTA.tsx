@@ -5,7 +5,7 @@ import { GlassCard } from "./GlassCard";
 
 export const FinalCTA: React.FC = () => {
   return (
-    <section className="relative py-24 sm:py-32 px-5 sm:px-6 lg:px-8 overflow-hidden">
+    <section className="relative py-24 sm:py-32 px-5 sm:px-6 lg:px-8 overflow-hidden defer-render-section">
       {/* Background ambient lighting */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-gradient-to-r from-sky-500/15 via-blue-600/15 to-violet-600/15 rounded-full blur-[100px] pointer-events-none -z-10" />
 

@@ -80,28 +80,34 @@ body {
   filter: brightness(1.08);
 }
 
-/* Website Authentic Secondary Glass Button */
+/* Website Authentic Secondary Glass Button (Frosted glass matching nav pill) */
 .btn-salesiq-secondary {
-  background: rgba(18, 26, 38, 0.75) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(56, 189, 248, 0.32) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
   color: #ffffff !important;
   box-shadow: 
-    0 4px 14px -2px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
-  transition: all 0.2s ease;
+    0 4px 16px -2px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-salesiq-secondary:hover {
-  background: rgba(28, 38, 55, 0.9) !important;
-  border-color: rgba(56, 189, 248, 0.55) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(56, 189, 248, 0.6) !important;
   color: #ffffff !important;
-  transform: translateY(-2px);
+  transform: translateY(-1.5px);
   box-shadow: 
-    0 8px 22px -3px rgba(0, 0, 0, 0.6),
-    0 0 18px -2px rgba(56, 189, 248, 0.3),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+    0 8px 24px -4px rgba(0, 0, 0, 0.45),
+    0 0 18px -2px rgba(56, 189, 248, 0.35),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-salesiq-secondary:active {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Website Authentic Info Badge */
@@ -218,4 +224,48 @@ body {
 
 .navbar-liquid-pill.is-docking {
   animation: navPillDock 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Modern Web Guidance: defer-rendering-heavy-content
+   Skips rendering calculations for below-the-fold sections while 
+   preserving layout stability with contain-intrinsic-size.
+   ───────────────────────────────────────────────────────────── */
+.defer-render-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 700px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Modern Web Guidance: performance (CSS Containment)
+   Scopes complex interactive widgets to prevent layout thrashing
+   ───────────────────────────────────────────────────────────── */
+.isolated-dashboard-canvas {
+  contain: layout style paint;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Modern Web Guidance: motion (Reduced Motion Compliance)
+   Adjusts parameters on a case-by-case basis instead of forbidden
+   global 0.01ms reset, keeping color/state transitions intact.
+   ───────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .navbar-liquid-pill {
+    transition: opacity 150ms ease !important;
+    transform: none !important;
+  }
+
+  .navbar-liquid-pill.is-docking {
+    animation: none !important;
+  }
+
+  .ambient-glow-blue,
+  .ambient-glow-purple {
+    filter: blur(50px);
+  }
+
+  button:hover,
+  a:hover {
+    transform: none !important;
+  }
 }

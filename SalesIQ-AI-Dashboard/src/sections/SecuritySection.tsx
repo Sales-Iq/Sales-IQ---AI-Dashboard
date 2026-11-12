@@ -63,7 +63,7 @@ export const SecuritySection: React.FC = () => {
   ];
 
   return (
-    <section id="security" className="relative py-24 sm:py-32 px-5 sm:px-6 lg:px-8">
+    <section id="security" className="relative py-24 sm:py-32 px-5 sm:px-6 lg:px-8 defer-render-section">
       <div className="max-w-7xl mx-auto">
         <SectionHeading
           eyebrow="Role-Based Security & Governance"
