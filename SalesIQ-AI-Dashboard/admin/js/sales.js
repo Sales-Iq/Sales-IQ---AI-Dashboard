@@ -13,8 +13,18 @@ import {
   emptyState,
   toCSV,
   toast,
+  statusFor,
+  invalidateCache,
 } from "../../js/shared.js";
-import { db, doc, deleteDoc } from "../../js/firebase-config.js";
+import {
+  db,
+  doc,
+  deleteDoc,
+  runTransaction,
+  serverTimestamp,
+  writeBatch,
+  getDoc,
+} from "../../js/firebase-config.js";
 
 const { profile } = await requireAuth(["Admin"]);
 initAppShell("admin", "sales", profile);
@@ -270,10 +280,63 @@ window.deleteSale = async (id) => {
   const info = s
     ? `${s.productName || "Sale"} (${s.invoiceNumber || s.invoice || id})`
     : "this sale";
-  if (!confirm(`Are you sure you want to delete ${info}?`)) return;
+  if (
+    !confirm(
+      `Are you sure you want to delete ${info}? Any sold inventory quantity will be restored to stock.`,
+    )
+  )
+    return;
   try {
+    // 1. Restore product stock in Firestore if valid product and quantity
+    if (s && s.productId && Number(s.quantity) > 0) {
+      try {
+        await runTransaction(db, async (tx) => {
+          const prodRef = doc(db, "products", s.productId);
+          const prodSnap = await tx.get(prodRef);
+          if (prodSnap.exists()) {
+            const prodData = prodSnap.data();
+            const currentStock = Number(prodData.stock || 0);
+            const restoredStock = currentStock + Number(s.quantity);
+            tx.update(prodRef, {
+              stock: restoredStock,
+              status: statusFor(restoredStock, prodData.minStock),
+              updatedAt: serverTimestamp(),
+            });
+          }
+        });
+        invalidateCache("products");
+      } catch (stockErr) {
+        console.warn("Could not restore product stock:", stockErr);
+      }
+
+      // 2. Restore FEFO batch remainingQuantity if applicable
+      if (Array.isArray(s.soldBatches) && s.soldBatches.length > 0) {
+        try {
+          const batchWriter = writeBatch(db);
+          for (const b of s.soldBatches) {
+            if (b.batchId && Number(b.quantity) > 0) {
+              const bRef = doc(db, "productBatches", b.batchId);
+              const bSnap = await getDoc(bRef);
+              if (bSnap.exists()) {
+                const curBatchRem = Number(bSnap.data().remainingQuantity || 0);
+                batchWriter.update(bRef, {
+                  remainingQuantity: curBatchRem + Number(b.quantity),
+                });
+              }
+            }
+          }
+          await batchWriter.commit();
+          invalidateCache("productBatches");
+        } catch (batchErr) {
+          console.warn("Could not restore batch remaining quantity:", batchErr);
+        }
+      }
+    }
+
+    // 3. Delete sale document from Firestore
     await deleteDoc(doc(db, "sales", id));
-    toast("Sale record deleted successfully.", "ok");
+    invalidateCache("sales");
+    toast("Sale record deleted and stock restored successfully.", "ok");
     sales = sales.filter((x) => x.id !== id);
     render();
   } catch (err) {

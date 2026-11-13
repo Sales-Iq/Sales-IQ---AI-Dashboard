@@ -702,9 +702,9 @@ function initOperationsTileTabs() {
         else if (targetTab === "rush") subtitle.textContent = "24-Hour rush-hour sales velocity & peak footfall";
       }
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getTodayStr();
       const salesToday = sales.filter(
-        (s) => saleDate(s)?.toISOString().slice(0, 10) === today,
+        (s) => toLocalYMD(saleDate(s)) === today,
       );
 
       if (targetTab === "tender") {
@@ -717,9 +717,9 @@ function initOperationsTileTabs() {
 }
 
 function renderOperationsCharts() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayStr();
   const salesToday = sales.filter(
-    (s) => saleDate(s)?.toISOString().slice(0, 10) === today,
+    (s) => toLocalYMD(saleDate(s)) === today,
   );
   if (currentOperationsTab === "tender") {
     renderPaymentSplitDonut(salesToday);
@@ -1200,13 +1200,13 @@ function renderAiSummary({ low, out }) {
 }
 
 function renderDashboard() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayStr();
   const month = today.slice(0, 7);
   const salesToday = sales.filter(
-    (s) => saleDate(s)?.toISOString().slice(0, 10) === today,
+    (s) => toLocalYMD(saleDate(s)) === today,
   );
   const monthSales = sales.filter(
-    (s) => saleDate(s)?.toISOString().slice(0, 7) === month,
+    (s) => toLocalYMD(saleDate(s)).slice(0, 7) === month,
   );
   const low = products.filter(
     (p) => statusFor(p.stock, p.minStock) === "Low Stock",

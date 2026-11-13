@@ -29,7 +29,18 @@ export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 export const num = (n) => Number(n || 0);
 export const uid = () => Math.random().toString(36).slice(2, 10).toUpperCase();
-export const todayKey = (d = new Date()) => d.toISOString().slice(0, 10);
+
+export function toLocalYMD(d = new Date()) {
+  if (!d) return "";
+  const dt = d instanceof Date ? d : new Date(d);
+  if (isNaN(dt.getTime())) return "";
+  const year = dt.getFullYear();
+  const month = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export const todayKey = (d = new Date()) => toLocalYMD(d);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Multi-Currency & Real-Time Exchange Rate Engine (Base Currency: INR ₹)

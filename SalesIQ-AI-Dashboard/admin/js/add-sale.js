@@ -28,6 +28,7 @@ import {
   where,
   getDocs,
   writeBatch,
+  updateDoc,
 } from "../../js/firebase-config.js";
 
 const isStaff = document.body.dataset.role === "sales";
@@ -347,14 +348,40 @@ $("#billingForm").onsubmit = async (e) => {
     await addDoc(collection(db, "sales"), sale);
 
     if (sale.customerName) {
-      await addDoc(collection(db, "customers"), {
-        name: sale.customerName,
-        totalSpent: sale.totalAmount,
-        lastPurchaseDate: pickedDate,
-        adminId: sale.adminId,
-        createdAt: Timestamp.fromDate(saleDateObj),
-        source: sale.source,
-      }).catch(() => {});
+      try {
+        const custQuery = query(
+          collection(db, "customers"),
+          where("adminId", "==", sale.adminId),
+        );
+        const custSnap = await getDocs(custQuery);
+        const matchingDoc = custSnap.docs.find(
+          (d) =>
+            (d.data().name || "").trim().toLowerCase() ===
+            sale.customerName.toLowerCase(),
+        );
+
+        if (matchingDoc) {
+          const prevData = matchingDoc.data();
+          await updateDoc(doc(db, "customers", matchingDoc.id), {
+            totalSpent: Number(prevData.totalSpent || 0) + sale.totalAmount,
+            lastPurchaseDate: pickedDate,
+            lastOrderAmount: sale.totalAmount,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await addDoc(collection(db, "customers"), {
+            name: sale.customerName,
+            totalSpent: sale.totalAmount,
+            lastPurchaseDate: pickedDate,
+            lastOrderAmount: sale.totalAmount,
+            adminId: sale.adminId,
+            createdAt: Timestamp.fromDate(saleDateObj),
+            source: sale.source,
+          });
+        }
+      } catch (custErr) {
+        console.warn("Customer upsert warning:", custErr);
+      }
     }
 
     const dateLabel =

@@ -14,6 +14,7 @@ import {
   hideSkeletonLoader,
   getFirstAdminId,
   convertFromINR,
+  toLocalYMD,
 } from "../../js/shared.js";
 
 import {
@@ -380,14 +381,41 @@ $("#billingForm").onsubmit = async (e) => {
     await addDoc(collection(db, "sales"), sale);
 
     if (sale.customerName) {
-      await addDoc(collection(db, "customers"), {
-        name: sale.customerName,
-        totalSpent: sale.totalAmount,
-        lastPurchaseDate: new Date().toISOString().slice(0, 10),
-        adminId: sale.adminId,
-        createdAt: serverTimestamp(),
-        source: sale.source,
-      }).catch(() => {});
+      const todayStr = toLocalYMD(new Date());
+      try {
+        const custQuery = query(
+          collection(db, "customers"),
+          where("adminId", "==", sale.adminId),
+        );
+        const custSnap = await getDocs(custQuery);
+        const matchingDoc = custSnap.docs.find(
+          (d) =>
+            (d.data().name || "").trim().toLowerCase() ===
+            sale.customerName.toLowerCase(),
+        );
+
+        if (matchingDoc) {
+          const prevData = matchingDoc.data();
+          await updateDoc(doc(db, "customers", matchingDoc.id), {
+            totalSpent: Number(prevData.totalSpent || 0) + sale.totalAmount,
+            lastPurchaseDate: todayStr,
+            lastOrderAmount: sale.totalAmount,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await addDoc(collection(db, "customers"), {
+            name: sale.customerName,
+            totalSpent: sale.totalAmount,
+            lastPurchaseDate: todayStr,
+            lastOrderAmount: sale.totalAmount,
+            adminId: sale.adminId,
+            createdAt: serverTimestamp(),
+            source: sale.source,
+          });
+        }
+      } catch (custErr) {
+        console.warn("Customer upsert warning:", custErr);
+      }
     }
 
     await createNotification(

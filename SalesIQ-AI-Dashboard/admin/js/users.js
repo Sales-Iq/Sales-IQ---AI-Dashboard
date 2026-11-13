@@ -485,15 +485,19 @@ window.toggleStatus = async (id, status) => {
 };
 
 window.removeUser = async (id) => {
+  if (id === profile.id) {
+    return toast("You cannot delete your own active administrator account.", "err");
+  }
   const user = allUsers.find((u) => u.id === id);
   if (!user) return toast("Account not found", "err");
 
   try {
-    if (
-      confirm(
-        "Remove account profile? Auth account deletion requires Firebase Admin SDK.",
-      )
-    ) {
+    const isOtherAdmin = user.role === "Admin" || user.accountCollection === "admins";
+    const promptMsg = isOtherAdmin
+      ? `Remove administrator profile "${user.name || user.email}"? This will revoke their admin console access.`
+      : `Remove account profile for "${user.name || user.email}"? Auth account deletion requires Firebase Admin SDK.`;
+
+    if (confirm(promptMsg)) {
       await deleteDoc(doc(db, user.accountCollection, id));
       toast("Account profile removed");
       load();

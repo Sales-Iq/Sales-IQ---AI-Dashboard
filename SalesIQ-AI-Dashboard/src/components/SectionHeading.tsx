@@ -18,7 +18,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
 }) => {
   return (
     <div
-      className={`max-w-3xl mb-14 md:mb-20 ${
+      className={`max-w-3xl mb-8 md:mb-10 ${
         align === "center" ? "mx-auto text-center" : "text-left"
       } ${className}`}
     >

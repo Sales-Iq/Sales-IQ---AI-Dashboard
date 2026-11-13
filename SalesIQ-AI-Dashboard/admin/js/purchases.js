@@ -13,6 +13,7 @@ import {
   statusFor,
   createNotification,
   invalidateCache,
+  toLocalYMD,
 } from "../../js/shared.js";
 import {
   db,
@@ -22,6 +23,9 @@ import {
   updateDoc,
   serverTimestamp,
   runTransaction,
+  query,
+  where,
+  getDocs,
 } from "../../js/firebase-config.js";
 
 const purchasesCollection = collection(db, "purchases");
@@ -52,10 +56,12 @@ async function load() {
     products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     $("#purchaseProduct").innerHTML =
       '<option value="">Choose product</option>' +
-      products.map(
-        (p) =>
-          `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
-      );
+      products
+        .map(
+          (p) =>
+            `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
+        )
+        .join("");
     render();
     hideSkeletonLoader();
   }
@@ -73,10 +79,12 @@ async function load() {
     products.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     $("#purchaseProduct").innerHTML =
       '<option value="">Choose product</option>' +
-      products.map(
-        (p) =>
-          `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
-      );
+      products
+        .map(
+          (p) =>
+            `<option value="${p.id}">${p.name} — current ${p.stock || 0}</option>`,
+        )
+        .join("");
     render();
   } catch (err) {
     console.warn("Purchases load warning:", err);
@@ -106,7 +114,7 @@ function render() {
     ? `<div class="table-wrap"><table><thead><tr><th>Product</th><th>Qty</th><th>Supplier</th><th>Price</th><th>Purchase Date</th><th>Saved</th></tr></thead><tbody>${purchases.map((p) => `<tr><td class="font-black">${p.productName}</td><td>${p.quantity}</td><td>${p.supplierName || "-"}</td><td>${money(p.purchasePrice)}</td><td>${p.purchaseDate || "-"}</td><td>${dateText(p.createdAt)}</td></tr>`).join("")}</tbody></table></div>`
     : emptyState("No restock history", "Add stock to save purchase records.");
 }
-$("#purchaseDate").value = new Date().toISOString().slice(0, 10);
+$("#purchaseDate").value = toLocalYMD(new Date());
 $("#purchaseForm").onsubmit = async (e) => {
   e.preventDefault();
   const btn = e.submitter;
@@ -164,40 +172,75 @@ $("#purchaseForm").onsubmit = async (e) => {
         updatedAt: serverTimestamp(),
       });
     });
+    const supplierName = $("#purchaseSupplier").value.trim();
+    const purchaseDateVal = $("#purchaseDate").value || toLocalYMD(new Date());
+
     await addDoc(purchasesCollection, {
       productId: p.id,
       productName: p.name,
       quantity: qty,
-      supplierName: $("#purchaseSupplier").value.trim(),
+      supplierName,
       purchasePrice: Number($("#purchasePrice").value || 0),
-      purchaseDate: $("#purchaseDate").value,
+      purchaseDate: purchaseDateVal,
       adminId: profile.id,
       createdAt: serverTimestamp(),
       createdBy: profile.id,
     });
+
+    if (supplierName) {
+      try {
+        const supQuery = query(
+          collection(db, "suppliers"),
+          where("adminId", "==", profile.id),
+        );
+        const supSnap = await getDocs(supQuery);
+        const matchingSup = supSnap.docs.find(
+          (d) =>
+            (d.data().name || "").trim().toLowerCase() ===
+            supplierName.toLowerCase(),
+        );
+        if (matchingSup) {
+          const supData = matchingSup.data();
+          const supplied = supData.productsSupplied || "";
+          const newSupplied = supplied
+            ? supplied.toLowerCase().includes(p.name.toLowerCase())
+              ? supplied
+              : `${supplied}, ${p.name}`
+            : p.name;
+          await updateDoc(doc(db, "suppliers", matchingSup.id), {
+            lastOrderDate: purchaseDateVal,
+            productsSupplied: newSupplied,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await addDoc(collection(db, "suppliers"), {
+            name: supplierName,
+            productsSupplied: p.name,
+            lastOrderDate: purchaseDateVal,
+            paymentStatus: "Paid",
+            adminId: profile.id,
+            createdAt: serverTimestamp(),
+          });
+        }
+        invalidateCache("suppliers");
+      } catch (supErr) {
+        console.warn("Supplier sync warning:", supErr);
+      }
+    }
+
     if (perishable) {
       await addDoc(batchesCollection, {
         productId: p.id,
         productName: p.name,
-
         batchNo,
-
-        supplierName: $("#purchaseSupplier").value.trim(),
-
+        supplierName,
         manufactureDate,
-
         expiryDate,
-
         quantity: qty,
-
         remainingQuantity: qty,
-
         purchasePrice: Number($("#purchasePrice").value || 0),
-
         adminId: profile.id,
-
         createdAt: serverTimestamp(),
-
         createdBy: profile.id,
       });
     }
@@ -210,7 +253,7 @@ $("#purchaseForm").onsubmit = async (e) => {
     invalidateCache("productBatches");
     toast("Stock increased successfully.");
     e.target.reset();
-    $("#purchaseDate").value = new Date().toISOString().slice(0, 10);
+    $("#purchaseDate").value = toLocalYMD(new Date());
     await load();
   } catch (err) {
     toast(err.message, "err");

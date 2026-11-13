@@ -65,9 +65,9 @@ function updateConnectionBadge() {
 function renderStats(mine) {
   const statsEl = $("#staffStats");
   if (!statsEl) return;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayStr();
   const todaySales = mine.filter(
-    (sale) => saleDate(sale)?.toISOString().slice(0, 10) === today,
+    (sale) => toLocalYMD(saleDate(sale)) === today,
   );
 
   statsEl.innerHTML = [

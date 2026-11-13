@@ -22,8 +22,8 @@ export const DeepDiveSection: React.FC = () => {
   );
 
   return (
-    <section id="ai-analytics" className="relative py-24 sm:py-32 px-5 sm:px-6 lg:px-8 overflow-hidden defer-render-section">
-      <div className="max-w-7xl mx-auto space-y-32">
+    <section id="ai-analytics" className="relative py-14 sm:py-18 px-5 sm:px-6 lg:px-8 overflow-hidden defer-render-section">
+      <div className="max-w-7xl mx-auto space-y-16 md:space-y-20">
         {/* ============================================================== */}
         {/* DEEP DIVE 1: INVENTORY INTELLIGENCE                            */}
         {/* ============================================================== */}

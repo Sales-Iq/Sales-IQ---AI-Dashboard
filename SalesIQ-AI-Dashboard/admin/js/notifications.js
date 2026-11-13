@@ -11,6 +11,7 @@ import {
   emptyState,
   setBusy,
   getCachedCollection,
+  toLocalYMD,
 } from "../../js/shared.js";
 import {
   db,
@@ -136,10 +137,10 @@ function updateStatsAndBadges() {
       String(r.message).toLowerCase().includes("restock"),
   ).length;
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = toLocalYMD(new Date());
   const todayCount = rows.filter((r) => {
     const d = toDate(r.createdAt);
-    return d && d.toISOString().slice(0, 10) === todayStr;
+    return d && toLocalYMD(d) === todayStr;
   }).length;
 
   $("#statTotalCount") && ($("#statTotalCount").textContent = total);

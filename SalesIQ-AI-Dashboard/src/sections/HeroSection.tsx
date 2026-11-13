@@ -5,7 +5,7 @@ import { DashboardPreview } from "../components/DashboardPreview";
 
 export const HeroSection: React.FC = () => {
   return (
-    <section className="relative min-h-[92vh] pt-32 pb-20 sm:pt-40 sm:pb-28 px-5 sm:px-6 lg:px-8 flex items-center overflow-hidden">
+    <section className="relative pt-28 pb-8 sm:pt-36 sm:pb-12 px-5 sm:px-6 lg:px-8 overflow-hidden">
       {/* Ambient background glows */}
       <div className="ambient-glow-blue -top-24 left-1/4 -translate-x-1/2" />
       <div className="ambient-glow-purple top-1/3 -right-24" />

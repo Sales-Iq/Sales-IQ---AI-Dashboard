@@ -9,12 +9,13 @@ import {
   emptyState,
   toCSV,
   hideSkeletonLoader,
+  toLocalYMD,
 } from "../../js/shared.js";
 const { profile } = await requireAuth(["Sales Staff"]);
 initAppShell("sales", "my-sales", profile);
 let mine = [];
 function dayKey(d) {
-  return d ? d.toISOString().slice(0, 10) : "";
+  return d ? toLocalYMD(d) : "";
 }
 function periodFilter(s) {
   const d = toDate(s.createdAt);
