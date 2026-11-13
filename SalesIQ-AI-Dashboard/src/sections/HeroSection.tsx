@@ -30,7 +30,7 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05]"
+            className="text-3xl sm:text-5xl lg:text-[3.25rem] font-extrabold text-white tracking-tight leading-[1.12]"
           >
             Run your retail business with{" "}
             <span className="bg-gradient-to-r from-sky-400 via-blue-500 to-violet-400 bg-clip-text text-transparent">
@@ -43,7 +43,7 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="mt-6 text-lg sm:text-xl text-slate-300 max-w-xl font-normal leading-relaxed"
+            className="mt-5 text-base sm:text-lg text-slate-300/90 max-w-xl font-normal leading-relaxed"
           >
             Connect sales, inventory, forecasting, and AI-powered insights in one
             intelligent retail management platform.
@@ -54,7 +54,7 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-            className="mt-10 flex flex-wrap items-center gap-4"
+            className="mt-8 flex flex-wrap items-center gap-4"
           >
             <a
               href="#preview"
