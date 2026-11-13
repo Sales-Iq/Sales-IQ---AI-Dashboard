@@ -3082,7 +3082,13 @@ export function startLeftToRightAnimation(chart, duration = 600, delay = 0) {
 
   chart._revealProgress = 0;
   chart._isAnimatingReveal = true;
-  chart.render();
+
+  // Guarantee Chart.js element models, scales, and ticks are synchronized with new data before animation
+  if (typeof chart.update === "function") {
+    chart.update("none");
+  } else {
+    chart.render();
+  }
 
   const startTimestamp = performance.now() + (delay || 0);
 
@@ -3276,17 +3282,20 @@ export function makeChart(canvas, type, data, options = {}) {
     canvas._chart.data.datasets = nextData.datasets;
     canvas._chart.options = nextOptions;
 
+    // Immediately update elements, scales, and geometry for new datasets
+    canvas._chart.update("none");
+
     const shouldReplay =
       Boolean(options.replayLeftToRight) || Boolean(options.forceLeftToRight);
 
     if (shouldReplay && isLeftToRightTarget) {
       startLeftToRightAnimation(
         canvas._chart,
-        options.animationDuration || 1400,
+        options.animationDuration || 600,
         options.animationDelay || 0,
       );
     } else if (options.skipAnimation || options.animation === false) {
-      canvas._chart.update("none");
+      // already updated with "none"
     } else {
       canvas._chart.update();
     }

@@ -46,18 +46,18 @@ export const FeaturesSection: React.FC = () => {
     },
     {
       icon: FileSpreadsheet,
-      title: "Business Analytics & Reports",
+      title: "Gross Profit & Real Margins",
       description:
-        "Five interactive Chart.js visualizations tracking daily revenue, monthly benchmarks, category distribution, and one-click PDF, Excel, CSV, or JSON exports.",
-      badge: "Export Suite",
+        "Real-time wholesale cost auditing (Selling Price − Buy Cost), live tender splits (UPI, Cash, Card), and 24-hour rush-hour velocity heatmaps with PDF & Excel exports.",
+      badge: "Real-Time Margins",
       accent: "gold" as const,
     },
     {
       icon: UsersRound,
-      title: "Customers, Suppliers & Staff",
+      title: "Staff Performance & CRM",
       description:
-        "Built-in CRM tracking customer lifetime spend, inward vendor restock purchase orders, and enterprise Role-Based Access Control (RBAC) protecting your margins.",
-      badge: "RBAC Governance",
+        "Built-in cashier billing leaderboards, customer lifetime spend tracking, inward vendor purchase orders, and enterprise Role-Based Access Control (RBAC).",
+      badge: "Staff Leaderboards",
       accent: "violet" as const,
     },
   ];

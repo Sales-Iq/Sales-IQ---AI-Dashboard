@@ -297,17 +297,52 @@ function renderStats({ salesToday, monthSales, low, out }) {
   const dummyToday = salesToday.filter(isDummySale).length;
   const staffToday = salesToday.length - dummyToday;
 
+  const todayRevenue = salesToday.reduce(
+    (sum, sale) => sum + Number(sale.totalAmount || 0),
+    0,
+  );
+
+  // Compute wholesale cost basis for today's sales
+  const prodMap = new Map();
+  if (Array.isArray(products)) {
+    products.forEach((p) => {
+      if (p.id) prodMap.set(p.id, p);
+      if (p.name) prodMap.set(p.name.toLowerCase().trim(), p);
+    });
+  }
+
+  const todayCost = salesToday.reduce((sum, sale) => {
+    const qty = Number(sale.quantity || 1);
+    let unitCost = null;
+
+    if (sale.costPrice !== undefined && sale.costPrice !== null && !isNaN(Number(sale.costPrice)) && Number(sale.costPrice) > 0) {
+      unitCost = Number(sale.costPrice);
+    } else {
+      const matchedP = (sale.productId && prodMap.get(sale.productId)) ||
+                       (sale.productName && prodMap.get(sale.productName.toLowerCase().trim()));
+      if (matchedP && matchedP.costPrice !== undefined && matchedP.costPrice !== null && !isNaN(Number(matchedP.costPrice)) && Number(matchedP.costPrice) > 0) {
+        unitCost = Number(matchedP.costPrice);
+      }
+    }
+
+    // Graceful retail fallback: 70% cost (30% margin) if cost is unspecified
+    if (unitCost === null || isNaN(unitCost)) {
+      const unitPrice = Number(sale.price || (sale.totalAmount ? sale.totalAmount / qty : 0));
+      unitCost = unitPrice * 0.70;
+    }
+
+    return sum + (unitCost * qty);
+  }, 0);
+
+  const grossProfitToday = Math.max(0, todayRevenue - todayCost);
+  const netMarginPct = todayRevenue > 0 ? ((grossProfitToday / todayRevenue) * 100).toFixed(1) : "0.0";
+
   const statsEl = $("#adminStats");
   if (!statsEl) return;
   statsEl.innerHTML = [
     [
       "Total sales today",
-      money(
-        salesToday.reduce(
-          (sum, sale) => sum + Number(sale.totalAmount || 0),
-          0,
-        ),
-      ),
+      money(todayRevenue),
       `${salesToday.length} orders • ${dummyToday} dummy • ${staffToday} staff orders`,
     ],
     [
@@ -319,6 +354,11 @@ function renderStats({ salesToday, monthSales, low, out }) {
         ),
       ),
       `${monthSales.length} monthly orders`,
+    ],
+    [
+      "Gross profit today",
+      money(grossProfitToday),
+      `Net margin: ${netMarginPct}% • Cost: ${money(todayCost)}`,
     ],
     ["Total products", products.length, `${low} low stock`],
     ["Out of stock", out, `${customers.length} customers`],
@@ -447,23 +487,20 @@ function getEffectiveChartRange() {
 
   const hasCustomFilter = Boolean(start || end);
 
-  if (start) {
-    // If end date is not selected, default to defaultEnd
-    if (!end) {
-      end = defaultEnd;
-    }
-    // Swap if end is earlier than start
+  if (start && end) {
     if (end < start) {
-      const temp = start;
-      start = end;
-      end = temp;
+      end = start;
+    }
+  } else if (start) {
+    end = defaultEnd;
+    if (end < start) {
+      end = start;
     }
   } else if (end) {
-    let s = defaultStart;
-    if (s > end) {
-      s = end;
+    start = defaultStart;
+    if (start > end) {
+      start = end;
     }
-    start = s;
   } else {
     start = defaultStart;
     end = defaultEnd;
@@ -566,7 +603,8 @@ function renderSalesChart(replayAnimation = false) {
     },
     {
       replayLeftToRight: shouldReplay,
-      animationDelay: 420,
+      animationDelay: replayAnimation ? 0 : 250,
+      animationDuration: replayAnimation ? 500 : 700,
       plugins: {
         tooltip: {
           callbacks: {
@@ -626,6 +664,353 @@ function renderInventoryChart() {
 function renderCharts() {
   renderSalesChart();
   renderInventoryChart();
+  renderOperationsCharts();
+}
+
+// ============================================================
+// Operations Hub Logic (Staff, Tender Donut, Rush Hour Curve)
+// ============================================================
+
+let currentOperationsTab = "staff";
+
+function initOperationsTileTabs() {
+  const tabGroup = document.getElementById("operationsTabGroup");
+  if (!tabGroup) return;
+
+  const buttons = tabGroup.querySelectorAll(".operations-tab-btn");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetTab = btn.getAttribute("data-tab");
+      if (targetTab === currentOperationsTab) return;
+      currentOperationsTab = targetTab;
+
+      buttons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const panelStaff = document.getElementById("tabPanelStaff");
+      const panelTender = document.getElementById("tabPanelTender");
+      const panelRush = document.getElementById("tabPanelRush");
+      const subtitle = document.getElementById("operationsTileSubtitle");
+
+      if (panelStaff) panelStaff.classList.toggle("hidden", targetTab !== "staff");
+      if (panelTender) panelTender.classList.toggle("hidden", targetTab !== "tender");
+      if (panelRush) panelRush.classList.toggle("hidden", targetTab !== "rush");
+
+      if (subtitle) {
+        if (targetTab === "staff") subtitle.textContent = "Cashier & staff billing leaderboard today";
+        else if (targetTab === "tender") subtitle.textContent = "Payment tender breakdown (UPI, Cash, Card)";
+        else if (targetTab === "rush") subtitle.textContent = "24-Hour rush-hour sales velocity & peak footfall";
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const salesToday = sales.filter(
+        (s) => saleDate(s)?.toISOString().slice(0, 10) === today,
+      );
+
+      if (targetTab === "tender") {
+        requestAnimationFrame(() => renderPaymentSplitDonut(salesToday));
+      } else if (targetTab === "rush") {
+        requestAnimationFrame(() => renderRushHourChart(salesToday));
+      }
+    });
+  });
+}
+
+function renderOperationsCharts() {
+  const today = new Date().toISOString().slice(0, 10);
+  const salesToday = sales.filter(
+    (s) => saleDate(s)?.toISOString().slice(0, 10) === today,
+  );
+  if (currentOperationsTab === "tender") {
+    renderPaymentSplitDonut(salesToday);
+  } else if (currentOperationsTab === "rush") {
+    renderRushHourChart(salesToday);
+  }
+}
+
+function renderOperationsTile(salesToday, staffUsers) {
+  renderStaffLeaderboard(salesToday, staffUsers);
+  renderPaymentSplitDonut(salesToday);
+  renderRushHourChart(salesToday);
+}
+
+function renderStaffLeaderboard(salesToday, staffUsers) {
+  const container = document.getElementById("staffLeaderboardContent");
+  if (!container) return;
+
+  const staffAgg = {};
+  let totalRevenue = 0;
+
+  salesToday.forEach((s) => {
+    const name = getSalespersonDisplay(s);
+    if (!staffAgg[name]) {
+      staffAgg[name] = { name, orders: 0, revenue: 0 };
+    }
+    staffAgg[name].orders += 1;
+    staffAgg[name].revenue += Number(s.totalAmount || 0);
+    totalRevenue += Number(s.totalAmount || 0);
+  });
+
+  const sortedStaff = Object.values(staffAgg).sort((a, b) => b.revenue - a.revenue);
+
+  if (sortedStaff.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 text-center text-xs text-slate-400">
+        <div class="text-xl mb-1">👥</div>
+        <p class="font-medium text-slate-300">No staff sales recorded today yet</p>
+        <p class="text-[11px] text-slate-500 mt-1">Live staff checkouts and demo sales will be ranked here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const maxRevenue = sortedStaff[0].revenue || 1;
+
+  container.innerHTML = sortedStaff
+    .slice(0, 5)
+    .map((rep, idx) => {
+      const rank = idx + 1;
+      const rankClass =
+        rank === 1
+          ? "leaderboard-rank-1"
+          : rank === 2
+            ? "leaderboard-rank-2"
+            : rank === 3
+              ? "leaderboard-rank-3"
+              : "leaderboard-rank-default";
+      const pct = Math.round((rep.revenue / maxRevenue) * 100);
+      const totalSharePct =
+        totalRevenue > 0 ? Math.round((rep.revenue / totalRevenue) * 100) : 0;
+
+      return `
+        <div class="leaderboard-item">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="leaderboard-rank ${rankClass}">#${rank}</div>
+            <div class="min-w-0">
+              <div class="font-bold text-xs text-slate-200 truncate flex items-center gap-1.5">
+                <span>${rep.name}</span>
+                <span class="badge badge-ok text-[10px] py-0 px-1.5 font-bold">${rep.orders} ${rep.orders === 1 ? "bill" : "bills"}</span>
+              </div>
+              <div class="w-24 sm:w-32 h-1.5 rounded-full bg-slate-800/80 mt-1.5 overflow-hidden">
+                <div class="h-full rounded-full bg-gradient-to-r from-sky-400 to-indigo-500" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <div class="font-bold text-xs text-emerald-400">${money(rep.revenue)}</div>
+            <div class="text-[10px] text-slate-400">${totalSharePct}% of today</div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderPaymentSplitDonut(salesToday) {
+  const canvas = document.getElementById("paymentSplitDonutChart");
+  const legendEl = document.getElementById("paymentSplitLegend");
+  if (!canvas) return;
+
+  const tenders = { UPI: 0, Cash: 0, Card: 0, Other: 0 };
+  let totalRevenue = 0;
+
+  salesToday.forEach((s) => {
+    let method = (s.paymentMethod || "Cash").trim();
+    if (!["UPI", "Cash", "Card"].includes(method)) method = "Other";
+    const amt = Number(s.totalAmount || 0);
+    tenders[method] += amt;
+    totalRevenue += amt;
+  });
+
+  const isLight = getTheme() === "light";
+  const colors = {
+    UPI: { bg: isLight ? "#059669" : "#10b981", label: "UPI" },
+    Cash: { bg: isLight ? "#d97706" : "#f59e0b", label: "Cash" },
+    Card: { bg: isLight ? "#0284c7" : "#0ea5e9", label: "Card" },
+    Other: { bg: isLight ? "#7c3aed" : "#8b5cf6", label: "Other" },
+  };
+
+  const activeKeys = Object.keys(tenders).filter((k) => tenders[k] > 0);
+  const labels = activeKeys.length ? activeKeys : ["No data"];
+  const data = activeKeys.length ? activeKeys.map((k) => tenders[k]) : [1];
+  const bgColors = activeKeys.length
+    ? activeKeys.map((k) => colors[k].bg)
+    : [isLight ? "#cbd5e1" : "#334155"];
+
+  makeChart(
+    canvas,
+    "doughnut",
+    {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: bgColors,
+          borderWidth: 2,
+          borderColor: isLight ? "#ffffff" : "#090d14",
+          hoverOffset: 4,
+        },
+      ],
+    },
+    {
+      cutout: "70%",
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const val = ctx.raw || 0;
+              const pct =
+                totalRevenue > 0
+                  ? ((val / totalRevenue) * 100).toFixed(1)
+                  : "0";
+              return ` ${ctx.label}: ${money(val)} (${pct}%)`;
+            },
+          },
+        },
+      },
+    },
+  );
+
+  if (legendEl) {
+    if (totalRevenue === 0) {
+      legendEl.innerHTML = `
+        <div class="text-xs text-slate-500 italic py-2">
+          No sales recorded yet today
+        </div>
+      `;
+    } else {
+      legendEl.innerHTML = activeKeys
+        .map((k) => {
+          const val = tenders[k];
+          const pct = Math.round((val / totalRevenue) * 100);
+          return `
+            <div class="tender-chip">
+              <div class="flex items-center">
+                <span class="tender-dot" style="background-color: ${colors[k].bg}"></span>
+                <span class="font-semibold text-slate-200">${k}</span>
+              </div>
+              <div class="text-right">
+                <span class="font-bold text-slate-100">${pct}%</span>
+                <span class="text-[10px] text-slate-400 block">${money(val)}</span>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+  }
+}
+
+function renderRushHourChart(salesToday) {
+  const canvas = document.getElementById("rushHourChart");
+  const peakBadge = document.getElementById("rushHourPeakBadge");
+  if (!canvas) return;
+
+  const hourlyRevenue = new Array(24).fill(0);
+  const hourlyOrders = new Array(24).fill(0);
+
+  salesToday.forEach((s) => {
+    const d = saleDate(s);
+    if (d) {
+      const h = d.getHours();
+      if (h >= 0 && h < 24) {
+        hourlyRevenue[h] += Number(s.totalAmount || 0);
+        hourlyOrders[h] += 1;
+      }
+    }
+  });
+
+  let peakHour = -1;
+  let peakVal = 0;
+  hourlyRevenue.forEach((val, h) => {
+    if (val > peakVal) {
+      peakVal = val;
+      peakHour = h;
+    }
+  });
+
+  if (peakBadge) {
+    if (peakVal > 0) {
+      const formatH = (h) =>
+        h === 0
+          ? "12 AM"
+          : h === 12
+            ? "12 PM"
+            : h > 12
+              ? `${h - 12} PM`
+              : `${h} AM`;
+      peakBadge.textContent = `⚡ Peak: ${formatH(peakHour)} (${money(peakVal)})`;
+      peakBadge.className =
+        "badge badge-warn text-[11px] font-bold py-0.5 px-2.5 animate-pulse";
+    } else {
+      peakBadge.textContent = "⚡ Peak: No activity yet";
+      peakBadge.className =
+        "badge badge-info text-[11px] font-bold py-0.5 px-2.5";
+    }
+  }
+
+  const isLight = getTheme() === "light";
+  const barColors = hourlyRevenue.map((val, h) => {
+    if (h === peakHour && peakVal > 0) {
+      return isLight ? "#f59e0b" : "#fbbf24";
+    }
+    return isLight ? "rgba(14, 165, 233, 0.45)" : "rgba(56, 189, 248, 0.5)";
+  });
+
+  makeChart(
+    canvas,
+    "bar",
+    {
+      labels: Array.from({ length: 24 }, (_, i) => {
+        return i === 0
+          ? "12 AM"
+          : i === 12
+            ? "12 PM"
+            : i > 12
+              ? `${i - 12} PM`
+              : `${i} AM`;
+      }),
+      datasets: [
+        {
+          label: "Hourly Revenue",
+          data: hourlyRevenue,
+          backgroundColor: barColors,
+          borderRadius: 4,
+          borderSkipped: false,
+        },
+      ],
+    },
+    {
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 8,
+            font: { size: 10 },
+          },
+        },
+        y: {
+          display: false,
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const h = ctx.dataIndex;
+              const rev = hourlyRevenue[h];
+              const ord = hourlyOrders[h];
+              return ` Revenue: ${money(rev)} (${ord} ${ord === 1 ? "sale" : "sales"})`;
+            },
+          },
+        },
+      },
+    },
+  );
 }
 
 function renderRecentSales() {
@@ -831,6 +1216,7 @@ function renderDashboard() {
   renderStats({ salesToday, monthSales, low, out });
   renderCharts();
   renderRecentSales();
+  renderOperationsTile(salesToday, staffUsers);
   renderAiSummary({ low, out });
   renderDemoControls();
   hideSkeletonLoader();
@@ -1017,49 +1403,6 @@ function initChartDateControls() {
   const endEl = $("#chartEndDate");
   const resetBtn = $("#resetChartDate");
 
-  function getDaysInMonth(year, month1Indexed) {
-    return new Date(year, month1Indexed, 0).getDate();
-  }
-
-  // Intercept Chromium month-wrap (e.g., 30-09 wrapped to 01-09, or 01-10 wrapped to 31-10)
-  function handleMonthWrapCorrection(inputEl, prevVal) {
-    const curVal = inputEl?.value;
-    if (!curVal || !prevVal) return curVal;
-
-    const [prevY, prevM, prevD] = prevVal.split("-").map(Number);
-    const [curY, curM, curD] = curVal.split("-").map(Number);
-
-    // If day was on the last day of the month, and now wrapped to 1 in the same month & year:
-    if (
-      prevY === curY &&
-      prevM === curM &&
-      curD === 1 &&
-      prevD === getDaysInMonth(prevY, prevM)
-    ) {
-      const dt = new Date(prevY, prevM - 1, prevD);
-      dt.setDate(dt.getDate() + 1); // Advances to next month's 1st day!
-      const corrected = toLocalYMD(dt);
-      inputEl.value = corrected;
-      return corrected;
-    }
-
-    // If day was on 1st of the month, and now wrapped backwards to last day in the same month & year:
-    if (
-      prevY === curY &&
-      prevM === curM &&
-      prevD === 1 &&
-      curD === getDaysInMonth(prevY, prevM)
-    ) {
-      const dt = new Date(prevY, prevM - 1, 1);
-      dt.setDate(dt.getDate() - 1); // Moves back to previous month's last day!
-      const corrected = toLocalYMD(dt);
-      inputEl.value = corrected;
-      return corrected;
-    }
-
-    return curVal;
-  }
-
   // Keyboard ArrowUp / ArrowDown stepper
   function attachKeyboardDateStepper(inputEl, onStep) {
     if (!inputEl) return;
@@ -1091,8 +1434,14 @@ function initChartDateControls() {
 
   if (startEl) {
     const handleStartChange = (val) => {
-      const correctedVal = handleMonthWrapCorrection(startEl, lastStartVal);
-      const finalVal = val || correctedVal || startEl.value;
+      const finalVal = (val !== undefined ? val : startEl?.value || "").trim();
+      // Ignore partial typed dates until full YYYY-MM-DD or empty
+      if (finalVal && !/^\d{4}-\d{2}-\d{2}$/.test(finalVal)) {
+        return;
+      }
+      if (finalVal === chartStartDate) {
+        return;
+      }
       lastStartVal = finalVal;
       chartStartDate = finalVal;
 
@@ -1113,6 +1462,12 @@ function initChartDateControls() {
 
       if (endEl && chartStartDate) {
         endEl.min = chartStartDate;
+        if (chartEndDate && chartEndDate < chartStartDate) {
+          chartEndDate = chartStartDate;
+          endEl.value = chartStartDate;
+          lastEndVal = chartStartDate;
+          localStorage.setItem("salesiq_chart_end", chartEndDate);
+        }
       }
       renderSalesChart(true);
     };
@@ -1124,8 +1479,14 @@ function initChartDateControls() {
 
   if (endEl) {
     const handleEndChange = (val) => {
-      const correctedVal = handleMonthWrapCorrection(endEl, lastEndVal);
-      const finalVal = val || correctedVal || endEl.value;
+      const finalVal = (val !== undefined ? val : endEl?.value || "").trim();
+      // Ignore partial typed dates until full YYYY-MM-DD or empty
+      if (finalVal && !/^\d{4}-\d{2}-\d{2}$/.test(finalVal)) {
+        return;
+      }
+      if (finalVal === chartEndDate) {
+        return;
+      }
       lastEndVal = finalVal;
       chartEndDate = finalVal;
 
@@ -1144,6 +1505,15 @@ function initChartDateControls() {
         localStorage.removeItem("salesiq_chart_end");
       }
 
+      if (startEl && chartEndDate) {
+        if (chartStartDate && chartStartDate > chartEndDate) {
+          chartStartDate = chartEndDate;
+          startEl.value = chartEndDate;
+          lastStartVal = chartEndDate;
+          localStorage.setItem("salesiq_chart_start", chartStartDate);
+        }
+      }
+
       renderSalesChart(true);
     };
 
@@ -1156,8 +1526,20 @@ function initChartDateControls() {
     resetBtn.addEventListener("click", () => {
       chartStartDate = "";
       chartEndDate = "";
+      lastStartVal = "";
+      lastEndVal = "";
       localStorage.removeItem("salesiq_chart_start");
       localStorage.removeItem("salesiq_chart_end");
+      const { defaultStart, defaultEnd } = getDefaultChartRange();
+      if (startEl) {
+        startEl.value = defaultStart;
+        lastStartVal = defaultStart;
+      }
+      if (endEl) {
+        endEl.value = defaultEnd;
+        endEl.min = defaultStart;
+        lastEndVal = defaultEnd;
+      }
       renderSalesChart(true);
       toast("Sales chart reset to default range");
     });
@@ -1331,12 +1713,13 @@ const DEFAULT_DASHBOARD_LAYOUT = {
   slots: {
     fullTop: [],
     leftCol: ["salesChartTile", "recentSalesTile"],
-    rightCol: ["inventoryChartTile", "aiSummaryTile"],
+    rightCol: ["inventoryChartTile", "operationsTile", "aiSummaryTile"],
     fullBottom: [],
   },
   tileHeights: {
     salesChartTile: null,
     inventoryChartTile: null,
+    operationsTile: null,
     recentSalesTile: null,
     aiSummaryTile: null,
   },
@@ -1348,6 +1731,7 @@ function getTileName(id) {
   const names = {
     salesChartTile: "Sales Chart",
     inventoryChartTile: "Inventory Chart",
+    operationsTile: "Operations Hub",
     recentSalesTile: "Recent Sales",
     aiSummaryTile: "AI Business Summary",
   };
@@ -1377,6 +1761,17 @@ function loadDashboardLayout() {
           layout.slots[slotKey] = [...parsed.slots[slotKey]];
         }
       });
+    }
+
+    // Ensure all tiles exist in slots, appending any newly introduced tile to rightCol
+    const existingTileIds = new Set([
+      ...(layout.slots.fullTop || []),
+      ...(layout.slots.leftCol || []),
+      ...(layout.slots.rightCol || []),
+      ...(layout.slots.fullBottom || []),
+    ]);
+    if (!existingTileIds.has("operationsTile")) {
+      layout.slots.rightCol.splice(1, 0, "operationsTile");
     }
 
     if (parsed.tileHeights && typeof parsed.tileHeights === "object") {
@@ -1457,6 +1852,7 @@ function applyDashboardLayout(layout) {
   const allTileIds = [
     "salesChartTile",
     "inventoryChartTile",
+    "operationsTile",
     "recentSalesTile",
     "aiSummaryTile",
   ];
@@ -1990,6 +2386,7 @@ function initRecentSalesFilters() {
 initChartDateControls();
 initRecentSalesFilters();
 initManualSaleModal();
+initOperationsTileTabs();
 initDashboardEditMode();
 renderDemoControls();
 startRunnerIfNeeded();

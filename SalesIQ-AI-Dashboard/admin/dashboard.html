@@ -531,6 +531,144 @@
                 ></div>
               </div>
 
+              <!-- Operations Intelligence Tile (Staff Leaderboard, Payment Split, Rush Hour Curve) -->
+              <div
+                id="operationsTile"
+                class="dashboard-tile glass p-5 flex flex-col justify-between"
+              >
+                <div>
+                  <div class="tile-edit-bar">
+                    <div class="tile-edit-bar-left">
+                      <div
+                        class="tile-drag-handle"
+                        draggable="true"
+                        data-tile="operationsTile"
+                        title="Drag to move this tile anywhere"
+                      >
+                        <span>⠿</span> <span>Move</span>
+                      </div>
+                      <span class="tile-size-badge" id="operationsTileBadge"
+                        >Right Col</span
+                      >
+                    </div>
+                    <div class="tile-btn-group">
+                      <button
+                        type="button"
+                        class="tile-action-btn switch-col-btn"
+                        data-tile="operationsTile"
+                        title="Move to the other column"
+                      >
+                        ⇄ Switch Col
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn move-up-btn"
+                        data-tile="operationsTile"
+                        title="Move up in this column"
+                      >
+                        ↑ Up
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn move-down-btn"
+                        data-tile="operationsTile"
+                        title="Move down in this column"
+                      >
+                        ↓ Down
+                      </button>
+                      <button
+                        type="button"
+                        class="tile-action-btn toggle-full-btn"
+                        data-tile="operationsTile"
+                        title="Toggle full width"
+                      >
+                        ⛶ Full Width
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Header & Tab Navigation -->
+                  <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                    <div>
+                      <h3 class="font-black text-lg text-slate-100 flex items-center gap-2">
+                        <span>Operations Hub</span>
+                        <span class="badge badge-info text-[10px] py-0 px-2 font-bold">Live</span>
+                      </h3>
+                      <p class="text-xs text-slate-400 mt-0.5" id="operationsTileSubtitle">
+                        Staff billing, tender splits & peak hours
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700/60" id="operationsTabGroup">
+                      <button
+                        type="button"
+                        class="operations-tab-btn active px-2.5 py-1 text-xs rounded-lg font-semibold transition-all"
+                        data-tab="staff"
+                        title="Cashier & staff billing performance"
+                      >
+                        👥 Staff
+                      </button>
+                      <button
+                        type="button"
+                        class="operations-tab-btn px-2.5 py-1 text-xs rounded-lg font-semibold text-slate-300 hover:text-white transition-all"
+                        data-tab="tender"
+                        title="Payment tender breakdown (UPI, Cash, Card)"
+                      >
+                        💳 Payments
+                      </button>
+                      <button
+                        type="button"
+                        class="operations-tab-btn px-2.5 py-1 text-xs rounded-lg font-semibold text-slate-300 hover:text-white transition-all"
+                        data-tab="rush"
+                        title="24-Hour rush-hour sales velocity"
+                      >
+                        ⚡ Rush Hour
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Tab 1: Staff Billing Leaderboard -->
+                  <div id="tabPanelStaff" class="operations-tab-panel">
+                    <div id="staffLeaderboardContent" class="space-y-2.5">
+                      <!-- Rendered by dashboard.js -->
+                    </div>
+                  </div>
+
+                  <!-- Tab 2: Payment Split Donut -->
+                  <div id="tabPanelTender" class="operations-tab-panel hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                      <div class="sm:col-span-7 chart-wrap relative h-[180px] max-h-[190px]">
+                        <canvas id="paymentSplitDonutChart"></canvas>
+                      </div>
+                      <div class="sm:col-span-5 flex flex-col gap-2" id="paymentSplitLegend">
+                        <!-- Legend chips dynamically populated -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tab 3: 24-Hour Rush-Hour Footfall Curve -->
+                  <div id="tabPanelRush" class="operations-tab-panel hidden">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                      <span class="text-xs text-slate-400">Hourly billing volume</span>
+                      <span id="rushHourPeakBadge" class="badge badge-warn text-[11px] font-bold py-0.5 px-2">
+                        Peak: Calculating...
+                      </span>
+                    </div>
+                    <div class="chart-wrap h-[180px] max-h-[190px]">
+                      <canvas id="rushHourChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="dashboard-row-resizer"
+                  title="Drag to adjust height"
+                ></div>
+                <div
+                  class="dashboard-corner-resizer"
+                  title="Drag corner to adjust"
+                ></div>
+              </div>
+
               <!-- AI Business Summary Tile (Directly below Inventory Chart!) -->
               <div
                 id="aiSummaryTile"

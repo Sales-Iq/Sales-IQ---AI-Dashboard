@@ -118,9 +118,17 @@ export const ProductPreviewSection: React.FC = () => {
                       <h3 className="text-base font-bold text-white tracking-tight">
                         Sales Velocity &amp; Revenue Growth
                       </h3>
-                      <p className="text-xs text-slate-400">
-                        Real-time revenue curve for {selectedRange}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <p className="text-xs text-slate-400">
+                          Live telemetry for {selectedRange}
+                        </p>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                          UPI 58% • Cash 24% • Card 18%
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                          ⚡ Peak 6-9 PM
+                        </span>
+                      </div>
                     </div>
 
                     {/* View mode toggle */}
