@@ -63,7 +63,7 @@ export const FeaturesSection: React.FC = () => {
   ];
 
   return (
-    <section id="features" className="relative py-14 sm:py-18 px-5 sm:px-6 lg:px-8 defer-render-section">
+    <section id="features" className="scroll-mt-20 sm:scroll-mt-24 relative py-10 sm:py-14 px-5 sm:px-6 lg:px-8 defer-render-section">
       <div className="max-w-7xl mx-auto">
         <SectionHeading
           eyebrow="Core Platform Capabilities"

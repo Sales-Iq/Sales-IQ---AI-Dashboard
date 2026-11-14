@@ -233,7 +233,7 @@ body {
    ───────────────────────────────────────────────────────────── */
 .defer-render-section {
   content-visibility: auto;
-  contain-intrinsic-size: auto none auto 700px;
+  contain-intrinsic-size: auto 600px;
 }
 
 /* ─────────────────────────────────────────────────────────────

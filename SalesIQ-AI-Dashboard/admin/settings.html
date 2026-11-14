@@ -138,6 +138,39 @@
                 </div>
               </div>
 
+              <div class="space-y-4 pt-2 border-t border-slate-800/80">
+                <div>
+                  <label class="label">Store Physical Address</label>
+                  <input
+                    id="storeAddress"
+                    class="input w-full"
+                    placeholder="Shop 12, Ground Floor, Central Market Road..."
+                  />
+                  <p class="text-[11px] text-slate-400 mt-1">Printed on receipts and thermal invoice headers.</p>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="label">Support Phone Number</label>
+                    <input
+                      id="storePhone"
+                      type="tel"
+                      class="input w-full font-mono"
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                  <div>
+                    <label class="label">Statutory GSTIN / Tax ID</label>
+                    <input
+                      id="storeGstin"
+                      class="input w-full font-mono uppercase"
+                      placeholder="24ABCDE1234F1Z5"
+                      maxlength="20"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div class="pt-2">
                 <button type="submit" id="saveBusinessSettingsBtn" class="btn btn-primary w-full py-2.5">
                   💾 Save Business Settings
@@ -247,7 +280,12 @@
                         <div id="invoicePreviewBizName" class="font-bold text-sm text-slate-100">
                           SalesIQ Store
                         </div>
-                        <div class="text-[10px] text-slate-400">Official Retail Invoice</div>
+                        <div id="invoicePreviewAddress" class="text-[10px] text-slate-400 truncate max-w-[200px]">
+                          Official Retail Invoice
+                        </div>
+                        <div id="invoicePreviewTaxLine" class="text-[10px] text-slate-400 font-mono">
+                          GSTIN: --
+                        </div>
                       </div>
                     </div>
                     <div class="text-right">

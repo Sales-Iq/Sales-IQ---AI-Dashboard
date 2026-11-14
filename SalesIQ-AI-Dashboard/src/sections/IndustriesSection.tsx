@@ -24,7 +24,7 @@ const iconMap: Record<string, LucideIcon> = {
 
 export const IndustriesSection: React.FC = () => {
   return (
-    <section id="industries" className="relative py-14 sm:py-18 px-5 sm:px-6 lg:px-8 defer-render-section">
+    <section id="industries" className="scroll-mt-20 sm:scroll-mt-24 relative py-10 sm:py-14 px-5 sm:px-6 lg:px-8 defer-render-section">
       <div className="max-w-7xl mx-auto">
         <SectionHeading
           eyebrow="Target Retail Environments"

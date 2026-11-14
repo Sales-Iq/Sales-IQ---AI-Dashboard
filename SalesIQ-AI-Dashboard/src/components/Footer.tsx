@@ -1,5 +1,5 @@
 import React from "react";
-import { Terminal } from "lucide-react";
+import { Terminal, Mail, Github, ArrowUpRight } from "lucide-react";
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -21,10 +21,33 @@ export const Footer: React.FC = () => {
               </span>
             </a>
 
-            <p className="text-sm text-slate-400 max-w-sm leading-relaxed mb-6">
+            <p className="text-sm text-slate-400 max-w-sm leading-relaxed mb-5">
               AI-powered sales, inventory, and demand forecasting platform. 
-              Built for retail stores, wholesalers, distributors, and multi-branch operations.
+              Built for retail stores, supermarkets, pharmacies, and multi-branch distribution.
             </p>
+
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <a
+                href="https://github.com/Sales-Iq/Sales-IQ---AI-Dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass-panel-subtle text-xs text-slate-300 hover:text-white hover:border-sky-500/40 transition-colors"
+                title="View Open Repository on GitHub"
+              >
+                <Github className="w-3.5 h-3.5 text-slate-400" />
+                <span>GitHub Source</span>
+                <ArrowUpRight className="w-3 h-3 text-slate-500" />
+              </a>
+
+              <a
+                href="mailto:support@salesiq.app"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass-panel-subtle text-xs text-slate-300 hover:text-white hover:border-sky-500/40 transition-colors"
+                title="Contact SalesIQ Team"
+              >
+                <Mail className="w-3.5 h-3.5 text-sky-400" />
+                <span>support@salesiq.app</span>
+              </a>
+            </div>
 
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg glass-panel-subtle text-xs text-slate-400">
               <Terminal className="w-3.5 h-3.5 text-sky-400" />
@@ -135,15 +158,15 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom Bar: Copyright & Academic Attribution */}
+        {/* Bottom Bar: Copyright & Attribution */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>
-            © {currentYear} SalesIQ. All rights reserved. Built with Lumelle Liquid Glass & Google Gemini AI.
+            © {currentYear} SalesIQ Technologies Inc. All rights reserved. • Built with Cloud Firestore &amp; Google Gemini AI.
           </p>
 
           <p className="text-slate-400 text-center sm:text-right">
             Master of Computer Applications (MCA) Project Architecture • Documented in{" "}
-            <span className="text-slate-300 font-mono">salesiq_features.txt</span>
+            <a href="/salesiq_features.txt" target="_blank" className="text-slate-300 font-mono hover:underline">salesiq_features.txt</a>
           </p>
         </div>
       </div>

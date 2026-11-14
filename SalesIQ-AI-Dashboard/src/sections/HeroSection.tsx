@@ -5,7 +5,7 @@ import { DashboardPreview } from "../components/DashboardPreview";
 
 export const HeroSection: React.FC = () => {
   return (
-    <section className="relative pt-28 pb-8 sm:pt-36 sm:pb-12 px-5 sm:px-6 lg:px-8 overflow-hidden">
+    <section className="relative pt-24 pb-4 sm:pt-28 sm:pb-6 lg:pb-8 px-5 sm:px-6 lg:px-8 overflow-hidden">
       {/* Ambient background glows */}
       <div className="ambient-glow-blue -top-24 left-1/4 -translate-x-1/2" />
       <div className="ambient-glow-purple top-1/3 -right-24" />
@@ -77,7 +77,7 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.45 }}
-            className="mt-12 pt-6 border-t border-white/[0.08] flex flex-wrap items-center gap-y-3 gap-x-6 text-xs text-slate-400 font-medium"
+            className="mt-8 pt-4 sm:pt-5 border-t border-white/[0.08] flex flex-wrap items-center gap-y-3 gap-x-6 text-xs text-slate-400 font-medium"
           >
             <div className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-sky-400" />
@@ -99,6 +99,9 @@ export const HeroSection: React.FC = () => {
           <DashboardPreview />
         </div>
       </div>
+
+      {/* Subtle Luminous Horizon Divider Bridging Hero & Preview */}
+      <div className="w-full max-w-5xl mx-auto h-px bg-gradient-to-r from-transparent via-sky-500/25 to-transparent mt-6 sm:mt-8" />
     </section>
   );
 };

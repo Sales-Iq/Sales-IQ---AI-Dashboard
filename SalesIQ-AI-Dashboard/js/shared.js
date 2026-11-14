@@ -287,12 +287,21 @@ export const toDate = (value) => {
         const d = new Date(sec * 1000);
         return !Number.isNaN(d.getTime()) ? d : null;
       }
+      // Pending server timestamp sentinel or optimistic object
+      if (value._methodName || value.constructor?.name === "FieldValue") {
+        return new Date();
+      }
     }
     if (typeof value === "number") {
       const d = new Date(value);
       return !Number.isNaN(d.getTime()) ? d : null;
     }
     if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        const [y, m, d] = trimmed.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }
       const d = new Date(value);
       return !Number.isNaN(d.getTime()) ? d : null;
     }
@@ -2256,7 +2265,7 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
           : collection(db, "sales");
       const snap = await getDocs(q);
       const tenantSales = snap.docs.map((d) => ({
-        ...d.data(),
+        ...d.data({ serverTimestamps: "estimate" }),
         id: d.id,
         docId: d.id,
       }));
@@ -2271,7 +2280,7 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
             query(collection(db, "sales"), where("salespersonId", "in", staffArr)),
           );
           orphanedSales = staffSalesSnap.docs
-            .map((d) => ({ ...d.data(), id: d.id, docId: d.id }))
+            .map((d) => ({ ...d.data({ serverTimestamps: "estimate" }), id: d.id, docId: d.id }))
             .filter(
               (s) =>
                 s.adminId !== tenantId &&
@@ -2335,7 +2344,7 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
       console.warn(`Targeted sales fetch fell back:`, err);
       const snap = await getDocs(collection(db, "sales"));
       docs = snap.docs
-        .map((d) => ({ ...d.data(), id: d.id, docId: d.id }))
+        .map((d) => ({ ...d.data({ serverTimestamps: "estimate" }), id: d.id, docId: d.id }))
         .filter(
           (d) => !tenantId || tenantId === "__ALL__" || d.adminId === tenantId,
         );
@@ -2348,7 +2357,7 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
     try {
       const q = query(collection(db, name), where("adminId", "==", tenantId));
       const snap = await getDocs(q);
-      docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, docId: d.id }));
+      docs = snap.docs.map((d) => ({ ...d.data({ serverTimestamps: "estimate" }), id: d.id, docId: d.id }));
     } catch (err) {
       console.warn(
         `Targeted where query on ${name} fell back to collection scan:`,
@@ -2356,12 +2365,12 @@ async function fetchFromFirestore(name, sorted, customAdminId) {
       );
       const snap = await getDocs(collection(db, name));
       docs = snap.docs
-        .map((d) => ({ ...d.data(), id: d.id, docId: d.id }))
+        .map((d) => ({ ...d.data({ serverTimestamps: "estimate" }), id: d.id, docId: d.id }))
         .filter((d) => d.adminId === tenantId);
     }
   } else {
     const snap = await getDocs(collection(db, name));
-    docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, docId: d.id }));
+    docs = snap.docs.map((d) => ({ ...d.data({ serverTimestamps: "estimate" }), id: d.id, docId: d.id }));
     if (TENANT_COLLECTIONS.has(name) && tenantId && tenantId !== "__ALL__") {
       docs = docs.filter((d) => d.adminId === tenantId);
     }
@@ -2512,8 +2521,8 @@ export function watchCollection(
       let combined = Array.from(salesMap.values());
       if (sorted) {
         combined.sort((a, b) => {
-          const da = toDate(a.createdAt);
-          const db = toDate(b.createdAt);
+          const da = toDate(a.createdAt) || (a.saleDate ? toDate(a.saleDate) : null) || (a.date ? toDate(a.date) : null);
+          const db = toDate(b.createdAt) || (b.saleDate ? toDate(b.saleDate) : null) || (b.date ? toDate(b.date) : null);
           const ta = da ? da.getTime() : Date.now();
           const tb = db ? db.getTime() : Date.now();
           return tb - ta;
@@ -2578,7 +2587,7 @@ export function watchCollection(
               changed = true;
             }
           } else {
-            const data = change.doc.data();
+            const data = change.doc.data({ serverTimestamps: "estimate" });
             salesMap.set(docId, {
               ...data,
               id: docId,
@@ -2627,15 +2636,15 @@ export function watchCollection(
       makeRef(),
       (snap) => {
         let rawDocs = snap.docs.map((d) => ({
-          ...d.data(),
+          ...d.data({ serverTimestamps: "estimate" }),
           id: d.id,
           docId: d.id,
         }));
         let scopedDocs = filterDocs(rawDocs);
         if (sorted) {
           scopedDocs.sort((a, b) => {
-            const da = toDate(a.createdAt);
-            const db = toDate(b.createdAt);
+            const da = toDate(a.createdAt) || (a.saleDate ? toDate(a.saleDate) : null) || (a.date ? toDate(a.date) : null);
+            const db = toDate(b.createdAt) || (b.saleDate ? toDate(b.saleDate) : null) || (b.date ? toDate(b.date) : null);
             const ta = da ? da.getTime() : Date.now();
             const tb = db ? db.getTime() : Date.now();
             return tb - ta;
@@ -3153,6 +3162,13 @@ export function makeChart(canvas, type, data, options = {}) {
 
   let animOptions = { ...options };
 
+  const isInitialMount = !canvas._chart;
+  const shouldReplay =
+    Boolean(options.replayAnimation) ||
+    Boolean(options.forceReplay) ||
+    Boolean(options.replayLeftToRight) ||
+    Boolean(options.forceLeftToRight);
+
   if (isLeftToRightTarget && type === "line") {
     const existingPlugins = animOptions.plugins || {};
     animOptions.plugins = {
@@ -3162,15 +3178,15 @@ export function makeChart(canvas, type, data, options = {}) {
         ...(existingPlugins.salesiqLeftToRight || {}),
       },
     };
-    animOptions.animation = false;
+    if (isInitialMount || shouldReplay) {
+      animOptions.animation = false;
+    } else {
+      animOptions.animation = {
+        duration: 500,
+        easing: "easeOutQuart",
+      };
+    }
   }
-
-  const isInitialMount = !canvas._chart;
-  const shouldReplay =
-    Boolean(options.replayAnimation) ||
-    Boolean(options.forceReplay) ||
-    Boolean(options.replayLeftToRight) ||
-    Boolean(options.forceLeftToRight);
 
   // Kerfa-style staggered bar growth wave entrance animation (vertical & horizontal)
   // Only applied on initial mount or when explicit replay is requested — NEVER resets bars on updates or theme switches!
@@ -3199,6 +3215,10 @@ export function makeChart(canvas, type, data, options = {}) {
         delete animOptions.animations.x;
         delete animOptions.animations.y;
       }
+      animOptions.animation = {
+        duration: 500,
+        easing: "easeOutQuart",
+      };
     }
   }
 
@@ -3213,7 +3233,10 @@ export function makeChart(canvas, type, data, options = {}) {
         ...(animOptions.animation || {}),
       };
     } else {
-      animOptions.animation = false;
+      animOptions.animation = {
+        duration: 500,
+        easing: "easeOutQuart",
+      };
     }
   }
 
@@ -3293,20 +3316,18 @@ export function makeChart(canvas, type, data, options = {}) {
     canvas._chart.data.datasets = nextData.datasets;
     canvas._chart.options = nextOptions;
 
-    // Immediately update elements, scales, and geometry for new datasets
-    canvas._chart.update("none");
-
     const shouldReplay =
       Boolean(options.replayLeftToRight) || Boolean(options.forceLeftToRight);
 
     if (shouldReplay && isLeftToRightTarget) {
+      canvas._chart.update("none");
       startLeftToRightAnimation(
         canvas._chart,
         options.animationDuration || 600,
         options.animationDelay || 0,
       );
-    } else if (options.skipAnimation || options.animation === false) {
-      // already updated with "none"
+    } else if (options.skipAnimation || animOptions.animation === false) {
+      canvas._chart.update("none");
     } else {
       canvas._chart.update();
     }

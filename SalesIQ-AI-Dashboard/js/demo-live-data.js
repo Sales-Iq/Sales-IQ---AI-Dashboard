@@ -12,6 +12,7 @@ import {
   statusFor,
   getActiveTenantId,
   invalidateCache,
+  toLocalYMD,
 } from "./shared.js";
 
 const DEMO_ENABLED_KEY = "salesiq_demo_live_enabled";
@@ -384,6 +385,7 @@ export async function createDummySale(profile = {}) {
       isDemo: true,
       adminId: activeProfile?.id || adminId || null,
       generatedBy: activeProfile?.id || "admin-demo-session",
+      saleDate: toLocalYMD(new Date()),
       createdAt: serverTimestamp(),
     };
 
@@ -397,7 +399,7 @@ export async function createDummySale(profile = {}) {
 
   invalidateCache("sales");
   invalidateCache("products");
-  return { id: saleRef.id, ...savedSale };
+  return { id: saleRef.id, ...savedSale, createdAt: new Date() };
 }
 
 export function startDemoLiveSales({

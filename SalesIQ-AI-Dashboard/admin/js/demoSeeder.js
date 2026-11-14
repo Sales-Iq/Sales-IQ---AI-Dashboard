@@ -20,6 +20,7 @@ import {
   createNotification,
   getActiveTenantId,
   invalidateCache,
+  toLocalYMD,
 } from "../../js/shared.js";
 
 const productsCollection = collection(db, "products");
@@ -716,6 +717,7 @@ export async function generateDummySale(profile = {}) {
     source: "dummy",
     isDemo: true,
     adminId: userProfile?.id || adminId,
+    saleDate: toLocalYMD(new Date()),
     createdAt: serverTimestamp(),
   };
 
@@ -772,7 +774,7 @@ export async function generateDummySale(profile = {}) {
 
   invalidateCache("sales");
   invalidateCache("products");
-  return { id: saleRef.id, ...saleData };
+  return { id: saleRef.id, ...saleData, createdAt: new Date() };
 }
 
 /* --------------------------
@@ -868,6 +870,7 @@ export async function generateMultipleSales(count = 10, profile = {}) {
         source: "dummy",
         isDemo: true,
         adminId: userProfile?.id || adminId,
+        saleDate: toLocalYMD(new Date()),
         createdAt: serverTimestamp(),
       });
     }

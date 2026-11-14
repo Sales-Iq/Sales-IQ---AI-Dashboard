@@ -69,9 +69,24 @@ function updateLiveInvoicePreview() {
   const currency = $("#currency")?.value || "₹";
   const tax = Number($("#taxPercent")?.value || 0);
   const prefix = ($("#invoicePrefix")?.value.trim() || "SIQ").toUpperCase();
+  const address = $("#storeAddress")?.value.trim() || "";
+  const phone = $("#storePhone")?.value.trim() || "";
+  const gstin = ($("#storeGstin")?.value.trim() || "").toUpperCase();
 
   const bizEl = $("#invoicePreviewBizName");
   if (bizEl) bizEl.textContent = name;
+
+  const addrEl = $("#invoicePreviewAddress");
+  if (addrEl) addrEl.textContent = address || "Official Retail Invoice";
+
+  const taxLineEl = $("#invoicePreviewTaxLine");
+  if (taxLineEl) {
+    if (gstin || phone) {
+      taxLineEl.textContent = [gstin ? `GST: ${gstin}` : "", phone ? `Ph: ${phone}` : ""].filter(Boolean).join(" • ");
+    } else {
+      taxLineEl.textContent = "GSTIN: --";
+    }
+  }
 
   const numEl = $("#invoicePreviewSampleNumber");
   if (numEl) numEl.textContent = `${prefix}-74892011`;
@@ -109,6 +124,9 @@ function applySettingsToForm(s) {
   if ($("#currency")) $("#currency").value = s.currency || "₹";
   if ($("#taxPercent")) $("#taxPercent").value = s.taxPercent || 0;
   if ($("#invoicePrefix")) $("#invoicePrefix").value = s.invoicePrefix || "SIQ";
+  if ($("#storeAddress")) $("#storeAddress").value = s.storeAddress || "";
+  if ($("#storePhone")) $("#storePhone").value = s.storePhone || "";
+  if ($("#storeGstin")) $("#storeGstin").value = s.storeGstin || "";
   if ($("#themeMode")) {
     $("#themeMode").value =
       s.theme || localStorage.getItem("salesiq_theme") || "dark";
@@ -149,6 +167,9 @@ try {
     if (s.currency) localStorage.setItem("salesiq_currency", s.currency);
     if (s.taxPercent !== undefined) localStorage.setItem("salesiq_tax_percent", s.taxPercent);
     if (s.invoicePrefix) localStorage.setItem("salesiq_invoice_prefix", s.invoicePrefix);
+    if (s.storeAddress) localStorage.setItem("salesiq_store_address", s.storeAddress);
+    if (s.storePhone) localStorage.setItem("salesiq_store_phone", s.storePhone);
+    if (s.storeGstin) localStorage.setItem("salesiq_store_gstin", s.storeGstin);
   }
 } catch (err) {
   console.warn("Settings read failed:", err);
@@ -169,6 +190,9 @@ $("#businessSettingsForm").onsubmit = async (e) => {
     currency: $("#currency").value,
     taxPercent: Number($("#taxPercent").value || 0),
     invoicePrefix: ($("#invoicePrefix").value.trim() || "SIQ").toUpperCase(),
+    storeAddress: $("#storeAddress") ? $("#storeAddress").value.trim() : "",
+    storePhone: $("#storePhone") ? $("#storePhone").value.trim() : "",
+    storeGstin: $("#storeGstin") ? $("#storeGstin").value.trim().toUpperCase() : "",
     theme: $("#themeMode").value,
     adminId: profile.id,
     updatedAt: serverTimestamp(),
@@ -184,6 +208,9 @@ $("#businessSettingsForm").onsubmit = async (e) => {
     localStorage.setItem("salesiq_currency", data.currency);
     localStorage.setItem("salesiq_tax_percent", data.taxPercent);
     localStorage.setItem("salesiq_invoice_prefix", data.invoicePrefix);
+    localStorage.setItem("salesiq_store_address", data.storeAddress);
+    localStorage.setItem("salesiq_store_phone", data.storePhone);
+    localStorage.setItem("salesiq_store_gstin", data.storeGstin);
 
     window.dispatchEvent(
       new CustomEvent("salesiq:currency-changed", {
@@ -211,7 +238,7 @@ if (logoInput) {
   });
 }
 
-["businessName", "currency", "taxPercent", "invoicePrefix"].forEach((id) => {
+["businessName", "currency", "taxPercent", "invoicePrefix", "storeAddress", "storePhone", "storeGstin"].forEach((id) => {
   const el = $("#" + id);
   if (el) {
     el.addEventListener("input", updateLiveInvoicePreview);

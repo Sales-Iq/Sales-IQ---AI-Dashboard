@@ -45,7 +45,10 @@ let lastEndVal = "";
 
 function saleDate(sale) {
   if (!sale) return null;
-  return toDate(sale.createdAt || sale.date || sale.timestamp);
+  return (
+    toDate(sale.createdAt || sale.saleDate || sale.date || sale.timestamp) ||
+    (sale.isDemo || sale.source === "dummy" ? new Date() : null)
+  );
 }
 
 function updateConnectionBadge() {

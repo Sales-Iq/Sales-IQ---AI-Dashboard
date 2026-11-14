@@ -364,6 +364,7 @@ $("#billingForm").onsubmit = async (e) => {
       source: "staff",
       adminId: activeProfile.adminId || profile.adminId || targetAdminId || selected.adminId || null,
       isDemo: false,
+      saleDate: toLocalYMD(new Date()),
       createdAt: serverTimestamp(),
     };
 
@@ -455,6 +456,9 @@ $("#printInvoice").onclick = () => {
   const html = $("#invoicePreview").innerHTML;
   const bizName = localStorage.getItem("salesiq_business_name") || "SalesIQ";
   const logoUrl = localStorage.getItem("salesiq_business_logo") || "";
+  const storeAddress = localStorage.getItem("salesiq_store_address") || "";
+  const storePhone = localStorage.getItem("salesiq_store_phone") || "";
+  const storeGstin = localStorage.getItem("salesiq_store_gstin") || "";
   const w = window.open("", "_blank");
 
   w.document.write(`
@@ -476,7 +480,10 @@ $("#printInvoice").onclick = () => {
           ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : '<span style="font-size:32px">🏪</span>'}
           <div class="header-title">
             <h1>${bizName}</h1>
-            <p>Official Retail Invoice</p>
+            ${storeAddress ? `<p style="margin:2px 0 0;font-size:12px;color:#475569;">${storeAddress}</p>` : ''}
+            <p style="margin:2px 0 0;font-size:11px;color:#64748b;">
+              Official Retail Invoice${storePhone ? ` • Ph: ${storePhone}` : ''}${storeGstin ? ` • GSTIN: ${storeGstin}` : ''}
+            </p>
           </div>
         </div>
         <div class="invoice-body">

@@ -191,7 +191,7 @@ function computeForecastMetrics(product, horizonDays = 30) {
 
   // Populate actual units sold for each of the last 14 days
   prodSales.forEach((s) => {
-    const saleDate = toDate(s.createdAt);
+    const saleDate = toDate(s.createdAt || s.saleDate || s.date);
     if (!saleDate) return;
     const diffDays = Math.floor((now - saleDate) / 86400000);
     if (diffDays >= 0 && diffDays < pastDaysCount) {

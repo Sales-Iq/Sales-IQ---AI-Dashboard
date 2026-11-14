@@ -34,7 +34,7 @@ export const ProductPreviewSection: React.FC = () => {
   };
 
   return (
-    <section id="preview" className="relative pt-6 pb-14 sm:pt-8 sm:pb-18 px-5 sm:px-6 lg:px-8 defer-render-section">
+    <section id="preview" className="scroll-mt-20 sm:scroll-mt-24 relative pt-4 pb-10 sm:pt-6 sm:pb-12 px-5 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <SectionHeading
           eyebrow="Interactive Product Showcase"

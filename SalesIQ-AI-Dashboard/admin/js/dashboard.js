@@ -206,10 +206,29 @@ function getSalespersonDisplay(s) {
 }
 
 function saleDate(sale) {
-  if (!sale?.createdAt) return null;
-  const d = toDate(sale.createdAt);
-  if (d) return d;
-  if (typeof sale.createdAt === "object") return new Date();
+  if (!sale) return null;
+  if (sale.createdAt) {
+    const d = toDate(sale.createdAt);
+    if (d) return d;
+  }
+  if (sale.saleDate) {
+    const d = toDate(sale.saleDate);
+    if (d) return d;
+  }
+  if (sale.date) {
+    const d = toDate(sale.date);
+    if (d) return d;
+  }
+  if (sale.timestamp) {
+    const d = toDate(sale.timestamp);
+    if (d) return d;
+  }
+  if (sale.updatedAt) {
+    const d = toDate(sale.updatedAt);
+    if (d) return d;
+  }
+  if (sale.createdAt && typeof sale.createdAt === "object") return new Date();
+  if (sale.isDemo || sale.source === "dummy") return new Date();
   return null;
 }
 
@@ -258,6 +277,10 @@ async function runDemoTick() {
         `Live demo sale: ${sale.productName || "Product"} x ${sale.quantity || 1}`,
         "ok",
       );
+      if (!sales.some((s) => s.id === sale.id)) {
+        sales.unshift(sale);
+      }
+      scheduleRenderDashboard();
     }
   } catch (err) {
     console.error("Live dummy sale error:", err);
@@ -467,8 +490,12 @@ function getDefaultChartRange() {
   const today = getTodayStr();
   const firstSale = getFirstSaleDateStr();
   const lastSale = getLastSaleDateStr();
+  const past30Days = getPastMonthStr(29);
 
-  let defaultStart = firstSale || getPastMonthStr(29);
+  let defaultStart = past30Days;
+  if (firstSale && firstSale > past30Days) {
+    defaultStart = firstSale;
+  }
   let defaultEnd = today;
 
   if (lastSale && lastSale > defaultEnd) {
@@ -1019,8 +1046,8 @@ function renderRecentSales() {
 
   // Always sort sales by creation date descending so recent staff & admin sales appear at the top!
   const sortedSales = [...sales].sort((a, b) => {
-    const da = toDate(a.createdAt);
-    const db = toDate(b.createdAt);
+    const da = saleDate(a);
+    const db = saleDate(b);
     const ta = da ? da.getTime() : Date.now();
     const tb = db ? db.getTime() : Date.now();
     return tb - ta;
@@ -1091,7 +1118,7 @@ function renderRecentSales() {
                   }
                 </td>
                 <td>${sourceBadge(sale.source, sale)}</td>
-                <td>${dateText(sale.createdAt)}</td>
+                <td>${dateText(sale.createdAt || sale.saleDate || sale.date)}</td>
                 <td class="text-right">
                   <button
                     class="btn btn-ghost btn-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/15 px-2 py-1 rounded-lg"
@@ -1252,6 +1279,11 @@ $("#generateDemoSale")?.addEventListener("click", async (e) => {
   const btn = e.currentTarget;
   const countSelect = $("#salesCount");
   const count = countSelect ? parseInt(countSelect.value, 10) || 1 : 1;
+
+  if (!confirm(`Generate ${count} simulated dummy sale${count > 1 ? "s" : ""}? This will add test transactions to your ledger.`)) {
+    return;
+  }
+
   setBusy(btn, true, `Generating ${count}...`);
 
   try {
@@ -1259,10 +1291,14 @@ $("#generateDemoSale")?.addEventListener("click", async (e) => {
     if (count === 1) {
       const sale = await generateDummySale(currentProfile);
       toast(`Dummy sale added: ${sale.productName} x ${sale.quantity}`);
+      if (sale && !sales.some((s) => s.id === sale.id)) {
+        sales.unshift(sale);
+      }
     } else {
       const res = await generateMultipleSales(count, currentProfile);
       toast(`${res.count} dummy sales generated successfully!`);
     }
+    scheduleRenderDashboard();
   } catch (err) {
     toast(err.message, "err");
   } finally {

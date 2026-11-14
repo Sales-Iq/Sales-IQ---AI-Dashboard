@@ -4,21 +4,21 @@ import { Menu, X, ArrowRight } from "lucide-react";
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>("features");
+  const [activeSection, setActiveSection] = useState<string>("preview");
 
   const navContainerRef = useRef<HTMLElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
-  const activeSectionRef = useRef<string>("features");
+  const activeSectionRef = useRef<string>("preview");
   const isProgrammaticScrollRef = useRef<boolean>(false);
   const scrollLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navLinks = [
-    { name: "Features", href: "#features" },
     { name: "Interactive Demo", href: "#preview" },
-    { name: "How It Works", href: "#how-it-works" },
+    { name: "Features", href: "#features" },
     { name: "AI & Analytics", href: "#ai-analytics" },
+    { name: "How It Works", href: "#how-it-works" },
     { name: "Industries", href: "#industries" },
     { name: "Security", href: "#security" },
   ];
@@ -183,7 +183,7 @@ export const Navbar: React.FC = () => {
         }
       }
 
-      const nextSection = matched || "features";
+      const nextSection = matched || "preview";
       if (nextSection !== activeSectionRef.current) {
         activeSectionRef.current = nextSection;
         setActiveSection(nextSection);

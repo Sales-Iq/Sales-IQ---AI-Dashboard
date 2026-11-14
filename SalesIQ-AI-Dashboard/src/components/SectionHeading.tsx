@@ -18,7 +18,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
 }) => {
   return (
     <div
-      className={`max-w-3xl mb-8 md:mb-10 ${
+      className={`max-w-3xl mb-6 md:mb-8 ${
         align === "center" ? "mx-auto text-center" : "text-left"
       } ${className}`}
     >
@@ -51,7 +51,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-          className="mt-5 text-base sm:text-lg text-slate-400 font-normal leading-relaxed"
+          className="mt-3.5 text-base sm:text-lg text-slate-400 font-normal leading-relaxed"
         >
           {subtitle}
         </motion.p>

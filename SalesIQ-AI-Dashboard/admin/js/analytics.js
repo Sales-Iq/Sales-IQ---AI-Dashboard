@@ -111,10 +111,13 @@ try {
 // ── 3. Date & Timeframe Helpers ────────────────────────────────────────────
 function saleDate(sale) {
   if (!sale) return null;
-  const raw = sale.createdAt || sale.saleDate || sale.date;
-  if (!raw) return null;
-  const d = toDate(raw);
-  return d && !isNaN(d.getTime()) ? d : null;
+  const raw = sale.createdAt || sale.saleDate || sale.date || sale.timestamp;
+  if (raw) {
+    const d = toDate(raw);
+    if (d && !isNaN(d.getTime())) return d;
+  }
+  if (sale.isDemo || sale.source === "dummy") return new Date();
+  return null;
 }
 
 function toLocalYMD(d) {
